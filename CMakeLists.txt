@@ -12,7 +12,7 @@ find_package(OpenCV REQUIRED)
 ### gco ###
 add_subdirectory(lib/gco-v3.0)
 
-set(SOURCE_FILES main.cpp src/UnaryFile.cpp include/UnaryFile.h src/k-prototypes/Clusterer.cpp include/k-prototypes/Clusterer.h include/Image/Image.h include/k-prototypes/Cluster.h include/helper/coordinate_helper.h include/k-prototypes/Feature.h src/k-prototypes/Feature.cpp src/k-prototypes/Cluster.cpp)
+set(SOURCE_FILES main.cpp src/UnaryFile.cpp include/UnaryFile.h src/k-prototypes/Clusterer.cpp include/k-prototypes/Clusterer.h include/Image/Image.h include/k-prototypes/Cluster.h include/helper/coordinate_helper.h include/k-prototypes/Feature.h src/k-prototypes/Feature.cpp src/k-prototypes/Cluster.cpp include/helper/image_helper.h src/helper/image_helper.cpp)
 add_executable(hseg ${SOURCE_FILES})
 target_include_directories(hseg PUBLIC include ${GCO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(hseg gco ${OpenCV_LIBS})

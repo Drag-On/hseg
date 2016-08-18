@@ -1,6 +1,7 @@
 #include <iostream>
 #include <UnaryFile.h>
 #include <k-prototypes/Clusterer.h>
+#include <helper/image_helper.h>
 #include "GCoptimization.h"
 
 int main()
@@ -13,19 +14,21 @@ int main()
     rgb.read("data/2007_000129.jpg");
     LabelImage maxLabeling = unary.maxLabeling();
 
+    size_t numClusters = 500;
     Clusterer clusterer;
-    clusterer.run(500, unary.classes(), rgb, maxLabeling);
+    clusterer.run(numClusters, unary.classes(), rgb, maxLabeling);
 
     LabelImage const& spLabeling = clusterer.clustership();
 
-    cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
-    cv::Mat labelMat = static_cast<cv::Mat>(maxLabeling);
-    cv::Mat spLabelMat = static_cast<cv::Mat>(spLabeling);
+    helper::image::ColorMap cmap = helper::image::generateColorMap(numClusters);
 
-    cv::equalizeHist(labelMat, labelMat);
+    cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
+    cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));
+    cv::Mat spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
+
+    //cv::equalizeHist(labelMat, labelMat);
     cv::imshow("max labeling", labelMat);
     cv::imshow("rgb", rgbMat);
-    cv::equalizeHist(spLabelMat, spLabelMat);
     cv::imshow("sp", spLabelMat);
     cv::waitKey();
 

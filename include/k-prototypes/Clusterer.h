@@ -17,7 +17,7 @@ public:
 private:
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
-    float m_gamma = 1000.f; // TODO: Find good mixing coefficient
+    float m_gamma = 10000.f; // TODO: Find good mixing coefficient
     float m_conv = 0.01f;
 
     inline float delta(Label l1, Label l2) const
