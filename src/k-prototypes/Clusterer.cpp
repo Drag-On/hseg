@@ -18,8 +18,6 @@ void Clusterer::run(size_t numClusters, size_t numLabels, RGBImage const& rgb, L
     initPrototypes(rgb, labels);
     allocatePrototypes(rgb, labels);
 
-    std::cout << "pixels: " << rgb.pixels() << std::endl;
-
     int moves = rgb.pixels(), lastMoves;
     int iter = 0;
     do
@@ -30,6 +28,8 @@ void Clusterer::run(size_t numClusters, size_t numLabels, RGBImage const& rgb, L
 
         //std::cout << iter << ": moves: " << moves << ", diff: " << std::abs(lastMoves - moves) << ", threshold: " << rgb.pixels() * m_conv << std::endl;
     } while (std::abs(lastMoves - moves) > rgb.pixels() * m_conv);
+
+    std::cout << "Converged after " << iter << " iterations (up to convergence criterium)" << std::endl;
 }
 
 LabelImage const& Clusterer::clustership() const

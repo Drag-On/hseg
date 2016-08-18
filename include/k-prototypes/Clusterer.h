@@ -13,11 +13,11 @@ public:
     void run(size_t numClusters, size_t numLabels, RGBImage const& rgb, LabelImage const& labels);
 
     LabelImage const& clustership() const;
-    
+
 private:
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
-    float m_gamma = 1.f; // TODO: Find good mixing coefficient
+    float m_gamma = 1000.f; // TODO: Find good mixing coefficient
     float m_conv = 0.01f;
 
     inline float delta(Label l1, Label l2) const

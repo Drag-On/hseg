@@ -14,7 +14,7 @@ int main()
     LabelImage maxLabeling = unary.maxLabeling();
 
     Clusterer clusterer;
-    clusterer.run(200, unary.classes(), rgb, maxLabeling);
+    clusterer.run(500, unary.classes(), rgb, maxLabeling);
 
     LabelImage const& spLabeling = clusterer.clustership();
 

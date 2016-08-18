@@ -6,13 +6,13 @@
 #include "k-prototypes/Feature.h"
 
 Feature::Feature(RGBImage const& rgb, size_t site)
-        : m_r(rgb.at(site, 0)),
-          m_g(rgb.at(site, 1)),
-          m_b(rgb.at(site, 2))
-{ // TODO: Have weights that balance coordinates vs. color
+        : m_r(m_colorWeight * rgb.at(site, 0)),
+          m_g(m_colorWeight * rgb.at(site, 1)),
+          m_b(m_colorWeight * rgb.at(site, 2))
+{
     auto coords = helper::coord::siteTo2DCoordinate(site, rgb.width());
-    m_x = coords.first;
-    m_y = coords.second;
+    m_x = m_spatialWeight * coords.first;
+    m_y = m_spatialWeight * coords.second;
 }
 
 float Feature::x() const
