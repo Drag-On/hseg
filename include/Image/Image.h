@@ -12,8 +12,10 @@
 
 /**
  * Image of variable size and with a variable amount of channels
+ * @tparam T Value type
+ * @tparam C Amount of channels
  */
-template<typename T>
+template<typename T, int C>
 class Image
 {
 public:
@@ -26,9 +28,8 @@ public:
      * Construct an empty image
      * @param width Image width
      * @param height Image height
-     * @param channels Image channels
      */
-    Image(int width, int height, int channels) noexcept;
+    Image(int width, int height) noexcept;
 
     /**
      * Copy constructor
@@ -110,36 +111,47 @@ public:
 private:
     int m_width;
     int m_height;
-    int m_channels;
     std::vector<T> m_data;
 };
 
-template <typename T>
-Image<T>::Image(int width, int height, int channels) noexcept
+/**
+ * RGB image encoded as bytes
+ */
+using RGBImage = Image<unsigned char, 3>;
+
+/**
+ * Label image encoded as bytes
+ */
+using LabelImage = Image<unsigned char, 1>;
+
+
+template <typename T, int C>
+Image<T, C>::Image(int width, int height) noexcept
         : m_width(width),
           m_height(height),
-          m_channels(channels),
-          m_data(width * height * channels, 0)
+          m_data(width * height * C, 0)
 {
 }
 
-template <typename T>
-bool Image<T>::read(std::string const& filename)
+template <typename T, int C>
+bool Image<T, C>::read(std::string const& filename)
 {
     cv::Mat mat = cv::imread(filename);
     if (!mat.data)
         return false;
 
+    if(!mat.channels() == C)
+        return false;
+
     m_width = mat.cols;
     m_height = mat.rows;
-    m_channels = mat.channels();
-    m_data.resize(m_width * m_height * m_channels, 0);
+    m_data.resize(m_width * m_height * C, 0);
 
     for (int y = 0; y < m_width; ++y)
     {
         for (int x = 0; x < m_height; ++x)
         {
-            for (int l = 0; l < m_channels; ++l)
+            for (int l = 0; l < C; ++l)
             {
                 at(x, y, l) = mat.at<char>(y, x, l);
             }
@@ -149,15 +161,15 @@ bool Image<T>::read(std::string const& filename)
     return true;
 }
 
-template <typename T>
-Image<T>::operator cv::Mat() const
+template <typename T, int C>
+Image<T, C>::operator cv::Mat() const
 {
-    cv::Mat mat(m_height, m_width, CV_8UC(m_channels));
+    cv::Mat mat(m_height, m_width, CV_8UC(C));
     for (int y = 0; y < m_width; ++y)
     {
         for (int x = 0; x < m_height; ++x)
         {
-            for (int l = 0; l < m_channels; ++l)
+            for (int l = 0; l < C; ++l)
             {
                 mat.at<char>(y, x, l) = at(x, y, l);
             }
@@ -166,33 +178,35 @@ Image<T>::operator cv::Mat() const
     return mat;
 }
 
-template <typename T>
-int Image<T>::width() const
+template <typename T, int C>
+int Image<T, C>::width() const
 {
     return m_width;
 }
 
-template <typename T>
-int Image<T>::height() const
+template <typename T, int C>
+int Image<T, C>::height() const
 {
     return m_height;
 }
 
-template <typename T>
-int Image<T>::channels() const
+template <typename T, int C>
+int Image<T, C>::channels() const
 {
-    return m_channels;
+    return C;
 }
 
-template <typename T>
-T const& Image<T>::at(int x, int y, int c) const
+template <typename T, int C>
+T const& Image<T, C>::at(int x, int y, int c) const
 {
+    assert(c < C);
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
-template <typename T>
-T& Image<T>::at(int x, int y, int c)
+template <typename T, int C>
+T& Image<T, C>::at(int x, int y, int c)
 {
+    assert(c < C);
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
