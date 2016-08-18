@@ -64,13 +64,22 @@ int UnaryFile::maxLabelAt(int x, int y) const
 {
     int maxLabel = 0;
     float maxVal = std::numeric_limits<float>::min();
-    for(int l = 0; l < m_classes; ++l)
+    for (int l = 0; l < m_classes; ++l)
     {
-        if(at(x, y, l) > maxVal)
+        if (at(x, y, l) > maxVal)
         {
             maxVal = at(x, y, l);
             maxLabel = l;
         }
     }
     return maxLabel;
+}
+
+LabelImage UnaryFile::maxLabeling() const
+{
+    LabelImage labeling(m_width, m_height);
+    for (int x = 0; x < m_width; ++x)
+        for (int y = 0; y < m_height; ++y)
+            labeling.at(x, y, 0) = maxLabelAt(x, y);
+    return labeling;
 }

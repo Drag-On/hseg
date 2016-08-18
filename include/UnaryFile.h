@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <Image/Image.h>
 
 /**
  * Loads the scores for an image from file
@@ -56,6 +57,12 @@ public:
      * @return Class label with maximum score at the given pixel
      */
     int maxLabelAt(int x, int y) const;
+
+    /**
+     * Computes a labeling by taking he maximum score at every pixel
+     * @return The best labeling according to the scores
+     */
+    LabelImage maxLabeling() const;
 
 private:
     bool m_valid = false;
