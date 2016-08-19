@@ -6,16 +6,16 @@
 
 int main()
 {
-    std::cout << "Hello, World!" << std::endl;
+    std::string filename = "2007_000129"; //"2007_000032";
 
-    UnaryFile unary("data/2007_000129_prob.dat");
+    UnaryFile unary("data/" + filename + "_prob.dat");
 
     RGBImage rgb;
-    rgb.read("data/2007_000129.jpg");
+    rgb.read("data/" + filename  + ".jpg");
     CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 150;
+    size_t numClusters = 120;
     Clusterer clusterer;
     clusterer.run(numClusters, unary.classes(), cieLab, maxLabeling);
 
