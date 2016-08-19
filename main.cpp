@@ -15,7 +15,7 @@ int main()
     CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 100;
+    size_t numClusters = 150;
     Clusterer clusterer;
     clusterer.run(numClusters, unary.classes(), cieLab, maxLabeling);
 
@@ -24,17 +24,11 @@ int main()
     helper::image::ColorMap cmap = helper::image::generateColorMap(numClusters);
 
     cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
-    cv::Mat cieLabMat = static_cast<cv::Mat>(cieLab);
     cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));
     cv::Mat spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
 
-    auto minMax = cieLab.minMax();
-    cieLabMat -= minMax.first;
-    cieLabMat = cieLabMat / (minMax.second - minMax.first) * 1;
-
     cv::imshow("max labeling", labelMat);
     cv::imshow("rgb", rgbMat);
-    cv::imshow("CieLab", cieLabMat);
     cv::imshow("sp", spLabelMat);
     cv::waitKey();
 

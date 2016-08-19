@@ -178,6 +178,14 @@ public:
      */
     std::pair<T, T> minMax() const;
 
+    /**
+     * Stretches the image's colors such that the smalles value coincides with a given minimum, and its largest value
+     * conincides with a given maximum
+     * @param min New minimum value
+     * @param max New maximum value
+     */
+    Image& scaleColorSpace(T min, T max);
+
 private:
     int m_width;
     int m_height;
@@ -394,6 +402,16 @@ std::pair<T, T> Image<T, C>::minMax() const
             max = e;
     }
     return std::pair<T, T>(min, max);
+}
+
+template<typename T, int C>
+Image<T, C>& Image<T, C>::scaleColorSpace(T min, T max)
+{
+    auto minMax = this->minMax();
+    for (auto& px : m_data)
+        px = ((max - min) * (px - minMax.first)) / (minMax.second - minMax.first) + min;
+
+    return *this;
 }
 
 #endif //HSEG_IMAGE_H
