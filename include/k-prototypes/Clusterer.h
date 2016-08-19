@@ -11,12 +11,28 @@
 #include <helper/coordinate_helper.h>
 #include "Cluster.h"
 
+/**
+ * Clusters an image based on color, position, and a given labeling
+ */
 class Clusterer
 {
 public:
+    /**
+     * Runs the clustering process
+     * @param numClusters Amount of clusters to generate.
+     * @param numLabels Amount of class labels that can occur on the label image
+     * @param color Color image
+     * @param labels Label image
+     * @tparam T Type of the image data
+     * @details The resulting clustering will never have more clusters than specified, but it might well not use all
+     *          of them.
+     */
     template<typename T>
     void run(size_t numClusters, size_t numLabels, Image<T,3> const& color, LabelImage const& labels);
 
+    /**
+     * @return Clustering result
+     */
     LabelImage const& clustership() const;
 
     /**
@@ -32,7 +48,7 @@ private:
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
     float m_gamma = 5000.f; // TODO: Find good mixing coefficient
-    float m_conv = 0.001f;
+    float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
 
     inline float delta(Label l1, Label l2) const
     {
@@ -81,7 +97,7 @@ void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& col
         //std::cout << iter << ": moves: " << moves << ", diff: " << std::abs(lastMoves - moves) << ", threshold: " << rgb.pixels() * m_conv << std::endl;
     } while (std::abs(lastMoves - moves) > color.pixels() * m_conv);
 
-    std::cout << "Converged after " << iter << " iterations (up to convergence criterium)" << std::endl;
+    std::cout << "Converged after " << iter << " iterations (up to convergence criterion)" << std::endl;
     energy = computeEnergy(color, labels);
     std::cout << "Energy: " << energy << std::endl;
     long int lostClusters = std::count_if(m_clusters.begin(), m_clusters.end(), [](Cluster const& c) {return c.size == 0;});
