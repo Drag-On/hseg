@@ -19,6 +19,15 @@ public:
 
     LabelImage const& clustership() const;
 
+    /**
+     * Computes the energy of the current configuration given a color image and a label image
+     * @param color Color image
+     * @param labels Label image
+     * @return Energy of the current configuration
+     */
+    template<typename T>
+    float computeEnergy(Image<T, 3> const& color, LabelImage const& labels) const;
+
 private:
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
@@ -43,6 +52,8 @@ private:
     int reallocatePrototypes(Image<T, 3> const& color, LabelImage const& labels);
 
     size_t findClosestCluster(Feature const& feature, Label classLabel) const;
+
+    float computeDistance(Feature const& feature, Label label, size_t clusterIdx) const;
 };
 
 template<typename T>
@@ -53,8 +64,14 @@ void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& col
     m_clusters.resize(numClusters, Cluster(numLabels));
     m_clustership = LabelImage(color.width(), color.height());
 
+    float energy = computeEnergy(color, labels);
+    std::cout << "Energy before cluster allocation: " << energy << std::endl;
+
     initPrototypes(color, labels);
     allocatePrototypes(color, labels);
+
+    energy = computeEnergy(color, labels);
+    std::cout << "Energy after cluster allocation: " << energy << std::endl;
 
     int moves = color.pixels(), lastMoves;
     int iter = 0;
@@ -63,6 +80,9 @@ void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& col
         iter++;
         lastMoves = moves;
         moves = reallocatePrototypes(color, labels);
+
+        energy = computeEnergy(color, labels);
+        std::cout << "Energy after iteration " << iter << ": " << energy << std::endl;
 
         //std::cout << iter << ": moves: " << moves << ", diff: " << std::abs(lastMoves - moves) << ", threshold: " << rgb.pixels() * m_conv << std::endl;
     } while (std::abs(lastMoves - moves) > color.pixels() * m_conv);
@@ -146,6 +166,23 @@ int Clusterer::reallocatePrototypes(Image<T, 3> const& color, LabelImage const& 
         }
     }
     return moves;
+}
+
+template<typename T>
+float Clusterer::computeEnergy(Image<T, 3> const& color, LabelImage const& labels) const
+{
+    float energy = 0;
+
+    for (size_t i = 0; i < m_clustership.pixels(); ++i)
+    {
+        Feature f(color, i);
+        Label l = labels.at(i, 0);
+        size_t j = m_clustership.at(i, 0);
+        float pxEnergy = computeDistance(f, l, j);
+        energy += pxEnergy;
+    }
+
+    return energy;
 }
 
 #endif //HSEG_CLUSTERER_H
