@@ -113,7 +113,7 @@ void Clusterer::initPrototypes(Image<T, 3> const& color, LabelImage const& label
     for (auto& c : m_clusters)
     {
         size_t site = distribution(generator);
-        c.feature = c.accumFeature = Feature(color, site);
+        c.feature = Feature(color, site);
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
         c.label = labels.at(coords.first, coords.second, 0);
     }
