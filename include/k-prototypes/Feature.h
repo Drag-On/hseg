@@ -119,7 +119,7 @@ private:
     float m_x = 0.f, m_y = 0.f;
     float m_r = 0.f, m_g = 0.f, m_b = 0.f;
     float m_spatialWeight = 1.f;
-    float m_colorWeight = 1.f;
+    float m_colorWeight = 2.f;
 };
 
 #endif //HSEG_FEATURE_H
