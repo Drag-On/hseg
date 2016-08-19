@@ -64,13 +64,10 @@ void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& col
     m_clusters.resize(numClusters, Cluster(numLabels));
     m_clustership = LabelImage(color.width(), color.height());
 
-    float energy = computeEnergy(color, labels);
-    std::cout << "Energy before cluster allocation: " << energy << std::endl;
-
     initPrototypes(color, labels);
     allocatePrototypes(color, labels);
 
-    energy = computeEnergy(color, labels);
+    float energy = computeEnergy(color, labels);
     std::cout << "Energy after cluster allocation: " << energy << std::endl;
 
     int moves = color.pixels(), lastMoves;
@@ -81,13 +78,12 @@ void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& col
         lastMoves = moves;
         moves = reallocatePrototypes(color, labels);
 
-        energy = computeEnergy(color, labels);
-        std::cout << "Energy after iteration " << iter << ": " << energy << std::endl;
-
         //std::cout << iter << ": moves: " << moves << ", diff: " << std::abs(lastMoves - moves) << ", threshold: " << rgb.pixels() * m_conv << std::endl;
     } while (std::abs(lastMoves - moves) > color.pixels() * m_conv);
 
     std::cout << "Converged after " << iter << " iterations (up to convergence criterium)" << std::endl;
+    energy = computeEnergy(color, labels);
+    std::cout << "Energy: " << energy << std::endl;
     long int lostClusters = std::count_if(m_clusters.begin(), m_clusters.end(), [](Cluster const& c) {return c.size == 0;});
     std::cout << lostClusters << " clusters are empty." << std::endl;
 }
