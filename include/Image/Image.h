@@ -194,14 +194,20 @@ private:
 };
 
 /**
+ * 3-Channel color image
+ */
+template <typename T>
+using ColorImage = Image<T, 3>;
+
+/**
  * RGB image encoded as bytes
  */
-using RGBImage = Image<unsigned char, 3>;
+using RGBImage = ColorImage<unsigned char>;
 
 /**
  * CieLab image encoded as floating points
  */
-using CieLabImage = Image<float, 3>;
+using CieLabImage = ColorImage<float>;
 
 /**
  * A label

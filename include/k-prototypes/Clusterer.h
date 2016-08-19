@@ -28,7 +28,7 @@ public:
      *          of them.
      */
     template<typename T>
-    void run(size_t numClusters, size_t numLabels, Image<T,3> const& color, LabelImage const& labels);
+    void run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels);
 
     /**
      * @return Clustering result
@@ -42,7 +42,7 @@ public:
      * @return Energy of the current configuration
      */
     template<typename T>
-    float computeEnergy(Image<T, 3> const& color, LabelImage const& labels) const;
+    float computeEnergy(ColorImage<T> const& color, LabelImage const& labels) const;
 
 private:
     std::vector<Cluster> m_clusters;
@@ -59,13 +59,13 @@ private:
     }
 
     template<typename T>
-    void initPrototypes(Image<T, 3> const& color, LabelImage const& labels);
+    void initPrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     template<typename T>
-    void allocatePrototypes(Image<T, 3> const& color, LabelImage const& labels);
+    void allocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     template<typename T>
-    int reallocatePrototypes(Image<T, 3> const& color, LabelImage const& labels);
+    int reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     size_t findClosestCluster(Feature const& feature, Label classLabel) const;
 
@@ -73,7 +73,7 @@ private:
 };
 
 template<typename T>
-void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& color, LabelImage const& labels)
+void Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels)
 {
     assert(color.pixels() == labels.pixels());
 
@@ -105,7 +105,7 @@ void Clusterer::run(size_t numClusters, size_t numLabels, Image<T, 3> const& col
 }
 
 template<typename T>
-void Clusterer::initPrototypes(Image<T, 3> const& color, LabelImage const& labels)
+void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     // Randomly select k objects as initial prototypes
     std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
@@ -123,7 +123,7 @@ void Clusterer::initPrototypes(Image<T, 3> const& color, LabelImage const& label
 }
 
 template<typename T>
-void Clusterer::allocatePrototypes(Image<T, 3> const& color, LabelImage const& labels)
+void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     for (size_t i = 0; i < color.pixels(); ++i)
     {
@@ -144,7 +144,7 @@ void Clusterer::allocatePrototypes(Image<T, 3> const& color, LabelImage const& l
 }
 
 template<typename T>
-int Clusterer::reallocatePrototypes(Image<T, 3> const& color, LabelImage const& labels)
+int Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     int moves = 0;
     for (size_t i = 0; i < color.pixels(); ++i)
@@ -180,7 +180,7 @@ int Clusterer::reallocatePrototypes(Image<T, 3> const& color, LabelImage const& 
 }
 
 template<typename T>
-float Clusterer::computeEnergy(Image<T, 3> const& color, LabelImage const& labels) const
+float Clusterer::computeEnergy(ColorImage<T> const& color, LabelImage const& labels) const
 {
     float energy = 0;
 
