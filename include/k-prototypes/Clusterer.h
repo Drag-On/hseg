@@ -128,13 +128,13 @@ void Clusterer::allocatePrototypes(Image<T, 3> const& color, LabelImage const& l
     for (size_t i = 0; i < color.pixels(); ++i)
     {
         Feature curFeature(color, i);
-        Label curLabel = labels.at(i, 0);
+        Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
         size_t minCluster = findClosestCluster(curFeature, curLabel);
 
         // Assign to cluster
-        m_clustership.at(i, 0) = minCluster;
+        m_clustership.atSite(i) = minCluster;
         m_clusters[minCluster].size++;
         m_clusters[minCluster].accumFeature += curFeature;
         m_clusters[minCluster].updateFeature();
@@ -150,16 +150,16 @@ int Clusterer::reallocatePrototypes(Image<T, 3> const& color, LabelImage const& 
     for (size_t i = 0; i < color.pixels(); ++i)
     {
         Feature curFeature(color, i);
-        Label curLabel = labels.at(i, 0);
+        Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
         size_t minCluster = findClosestCluster(curFeature, curLabel);
-        size_t oldCluster = m_clustership.at(i, 0);
+        size_t oldCluster = m_clustership.atSite(i);
 
         if (oldCluster != minCluster)
         {
             moves++;
-            m_clustership.at(i, 0) = minCluster;
+            m_clustership.atSite(i) = minCluster;
             m_clusters[minCluster].size++;
             m_clusters[oldCluster].size--;
             m_clusters[minCluster].accumFeature += curFeature;
@@ -187,8 +187,8 @@ float Clusterer::computeEnergy(Image<T, 3> const& color, LabelImage const& label
     for (size_t i = 0; i < m_clustership.pixels(); ++i)
     {
         Feature f(color, i);
-        Label l = labels.at(i, 0);
-        size_t j = m_clustership.at(i, 0);
+        Label l = labels.atSite(i);
+        size_t j = m_clustership.atSite(i);
         float pxEnergy = computeDistance(f, l, j);
         energy += pxEnergy;
     }

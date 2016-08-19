@@ -42,12 +42,12 @@ namespace helper
 
             for (size_t i = 0; i < labelImg.pixels(); ++i)
             {
-                Label l = labelImg.at(i, 0);
+                Label l = labelImg.atSite(i);
                 assert(colorMap.size() > l);
 
-                rgb.at(i, 0) = colorMap[l][0];
-                rgb.at(i, 1) = colorMap[l][1];
-                rgb.at(i, 2) = colorMap[l][2];
+                rgb.atSite(i, 0) = colorMap[l][0];
+                rgb.atSite(i, 1) = colorMap[l][1];
+                rgb.atSite(i, 2) = colorMap[l][2];
             }
 
             return rgb;

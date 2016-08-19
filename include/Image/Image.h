@@ -146,7 +146,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T const& at(int x, int y, int c) const;
+    T const& at(int x, int y, int c = 0) const;
 
     /**
      * Retrieve a pixel value
@@ -155,7 +155,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T& at(int x, int y, int c);
+    T& at(int x, int y, int c = 0);
 
     /**
      * Retrieve a pixel value
@@ -163,7 +163,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T const& at(size_t site, int c) const;
+    T const& atSite(size_t site, int c = 0) const;
 
     /**
      * Retrieve a pixel value
@@ -171,7 +171,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T& at(size_t site, int c);
+    T& atSite(size_t site, int c = 0);
 
     /**
      * @return Minimum and maximum value
@@ -342,14 +342,14 @@ T& Image<T, C>::at(int x, int y, int c)
 }
 
 template<typename T, int C>
-T const& Image<T, C>::at(size_t site, int c) const
+T const& Image<T, C>::atSite(size_t site, int c) const
 {
     assert(c < C);
     return m_data[site + (c * m_width * m_height)];
 }
 
 template<typename T, int C>
-T& Image<T, C>::at(size_t site, int c)
+T& Image<T, C>::atSite(size_t site, int c)
 {
     assert(c < C);
     return m_data[site + (c * m_width * m_height)];
