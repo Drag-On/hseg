@@ -8,3 +8,13 @@ Cluster::Cluster(size_t numClasses)
 {
     labelFrequencies.resize(numClasses, 0);
 }
+
+void Cluster::updateFeature()
+{
+    feature = accumFeature / size;
+}
+
+void Cluster::updateLabel()
+{
+    label = std::distance(labelFrequencies.begin(), std::max_element(labelFrequencies.begin(), labelFrequencies.end()));
+}

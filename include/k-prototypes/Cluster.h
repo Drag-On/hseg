@@ -20,6 +20,16 @@ struct Cluster
     Label label; //< Dominant class label
     std::vector<Label> labelFrequencies; //< Label frequencies inside the cluster
     size_t size = 0; //< Amount of attached pixels
+
+    /**
+     * Recomputes the mean feature based on accumulated features cluster size
+     */
+    void updateFeature();
+
+    /**
+     * Updates the dominant label based on the label frequencies
+     */
+    void updateLabel();
 };
 
 #endif //HSEG_CLUSTER_H

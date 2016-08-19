@@ -118,11 +118,9 @@ void Clusterer::allocatePrototypes(Image<T, 3> const& color, LabelImage const& l
         m_clustership.at(i, 0) = minCluster;
         m_clusters[minCluster].size++;
         m_clusters[minCluster].accumFeature += curFeature;
-        m_clusters[minCluster].feature = m_clusters[minCluster].accumFeature / m_clusters[minCluster].size;
+        m_clusters[minCluster].updateFeature();
         m_clusters[minCluster].labelFrequencies[curLabel]++;
-        m_clusters[minCluster].label = std::distance(m_clusters[minCluster].labelFrequencies.begin(),
-                                                     std::max_element(m_clusters[minCluster].labelFrequencies.begin(),
-                                                                      m_clusters[minCluster].labelFrequencies.end()));
+        m_clusters[minCluster].updateLabel();
     }
 }
 
@@ -147,18 +145,12 @@ int Clusterer::reallocatePrototypes(Image<T, 3> const& color, LabelImage const& 
             m_clusters[oldCluster].size--;
             m_clusters[minCluster].accumFeature += curFeature;
             m_clusters[oldCluster].accumFeature -= curFeature;
-            m_clusters[minCluster].feature = m_clusters[minCluster].accumFeature / m_clusters[minCluster].size;
-            m_clusters[oldCluster].feature = m_clusters[oldCluster].accumFeature / m_clusters[oldCluster].size;
+            m_clusters[minCluster].updateFeature();
+            m_clusters[oldCluster].updateFeature();
             m_clusters[minCluster].labelFrequencies[curLabel]++;
             m_clusters[oldCluster].labelFrequencies[curLabel]--;
-            m_clusters[minCluster].label = std::distance(m_clusters[minCluster].labelFrequencies.begin(),
-                                                         std::max_element(
-                                                                 m_clusters[minCluster].labelFrequencies.begin(),
-                                                                 m_clusters[minCluster].labelFrequencies.end()));
-            m_clusters[oldCluster].label = std::distance(m_clusters[oldCluster].labelFrequencies.begin(),
-                                                         std::max_element(
-                                                                 m_clusters[oldCluster].labelFrequencies.begin(),
-                                                                 m_clusters[oldCluster].labelFrequencies.end()));
+            m_clusters[minCluster].updateLabel();
+            m_clusters[oldCluster].updateLabel();
         }
     }
     return moves;
