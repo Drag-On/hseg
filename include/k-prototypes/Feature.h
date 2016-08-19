@@ -26,13 +26,13 @@ public:
      */
     template<typename T>
     Feature(Image<T, 3> const& color, size_t site)
-            : m_r(m_colorWeight * color.at(site, 0)),
-              m_g(m_colorWeight * color.at(site, 1)),
-              m_b(m_colorWeight * color.at(site, 2))
     {
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
         m_x = m_spatialWeight * coords.first;
         m_y = m_spatialWeight * coords.second;
+        m_r = m_colorWeight * color.at(site, 0);
+        m_g = m_colorWeight * color.at(site, 1);
+        m_b = m_colorWeight * color.at(site, 2);
     }
 
     /**
