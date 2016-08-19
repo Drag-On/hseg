@@ -12,23 +12,29 @@ int main()
 
     RGBImage rgb;
     rgb.read("data/2007_000129.jpg");
+    CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 500;
+    size_t numClusters = 200;
     Clusterer clusterer;
-    clusterer.run(numClusters, unary.classes(), rgb, maxLabeling);
+    clusterer.run(numClusters, unary.classes(), cieLab, maxLabeling);
 
     LabelImage const& spLabeling = clusterer.clustership();
 
     helper::image::ColorMap cmap = helper::image::generateColorMap(numClusters);
 
     cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
+    cv::Mat cieLabMat = static_cast<cv::Mat>(cieLab);
     cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));
     cv::Mat spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
 
-    //cv::equalizeHist(labelMat, labelMat);
+    auto minMax = cieLab.minMax();
+    cieLabMat -= minMax.first;
+    cieLabMat = cieLabMat / (minMax.second - minMax.first) * 1;
+
     cv::imshow("max labeling", labelMat);
     cv::imshow("rgb", rgbMat);
+    cv::imshow("CieLab", cieLabMat);
     cv::imshow("sp", spLabelMat);
     cv::waitKey();
 

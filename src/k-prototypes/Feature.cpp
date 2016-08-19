@@ -2,18 +2,7 @@
 // Created by jan on 18.08.16.
 //
 
-#include <helper/coordinate_helper.h>
 #include "k-prototypes/Feature.h"
-
-Feature::Feature(RGBImage const& rgb, size_t site)
-        : m_r(m_colorWeight * rgb.at(site, 0)),
-          m_g(m_colorWeight * rgb.at(site, 1)),
-          m_b(m_colorWeight * rgb.at(site, 2))
-{
-    auto coords = helper::coord::siteTo2DCoordinate(site, rgb.width());
-    m_x = m_spatialWeight * coords.first;
-    m_y = m_spatialWeight * coords.second;
-}
 
 float Feature::x() const
 {
@@ -42,8 +31,12 @@ float Feature::b() const
 
 float Feature::sqDistanceTo(Feature const& other) const
 {
-    return std::pow(m_x - other.m_x, 2) + std::pow(m_y - other.m_y, 2) + std::pow(m_r - other.m_r, 2) +
-                     std::pow(m_g - other.m_g, 2) + std::pow(m_b - other.m_b, 2);
+    auto xDiff = m_x - other.m_x;
+    auto yDiff = m_y - other.m_y;
+    auto rDiff = m_r - other.m_r;
+    auto gDiff = m_g - other.m_g;
+    auto bDiff = m_b - other.m_b;
+    return xDiff * xDiff + yDiff * yDiff + rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
 }
 
 Feature& Feature::operator+=(Feature const& other)

@@ -6,6 +6,7 @@
 #define HSEG_FEATURE_H
 
 #include <Image/Image.h>
+#include <helper/coordinate_helper.h>
 
 /**
  * Represents a feature taken from a pixel. This is continuous and therefore has a mean.
@@ -20,10 +21,19 @@ public:
 
     /**
      * Construct a feature from an image at a certain site
-     * @param rgb RGB image
+     * @param color RGB image
      * @param site Site
      */
-    Feature(RGBImage const& rgb, size_t site);
+    template<typename T>
+    Feature(Image<T, 3> const& color, size_t site)
+            : m_r(m_colorWeight * color.at(site, 0)),
+              m_g(m_colorWeight * color.at(site, 1)),
+              m_b(m_colorWeight * color.at(site, 2))
+    {
+        auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
+        m_x = m_spatialWeight * coords.first;
+        m_y = m_spatialWeight * coords.second;
+    }
 
     /**
      * Computes the squared euclidean distance to another feature
@@ -108,7 +118,7 @@ public:
 private:
     float m_x = 0.f, m_y = 0.f;
     float m_r = 0.f, m_g = 0.f, m_b = 0.f;
-    float m_spatialWeight = 4.f;
+    float m_spatialWeight = 1.f;
     float m_colorWeight = 1.f;
 };
 
