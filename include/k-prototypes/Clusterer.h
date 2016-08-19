@@ -47,7 +47,7 @@ public:
 private:
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
-    float m_gamma = 5000.f; // TODO: Find good mixing coefficient
+    float m_gamma = 100.f; // TODO: Find good mixing coefficient
     float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
 
     inline float delta(Label l1, Label l2) const
@@ -112,6 +112,9 @@ void Clusterer::initPrototypes(Image<T, 3> const& color, LabelImage const& label
     std::uniform_int_distribution<size_t> distribution(0, color.pixels() - 1);
     for (auto& c : m_clusters)
     {
+        if(c.size > 0)
+            continue;
+
         size_t site = distribution(generator);
         c.feature = Feature(color, site);
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
@@ -169,6 +172,10 @@ int Clusterer::reallocatePrototypes(Image<T, 3> const& color, LabelImage const& 
             m_clusters[oldCluster].updateLabel();
         }
     }
+
+    // This re-initializes clusters that have size 0
+    //initPrototypes(color, labels);
+
     return moves;
 }
 

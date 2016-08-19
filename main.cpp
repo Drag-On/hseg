@@ -15,7 +15,7 @@ int main()
     CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 200;
+    size_t numClusters = 100;
     Clusterer clusterer;
     clusterer.run(numClusters, unary.classes(), cieLab, maxLabeling);
 
