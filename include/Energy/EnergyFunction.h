@@ -125,13 +125,16 @@ private:
     UnaryFile m_unaryScores;
     float m_pairwiseWeight = 10.f; // TODO: See above
     float m_pairwiseSigmaSq = 0.05f;
-    float m_spGamma = 10.f; // TODO: Make this dependent on k
+    float m_spGamma = 100.f; // TODO: Make this dependent on k
 };
 
 template<typename T>
 float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp) const
 {
-    return giveUnaryEnergy(labeling) + givePairwiseEnergy(labeling, img) + giveSpEnergy(labeling, img, sp);
+    auto unaryEnergy = giveUnaryEnergy(labeling);
+    auto pairwiseEnergy = givePairwiseEnergy(labeling, img);
+    auto spEnergy = giveSpEnergy(labeling, img, sp);
+    return unaryEnergy + pairwiseEnergy + spEnergy;
 }
 
 template<typename T>

@@ -32,7 +32,8 @@ public:
      * @param labels Label image
      * @tparam T Type of the image data
      * @details The resulting clustering will never have more clusters than specified, but it might well not use all
-     *          of them.
+     *          of them. If this is called multiple times on the same object, the algorithm will be warm-started with
+     *          the previous result.
      */
     template<typename T>
     void run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels);

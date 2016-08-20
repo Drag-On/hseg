@@ -27,6 +27,8 @@ public:
      * @param img Color image
      * @param sp Superpixel labeling
      * @param numSP Amount of superpixels
+     * @details This can be called multiples times on the same object. It will then warm-start the algorithm and
+     *          initialize it with the previous result.
      */
     template<typename T>
     void run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP);
@@ -85,6 +87,13 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
             graph.setSmoothCost(l1, l2, cost);
             graph.setSmoothCost(l2, l1, cost);
         }
+    }
+
+    // Warm start from previous labeling if available
+    if(m_labeling.width() == img.width() && m_labeling.height() == img.height())
+    {
+        for(size_t s = 0; s < m_labeling.pixels(); ++s)
+            graph.setLabel(s, m_labeling.atSite(s));
     }
 
     // Do alpha-expansion
