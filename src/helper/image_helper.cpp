@@ -8,7 +8,7 @@ namespace helper
 {
     namespace image
     {
-        ColorMap generateColorMap(size_t n)
+        ColorMap generateColorMapVOC(size_t n)
         {
             enum Bits
             {

@@ -15,13 +15,13 @@ int main()
     CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 120;
+    size_t numClusters = 100;
     Clusterer clusterer;
     clusterer.run(numClusters, unary.classes(), cieLab, maxLabeling);
 
     LabelImage const& spLabeling = clusterer.clustership();
 
-    helper::image::ColorMap cmap = helper::image::generateColorMap(numClusters);
+    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max<int>(unary.classes(), numClusters));
 
     cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
     cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));

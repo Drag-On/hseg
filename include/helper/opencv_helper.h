@@ -6,6 +6,7 @@
 #define HSEG_OPENCV_HELPER_H
 
 #include <cassert>
+#include <string>
 
 namespace helper
 {
@@ -37,6 +38,8 @@ namespace helper
 
         template<>
         int getOpenCvType<double>(int channels);
+
+        std::string getOpenCvTypeString(int type);
     }
 }
 

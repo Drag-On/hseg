@@ -25,11 +25,11 @@ namespace helper
         using ColorMap = GeneralColorMap<unsigned char>;
 
         /**
-         * Generates a colormap with \p n entries
+         * Generates a colormap with \p n entries with the algorithm used by PascalVOC to colorize the resulting labeling
          * @param n Amount of entries
          * @return The generated colormap
          */
-        ColorMap generateColorMap(size_t n);
+        ColorMap generateColorMapVOC(size_t n);
 
         /**
          * Colorizes a label image according to a color map
