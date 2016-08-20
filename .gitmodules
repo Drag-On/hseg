@@ -1,0 +1,3 @@
+[submodule "lib/properties"]
+	path = lib/properties
+	url = git@gitlab.com:Drag-On/properties.git
