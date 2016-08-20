@@ -20,6 +20,10 @@ int main()
 
     HsegProperties properties;
     properties.read("properties.info");
+    std::cout << "----------------------------------------------------------------" << std::endl;
+    std::cout << "Used properties: " << std::endl;
+    std::cout << properties << std::endl;
+    std::cout << "----------------------------------------------------------------" << std::endl;
 
     size_t numClusters = properties.clustering.numClusters;
 
