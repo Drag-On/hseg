@@ -17,14 +17,16 @@ int main()
     CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 400;
+    size_t numClusters = 200;
 
     LabelImage fakeSpLabeling(unary.width(), unary.height());
     EnergyFunction energyFun(unary);
     float lastEnergy, energy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling);
     std::cout << "Energy before anything: " << energy << std::endl;
 
-    float eps = 1000.f;
+    float eps = 0.001f;
+    float threshold;
+    float energyDecrease;
     LabelImage spLabeling;
     LabelImage classLabeling = maxLabeling;
     Clusterer clusterer(energyFun);
@@ -45,8 +47,10 @@ int main()
         energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling);
         std::cout << "Energy after labeling: " << energy << std::endl;
 
-        std::cout << "Energy decreased by " << lastEnergy - energy << " (threshold is " << eps << ")" << std::endl;
-    } while (lastEnergy - energy > eps);
+        threshold = eps * std::abs(energy);
+        energyDecrease = lastEnergy - energy;
+        std::cout << "Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")" << std::endl;
+    } while (energyDecrease > threshold);
 
 
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max<int>(unary.classes(), numClusters));

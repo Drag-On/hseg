@@ -123,9 +123,9 @@ public:
 private:
     float m_unaryWeight = 5.f; // TODO: Make this dependent on y_i
     UnaryFile m_unaryScores;
-    float m_pairwiseWeight = 10.f; // TODO: See above
+    float m_pairwiseWeight = 500.f; // TODO: See above
     float m_pairwiseSigmaSq = 0.05f;
-    float m_spGamma = 100.f; // TODO: Make this dependent on k
+    float m_spGamma = 80.f; // TODO: Make this dependent on k
 };
 
 template<typename T>
