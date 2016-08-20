@@ -9,6 +9,7 @@
 #include <chrono>
 #include <iostream>
 #include <helper/coordinate_helper.h>
+#include <Energy/EnergyFunction.h>
 #include "Cluster.h"
 
 /**
@@ -17,6 +18,12 @@
 class Clusterer
 {
 public:
+    /**
+     * Constructor
+     * @param energy Energy function to optimize with respect to the superpixel segmentation
+     */
+    Clusterer(EnergyFunction const& energy);
+
     /**
      * Runs the clustering process
      * @param numClusters Amount of clusters to generate.
@@ -45,18 +52,10 @@ public:
     float computeEnergy(ColorImage<T> const& color, LabelImage const& labels) const;
 
 private:
+    EnergyFunction m_energy;
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
-    float m_gamma = 100.f; // TODO: Find good mixing coefficient
     float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
-
-    inline float delta(Label l1, Label l2) const
-    {
-        if(l1 == l2)
-            return 0;
-        else
-            return 1;
-    }
 
     template<typename T>
     void initPrototypes(ColorImage<T> const& color, LabelImage const& labels);
@@ -68,8 +67,6 @@ private:
     int reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     size_t findClosestCluster(Feature const& feature, Label classLabel) const;
-
-    float computeDistance(Feature const& feature, Label label, size_t clusterIdx) const;
 };
 
 template<typename T>
@@ -83,8 +80,8 @@ void Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& c
     initPrototypes(color, labels);
     allocatePrototypes(color, labels);
 
-    float energy = computeEnergy(color, labels);
-    std::cout << "Energy after cluster allocation: " << energy << std::endl;
+    //float energy = computeEnergy(color, labels);
+    //std::cout << "Energy after cluster allocation: " << energy << std::endl;
 
     int moves = color.pixels(), lastMoves;
     int iter = 0;
@@ -98,10 +95,11 @@ void Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& c
     } while (std::abs(lastMoves - moves) > color.pixels() * m_conv);
 
     std::cout << "Converged after " << iter << " iterations (up to convergence criterion)" << std::endl;
-    energy = computeEnergy(color, labels);
-    std::cout << "Energy: " << energy << std::endl;
-    long int lostClusters = std::count_if(m_clusters.begin(), m_clusters.end(), [](Cluster const& c) {return c.size == 0;});
-    std::cout << lostClusters << " clusters are empty." << std::endl;
+    //energy = computeEnergy(color, labels);
+    //std::cout << "Energy: " << energy << std::endl;
+    //long int lostClusters = std::count_if(m_clusters.begin(), m_clusters.end(),
+    //                                      [](Cluster const& c) { return c.size == 0; });
+    //std::cout << lostClusters << " clusters are empty." << std::endl;
 }
 
 template<typename T>
@@ -112,7 +110,7 @@ void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& lab
     std::uniform_int_distribution<size_t> distribution(0, color.pixels() - 1);
     for (auto& c : m_clusters)
     {
-        if(c.size > 0)
+        if (c.size > 0)
             continue;
 
         size_t site = distribution(generator);
@@ -189,7 +187,7 @@ float Clusterer::computeEnergy(ColorImage<T> const& color, LabelImage const& lab
         Feature f(color, i);
         Label l = labels.atSite(i);
         size_t j = m_clustership.atSite(i);
-        float pxEnergy = computeDistance(f, l, j);
+        float pxEnergy = m_energy.pixelToClusterDistance(f, l, m_clusters[j].feature, m_clusters[j].label);
         energy += pxEnergy;
     }
 

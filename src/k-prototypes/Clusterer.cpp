@@ -4,6 +4,10 @@
 
 #include "k-prototypes/Clusterer.h"
 
+Clusterer::Clusterer(EnergyFunction const& energy)
+        : m_energy(energy)
+{
+}
 
 LabelImage const& Clusterer::clustership() const
 {
@@ -12,11 +16,13 @@ LabelImage const& Clusterer::clustership() const
 
 size_t Clusterer::findClosestCluster(Feature const& feature, Label classLabel) const
 {
-    float minDistance = computeDistance(feature, classLabel, 0);
+    float minDistance = m_energy.pixelToClusterDistance(feature, classLabel, m_clusters[0].feature,
+                                                        m_clusters[0].label);
     size_t minCluster = 0;
     for (size_t j = 1; j < m_clusters.size(); ++j)
     {
-        float distance = computeDistance(feature, classLabel, j);
+        float distance = m_energy.pixelToClusterDistance(feature, classLabel, m_clusters[j].feature,
+                                                         m_clusters[j].label);
         if (distance < minDistance)
         {
             minDistance = distance;
@@ -24,9 +30,4 @@ size_t Clusterer::findClosestCluster(Feature const& feature, Label classLabel) c
         }
     }
     return minCluster;
-}
-
-float Clusterer::computeDistance(Feature const& feature, Label label, size_t clusterIdx) const
-{
-    return feature.sqDistanceTo(m_clusters[clusterIdx].feature) + m_gamma * delta(label, m_clusters[clusterIdx].label);
 }
