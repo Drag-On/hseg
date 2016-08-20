@@ -5,8 +5,9 @@
 #include <helper/coordinate_helper.h>
 #include "Energy/EnergyFunction.h"
 
-EnergyFunction::EnergyFunction(UnaryFile const& unaries)
-        : m_unaryScores(unaries)
+EnergyFunction::EnergyFunction(UnaryFile const& unaries, HsegProperties::weightsGroup const& weights)
+        : m_unaryScores(unaries),
+          m_weights(weights)
 {
 }
 
@@ -14,10 +15,7 @@ float EnergyFunction::giveUnaryEnergy(LabelImage const& labeling) const
 {
     float unaryEnergy = 0;
     for (size_t i = 0; i < labeling.pixels(); ++i)
-    {
-        auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
-        unaryEnergy += m_unaryWeight * (-m_unaryScores.at(coords.first, coords.second, labeling.atSite(i)));
-    }
+        unaryEnergy += unaryCost(i, labeling.atSite(i));
     return unaryEnergy;
 }
 
@@ -33,13 +31,13 @@ float EnergyFunction::classDistance(Label l1, Label l2) const
 
 float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Feature const& fCl, Label lCl) const
 {
-    return featureDistance(fPx, fCl) + m_spGamma * classDistance(lPx, lCl);
+    return featureDistance(fPx, fCl) + m_weights.spGamma * classDistance(lPx, lCl);
 }
 
 float EnergyFunction::unaryCost(size_t i, Label l) const
 {
     auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
-    return m_unaryWeight * (-m_unaryScores.at(coords.first, coords.second, l));
+    return m_weights.unary * (-m_unaryScores.at(coords.first, coords.second, l));
 }
 
 Label EnergyFunction::numClasses() const
@@ -49,5 +47,5 @@ Label EnergyFunction::numClasses() const
 
 float EnergyFunction::classWeight() const
 {
-    return m_spGamma;
+    return m_weights.spGamma;
 }

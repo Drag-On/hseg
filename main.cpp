@@ -4,6 +4,7 @@
 #include <helper/image_helper.h>
 #include <GraphOptimizer/GraphOptimizer.h>
 #include <Energy/EnergyFunction.h>
+#include <Properties.h>
 
 
 int main()
@@ -17,20 +18,23 @@ int main()
     CieLabImage cieLab = rgb.getCieLabImg();
     LabelImage maxLabeling = unary.maxLabeling();
 
-    size_t numClusters = 200;
+    HsegProperties properties;
+    properties.read("properties.info");
+
+    size_t numClusters = properties.clustering.numClusters;
 
     LabelImage fakeSpLabeling(unary.width(), unary.height());
-    EnergyFunction energyFun(unary);
+    EnergyFunction energyFun(unary, properties.weights);
     float lastEnergy, energy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling);
     std::cout << "Energy before anything: " << energy << std::endl;
 
-    float eps = 0.001f;
+    float eps = properties.convergence.overall;
     float threshold;
     float energyDecrease;
     LabelImage spLabeling;
     LabelImage classLabeling = maxLabeling;
     Clusterer clusterer(energyFun);
-    GraphOptimizer optimizer(unary);
+    GraphOptimizer optimizer(energyFun);
     do
     {
         lastEnergy = energy;

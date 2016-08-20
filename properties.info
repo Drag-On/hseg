@@ -1,0 +1,33 @@
+;
+; properties for hseg
+;
+
+; Parameters of the clustering process
+clustering
+{
+	numClusters 200 ; Amount of clusters to generate
+}
+
+; Weights of the different parts of the energy function
+weights
+{
+	unary 5.				; Weight of the unary term
+	pairwise 500.			; Weight of the pairwise term
+	pairwiseSigmaSq 0.05	; Mean of the bell curve inside of the pairwise
+	spGamma 80.				; Mixing coefficient of the clustering term
+	spatial 0.7				; Weight of the spatial part of the features
+	; color 0.3				; Weight of the color part of the features.
+							; Per default it is computed as 1 - spatial.
+}
+
+; Convergence criteria
+convergence
+{
+	cluster 0.001	; Percentage of total pixels. The algorithm terminates when
+					; the amount of pixels that have changed clusters within
+					; one iteration is less than this number times the total
+					; amount of pixels.
+	overall 0.001	; Percentage of the total energy. The algorithm terminates
+					; when the change of energy since the last iteration is
+					; lower than this number times the current energy.
+}

@@ -8,6 +8,7 @@
 
 #include <UnaryFile.h>
 #include <k-prototypes/Feature.h>
+#include <Properties.h>
 
 /**
  * Provides functionality to compute (partial) energies of the target energy function
@@ -19,7 +20,7 @@ public:
      * Constructor
      * @param unaries Unary scores to use for this image
      */
-    EnergyFunction(UnaryFile const& unaries);
+    EnergyFunction(UnaryFile const& unaries, HsegProperties::weightsGroup const& weights);
 
     /**
      * Computes the overall energy
@@ -121,11 +122,8 @@ public:
     inline float simplePotts(T l1, T l2) const;
 
 private:
-    float m_unaryWeight = 5.f; // TODO: Make this dependent on y_i
     UnaryFile m_unaryScores;
-    float m_pairwiseWeight = 500.f; // TODO: See above
-    float m_pairwiseSigmaSq = 0.05f;
-    float m_spGamma = 80.f; // TODO: Make this dependent on k
+    HsegProperties::weightsGroup m_weights;
 };
 
 template<typename T>
@@ -172,7 +170,7 @@ float EnergyFunction::pairwiseWeight(ColorImage<T> const& img, size_t i, size_t 
     float gDiff = img.atSite(i, 1) - img.atSite(j, 1);
     float bDiff = img.atSite(i, 2) - img.atSite(j, 2);
     float colorDiffNormSq = rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-    float weight = m_pairwiseWeight * std::exp(-m_pairwiseSigmaSq * colorDiffNormSq);
+    float weight = m_weights.pairwise * std::exp(-m_weights.pairwiseSigmaSq * colorDiffNormSq);
     return weight;
 }
 
@@ -212,7 +210,7 @@ float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> con
     for (size_t i = 0; i < labeling.pixels(); ++i)
     {
         float featureEnergy = featureDistance(Feature(img, i), meanFeatures[sp.atSite(i)].first);
-        float classEnergy = m_spGamma * classDistance(labeling.atSite(i), dominantLabels[sp.atSite(i)]);
+        float classEnergy = m_weights.spGamma * classDistance(labeling.atSite(i), dominantLabels[sp.atSite(i)]);
         spEnergy += featureEnergy + classEnergy;
     }
 
