@@ -194,8 +194,8 @@ public:
     Image& scaleColorSpace(T min, T max);
 
 private:
-    size_t m_width;
-    size_t m_height;
+    size_t m_width = 0;
+    size_t m_height = 0;
     std::vector<T> m_data;
     ColorSpace m_colorSpace = ColorSpace::BGR;
 };
