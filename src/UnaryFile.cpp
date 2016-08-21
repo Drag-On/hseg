@@ -23,10 +23,10 @@ UnaryFile::UnaryFile(std::string const& filename)
             file.close();
             return;
         }
-        m_height = boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 4));
-        m_width = boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 8));
+        m_height = static_cast<size_t>(boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 4)));
+        m_width = static_cast<size_t>(boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 8)));
 
-        m_data.resize((fileSize - 12) / sizeof(float));
+        m_data.resize((static_cast<size_t>(fileSize) - 12) / sizeof(float));
         file.seekg(12, std::ios::beg);
         file.read(reinterpret_cast<char*>(m_data.data()), fileSize - 12);
         file.close();
@@ -40,31 +40,31 @@ bool UnaryFile::isValid() const
     return m_valid;
 }
 
-int UnaryFile::width() const
+size_t UnaryFile::width() const
 {
     return m_width;
 }
 
-int UnaryFile::height() const
+size_t UnaryFile::height() const
 {
     return m_height;
 }
 
-int UnaryFile::classes() const
+size_t UnaryFile::classes() const
 {
     return m_classes;
 }
 
-float UnaryFile::at(int x, int y, int c) const
+float UnaryFile::at(size_t x, size_t y, size_t c) const
 {
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
-int UnaryFile::maxLabelAt(int x, int y) const
+Label UnaryFile::maxLabelAt(size_t x, size_t y) const
 {
-    int maxLabel = 0;
+    Label maxLabel = 0;
     float maxVal = std::numeric_limits<float>::min();
-    for (int l = 0; l < m_classes; ++l)
+    for (Label l = 0; l < m_classes; ++l)
     {
         if (at(x, y, l) > maxVal)
         {
@@ -78,8 +78,8 @@ int UnaryFile::maxLabelAt(int x, int y) const
 LabelImage UnaryFile::maxLabeling() const
 {
     LabelImage labeling(m_width, m_height);
-    for (int x = 0; x < m_width; ++x)
-        for (int y = 0; y < m_height; ++y)
-            labeling.at(x, y, 0) = maxLabelAt(x, y);
+    for (size_t x = 0; x < m_width; ++x)
+        for (size_t y = 0; y < m_height; ++y)
+            labeling.at(x, y) = maxLabelAt(x, y);
     return labeling;
 }

@@ -29,17 +29,17 @@ public:
     /**
      * @return Width of the image
      */
-    int width() const;
+    size_t width() const;
 
     /**
      * @return Height of the image
      */
-    int height() const;
+    size_t height() const;
 
     /**
      * @return Amount of classes
      */
-    int classes() const;
+    size_t classes() const;
 
     /**
      * Retrieve the score of a certain pixel-label combination
@@ -48,7 +48,7 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    float at(int x, int y, int c) const;
+    float at(size_t x, size_t y, size_t c) const;
 
     /**
      * Computes the class label with the maximum score at a certain pixel
@@ -56,7 +56,7 @@ public:
      * @param y Y coordinate
      * @return Class label with maximum score at the given pixel
      */
-    int maxLabelAt(int x, int y) const;
+    Label maxLabelAt(size_t x, size_t y) const;
 
     /**
      * Computes a labeling by taking he maximum score at every pixel
@@ -66,9 +66,9 @@ public:
 
 private:
     bool m_valid = false;
-    int m_width = 0;
-    int m_height = 0;
-    int m_classes = 21; // Is currently not written to the files
+    size_t m_width = 0;
+    size_t m_height = 0;
+    size_t m_classes = 21; // Is currently not written to the files
     std::vector<float> m_data;
 };
 

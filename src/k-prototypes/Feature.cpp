@@ -58,11 +58,12 @@ Feature Feature::operator+(Feature const& other) const
 
 Feature& Feature::operator/=(size_t count)
 {
-    m_x /= count;
-    m_y /= count;
-    m_r /= count;
-    m_g /= count;
-    m_b /= count;
+    float fCount = static_cast<float>(count);
+    m_x /= fCount;
+    m_y /= fCount;
+    m_r /= fCount;
+    m_g /= fCount;
+    m_b /= fCount;
     return *this;
 }
 
