@@ -57,6 +57,7 @@ size_t UnaryFile::classes() const
 
 float UnaryFile::at(size_t x, size_t y, size_t c) const
 {
+    assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 

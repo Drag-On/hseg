@@ -203,7 +203,7 @@ private:
 /**
  * 3-Channel color image
  */
-template <typename T>
+template<typename T>
 using ColorImage = Image<T, 3>;
 
 /**
@@ -344,6 +344,7 @@ template<typename T, size_t C>
 T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 {
     assert(c < C);
+    assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
@@ -351,6 +352,7 @@ template<typename T, size_t C>
 T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
 {
     assert(c < C);
+    assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
@@ -358,6 +360,7 @@ template<typename T, size_t C>
 T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
 {
     assert(c < C);
+    assert(site + (c * m_width * m_height) < m_data.size());
     return m_data[site + (c * m_width * m_height)];
 }
 
@@ -365,6 +368,7 @@ template<typename T, size_t C>
 T& Image<T, C>::atSite(size_t site, ImgCoord c)
 {
     assert(c < C);
+    assert(site + (c * m_width * m_height) < m_data.size());
     return m_data[site + (c * m_width * m_height)];
 }
 
