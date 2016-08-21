@@ -65,7 +65,7 @@ private:
     void allocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     template<typename T>
-    int reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
+    size_t reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     size_t findClosestCluster(Feature const& feature, Label classLabel) const;
 };
@@ -84,8 +84,8 @@ void Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& c
     //float energy = computeEnergy(color, labels);
     //std::cout << "Energy after cluster allocation: " << energy << std::endl;
 
-    int moves = color.pixels(), lastMoves;
-    int iter = 0;
+    size_t moves = color.pixels(), lastMoves;
+    size_t iter = 0;
     do
     {
         iter++;
@@ -143,9 +143,9 @@ void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const&
 }
 
 template<typename T>
-int Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
+size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
-    int moves = 0;
+    size_t moves = 0;
     for (size_t i = 0; i < color.pixels(); ++i)
     {
         Feature curFeature(color, i);

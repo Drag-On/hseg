@@ -24,9 +24,9 @@ namespace helper
                 for (int j = 0; j <= 7; ++j)
                 {
                     // Note: This is switched compared to the pascal voc example code because opencv has BGR instead of RGB
-                    b = b | (((id & FirstBit) >> 0) << (7 - j));
-                    g = g | (((id & SecondBit) >> 1) << (7 - j));
-                    r = r | (((id & ThirdBit) >> 2) << (7 - j));
+                    b = b | static_cast<unsigned char>(((id & FirstBit) >> 0) << (7 - j));
+                    g = g | static_cast<unsigned char>(((id & SecondBit) >> 1) << (7 - j));
+                    r = r | static_cast<unsigned char>(((id & ThirdBit) >> 2) << (7 - j));
                     id = id >> 3;
                 }
                 cmap[i][0] = r;

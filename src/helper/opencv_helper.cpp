@@ -13,8 +13,8 @@ namespace helper
         {
             std::string typeStr;
 
-            uchar depth = type & CV_MAT_DEPTH_MASK;
-            uchar chans = 1 + (type >> CV_CN_SHIFT);
+            uchar depth = static_cast<uchar>(type & CV_MAT_DEPTH_MASK);
+            uchar chans = static_cast<uchar>(1 + (type >> CV_CN_SHIFT));
 
             switch (depth)
             {

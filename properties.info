@@ -5,7 +5,7 @@
 ; Parameters of the clustering process
 clustering
 {
-	numClusters 200 ; Amount of clusters to generate
+	numClusters 300 ; Amount of clusters to generate
 }
 
 ; Weights of the different parts of the energy function
@@ -14,7 +14,7 @@ weights
 	unary 5.				; Weight of the unary term
 	pairwise 500.			; Weight of the pairwise term
 	pairwiseSigmaSq 0.05	; Mean of the bell curve inside of the pairwise
-	spGamma 80.				; Mixing coefficient of the clustering term
+	spGamma 30.				; Mixing coefficient of the clustering term
 	spatial 0.7				; Weight of the spatial part of the features
 	; color 0.3				; Weight of the color part of the features.
 							; Per default it is computed as 1 - spatial.

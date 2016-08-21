@@ -13,7 +13,7 @@ add_subdirectory(lib/gco-v3.0)
 ### properties ###
 add_subdirectory(lib/properties)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wpedantic")
 
 set(SOURCE_FILES main.cpp src/UnaryFile.cpp include/UnaryFile.h src/k-prototypes/Clusterer.cpp include/k-prototypes/Clusterer.h include/Image/Image.h include/k-prototypes/Cluster.h include/helper/coordinate_helper.h include/k-prototypes/Feature.h src/k-prototypes/Feature.cpp src/k-prototypes/Cluster.cpp include/helper/image_helper.h src/helper/image_helper.cpp include/helper/opencv_helper.h src/helper/opencv_helper.cpp src/GraphOptimizer/GraphOptimizer.cpp include/GraphOptimizer/GraphOptimizer.h src/Energy/EnergyFunction.cpp include/Energy/EnergyFunction.h include/Properties.h include/Image/Coordinates.h)
 add_executable(hseg ${SOURCE_FILES})

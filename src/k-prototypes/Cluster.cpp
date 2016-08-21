@@ -16,5 +16,6 @@ void Cluster::updateFeature()
 
 void Cluster::updateLabel()
 {
-    label = std::distance(labelFrequencies.begin(), std::max_element(labelFrequencies.begin(), labelFrequencies.end()));
+    label = static_cast<Label>(std::distance(labelFrequencies.begin(),
+                                             std::max_element(labelFrequencies.begin(), labelFrequencies.end())));
 }

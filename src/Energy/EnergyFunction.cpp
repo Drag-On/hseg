@@ -42,7 +42,7 @@ float EnergyFunction::unaryCost(size_t i, Label l) const
 
 Label EnergyFunction::numClasses() const
 {
-    return m_unaryScores.classes();
+    return static_cast<Label>(m_unaryScores.classes());
 }
 
 float EnergyFunction::classWeight() const

@@ -61,7 +61,7 @@ int main()
     } while (energyDecrease > threshold);
 
 
-    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max<int>(unary.classes(), numClusters));
+    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(unary.classes(), numClusters));
 
     cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
     cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));

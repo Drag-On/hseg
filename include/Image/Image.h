@@ -31,7 +31,7 @@ using Site = size_t;
  * @tparam T Value type
  * @tparam C Amount of channels
  */
-template<typename T, int C>
+template<typename T, size_t C>
 class Image
 {
 public:
@@ -227,7 +227,7 @@ using Label = unsigned int;
 using LabelImage = Image<Label, 1>;
 
 
-template<typename T, int C>
+template<typename T, size_t C>
 Image<T, C>::Image(size_t width, size_t height) noexcept
         : m_width(width),
           m_height(height),
@@ -235,7 +235,7 @@ Image<T, C>::Image(size_t width, size_t height) noexcept
 {
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 Image<T, C>::Image(cv::Mat const& mat, ColorSpace colorSpace) noexcept
 {
     if (!mat.data || mat.channels() != C)
@@ -245,26 +245,26 @@ Image<T, C>::Image(cv::Mat const& mat, ColorSpace colorSpace) noexcept
     m_height = mat.rows;
     m_data.resize(m_width * m_height * C, 0);
 
-    for (int y = 0; y < m_height; ++y)
+    for (size_t y = 0; y < m_height; ++y)
     {
-        for (int x = 0; x < m_width; ++x)
+        for (size_t x = 0; x < m_width; ++x)
         {
             auto color = mat.at<cv::Vec<T, C>>(y, x);
-            for (int c = 0; c < C; ++c)
+            for (size_t c = 0; c < C; ++c)
                 at(x, y, c) = color[c];
         }
     }
     m_colorSpace = colorSpace;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 Image<T, C>& Image<T, C>::operator=(cv::Mat const& mat) noexcept
 {
     *this = Image<T, C>(mat);
     return *this;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 bool Image<T, C>::read(std::string const& filename)
 {
     cv::Mat mat = cv::imread(filename, CV_LOAD_IMAGE_COLOR);
@@ -274,16 +274,16 @@ bool Image<T, C>::read(std::string const& filename)
     if (mat.channels() != C)
         return false;
 
-    m_width = mat.cols;
-    m_height = mat.rows;
+    m_width = static_cast<size_t>(mat.cols);
+    m_height = static_cast<size_t>(mat.rows);
     m_data.resize(m_width * m_height * C, 0);
 
-    for (int y = 0; y < m_height; ++y)
+    for (size_t y = 0; y < m_height; ++y)
     {
-        for (int x = 0; x < m_width; ++x)
+        for (size_t x = 0; x < m_width; ++x)
         {
             auto color = mat.at<cv::Vec<uchar, C>>(y, x);
-            for (int c = 0; c < C; ++c)
+            for (size_t c = 0; c < C; ++c)
                 at(x, y, c) = color[c];
         }
     }
@@ -291,17 +291,17 @@ bool Image<T, C>::read(std::string const& filename)
     return true;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 Image<T, C>::operator cv::Mat() const
 {
     cv::Mat result(m_height, m_width, helper::opencv::getOpenCvType<T>(C));
 
-    for (int y = 0; y < m_height; ++y)
+    for (size_t y = 0; y < m_height; ++y)
     {
-        for (int x = 0; x < m_width; ++x)
+        for (size_t x = 0; x < m_width; ++x)
         {
             cv::Vec<T, C> color;
-            for (int c = 0; c < C; ++c)
+            for (size_t c = 0; c < C; ++c)
                 color[c] = at(x, y, c);
             result.at<cv::Vec<T, C>>(y, x) = color;
         }
@@ -310,65 +310,65 @@ Image<T, C>::operator cv::Mat() const
     return result;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 size_t Image<T, C>::width() const
 {
     return m_width;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 size_t Image<T, C>::height() const
 {
     return m_height;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 size_t Image<T, C>::channels() const
 {
     return C;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 size_t Image<T, C>::pixels() const
 {
     return m_width * m_height;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 ColorSpace Image<T, C>::colorSpace() const
 {
     return m_colorSpace;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 {
     assert(c < C);
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
 {
     assert(c < C);
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
 {
     assert(c < C);
     return m_data[site + (c * m_width * m_height)];
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 T& Image<T, C>::atSite(size_t site, ImgCoord c)
 {
     assert(c < C);
     return m_data[site + (c * m_width * m_height)];
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 void Image<T, C>::convertTo(ColorSpace space)
 {
     if (m_colorSpace != space)
@@ -387,7 +387,7 @@ void Image<T, C>::convertTo(ColorSpace space)
     }
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 Image<float, C> Image<T, C>::getCieLabImg() const
 {
     assert(colorSpace() == ColorSpace::BGR);
@@ -402,7 +402,7 @@ Image<float, C> Image<T, C>::getCieLabImg() const
     return img;
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 std::pair<T, T> Image<T, C>::minMax() const
 {
     T min = std::numeric_limits<T>::max();
@@ -417,7 +417,7 @@ std::pair<T, T> Image<T, C>::minMax() const
     return std::pair<T, T>(min, max);
 }
 
-template<typename T, int C>
+template<typename T, size_t C>
 Image<T, C>& Image<T, C>::scaleColorSpace(T min, T max)
 {
     auto minMax = this->minMax();
