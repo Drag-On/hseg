@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <string>
+#include <boost/type_index.hpp>
 
 namespace helper
 {
@@ -15,32 +16,26 @@ namespace helper
         template<typename T>
         int getOpenCvType(int channels)
         {
-            assert(false);
+            if (typeid(T) == typeid(unsigned char))
+                return CV_8UC(channels);
+            else if (typeid(T) == typeid(signed char))
+                return CV_8SC(channels);
+            else if (typeid(T) == typeid(unsigned short))
+                return CV_16UC(channels);
+            else if (typeid(T) == typeid(signed short))
+                return CV_16SC(channels);
+            else if (typeid(T) == typeid(signed int))
+                return CV_32SC(channels);
+            else if (typeid(T) == typeid(float))
+                return CV_32FC(channels);
+            else if (typeid(T) == typeid(double))
+                return CV_64FC(channels);
+            else
+                throw boost::typeindex::type_id<T>().pretty_name() + " is not a valid openCV type.";
         }
-
-        template<>
-        int getOpenCvType<unsigned char>(int channels);
-
-        template<>
-        int getOpenCvType<signed char>(int channels);
-
-        template<>
-        int getOpenCvType<unsigned short>(int channels);
-
-        template<>
-        int getOpenCvType<signed short>(int channels);
-
-        template<>
-        int getOpenCvType<signed int>(int channels);
-
-        template<>
-        int getOpenCvType<float>(int channels);
-
-        template<>
-        int getOpenCvType<double>(int channels);
-
-        std::string getOpenCvTypeString(int type);
     }
+
+    std::string getOpenCvTypeString(int type);
 }
 
 #endif //HSEG_OPENCV_HELPER_H
