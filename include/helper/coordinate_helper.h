@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <utility>
 #include <tuple>
+#include "Image/Coordinates.h"
 
 namespace helper
 {
@@ -20,7 +21,7 @@ namespace helper
          * @param width Width
          * @return The site
          */
-        inline size_t coordinateToSite(int x, int y, int width)
+        inline size_t coordinateToSite(size_t x, size_t y, size_t width)
         {
             return x + y * width;
         }
@@ -34,7 +35,7 @@ namespace helper
          * @param height Height
          * @return The site
          */
-        inline size_t coordinateToSite(int x, int y, int z, int width, int height)
+        inline size_t coordinateToSite(size_t x, size_t y, size_t z, size_t width, size_t height)
         {
             return x + y * width + z * width * height;
         }
@@ -45,11 +46,11 @@ namespace helper
          * @param width Width
          * @return 2d coordinate
          */
-        inline std::pair<int, int> siteTo2DCoordinate(size_t site, int width)
+        inline Coords2d<size_t> siteTo2DCoordinate(size_t site, size_t width)
         {
-            std::pair<int, int> coords;
-            coords.first = site % width;
-            coords.second = site / width;
+            Coords2d<size_t> coords;
+            coords.x() = site % width;
+            coords.y() = site / width;
             return coords;
         }
 
@@ -59,12 +60,12 @@ namespace helper
          * @param width Width
          * @return 2d coordinate
          */
-        inline std::tuple<int, int, int> siteTo3DCoordinate(size_t site, int width, int height)
+        inline Coords3d<size_t> siteTo3DCoordinate(size_t site, size_t width, size_t height)
         {
-            std::tuple<int, int, int> coords;
-            std::get<0>(coords) = site % width;
-            std::get<1>(coords) = (site / width) % height;
-            std::get<2>(coords) = site / (width * height);
+            Coords3d<size_t> coords;
+            coords[0] = site % width;
+            coords[1] = (site / width) % height;
+            coords[2] = site / (width * height);
             return coords;
         }
     }

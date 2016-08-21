@@ -145,17 +145,17 @@ float EnergyFunction::givePairwiseEnergy(LabelImage const& labeling, ColorImage<
         auto coords = helper::coord::siteTo2DCoordinate(i, labeling.width());
 
         // Set up pixel neighbor connections
-        decltype(coords) coordsR = {coords.first + 1, coords.second};
-        decltype(coords) coordsD = {coords.first, coords.second + 1};
-        if (coordsR.first < labeling.width())
+        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
+        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+        if (coordsR.x() < labeling.width())
         {
-            size_t siteR = helper::coord::coordinateToSite(coordsR.first, coordsR.second, labeling.width());
+            size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), labeling.width());
             Label lR = labeling.atSite(siteR);
             pairwiseEnergy += l == lR ? 0 : pairwiseWeight(img, i, siteR);
         }
-        if (coordsD.second < labeling.height())
+        if (coordsD.y() < labeling.height())
         {
-            size_t siteD = helper::coord::coordinateToSite(coordsD.first, coordsD.second, labeling.width());
+            size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), labeling.width());
             Label lD = labeling.atSite(siteD);
             pairwiseEnergy += l == lD ? 0 : pairwiseWeight(img, i, siteD);
         }

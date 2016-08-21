@@ -37,7 +37,7 @@ float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Feat
 float EnergyFunction::unaryCost(size_t i, Label l) const
 {
     auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
-    return m_weights.unary * (-m_unaryScores.at(coords.first, coords.second, l));
+    return m_weights.unary * (-m_unaryScores.at(coords.x(), coords.y(), l));
 }
 
 Label EnergyFunction::numClasses() const

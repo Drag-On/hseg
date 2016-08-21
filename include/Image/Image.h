@@ -12,12 +12,19 @@
 #include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <cv.hpp>
 #include <helper/opencv_helper.h>
+#include "Coordinates.h"
 
 enum class ColorSpace
 {
     BGR,
     CieLab,
 };
+
+using ImgCoord = size_t;
+
+using ImgCoords = Coords2d<ImgCoord>;
+
+using Site = size_t;
 
 /**
  * Image of variable size and with a variable amount of channels
@@ -38,7 +45,7 @@ public:
      * @param width Image width
      * @param height Image height
      */
-    Image(int width, int height) noexcept;
+    Image(size_t width, size_t height) noexcept;
 
     /**
      * Copy constructor
@@ -117,17 +124,17 @@ public:
     /**
      * @return Image width
      */
-    int width() const;
+    size_t width() const;
 
     /**
      * @return Image height
      */
-    int height() const;
+    size_t height() const;
 
     /**
      * @return Amount of channels
      */
-    int channels() const;
+    size_t channels() const;
 
     /**
      * @return Amount of pixels
@@ -146,7 +153,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T const& at(int x, int y, int c = 0) const;
+    T const& at(ImgCoord x, ImgCoord y, ImgCoord c = 0) const;
 
     /**
      * Retrieve a pixel value
@@ -155,7 +162,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T& at(int x, int y, int c = 0);
+    T& at(ImgCoord x, ImgCoord y, ImgCoord c = 0);
 
     /**
      * Retrieve a pixel value
@@ -163,7 +170,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T const& atSite(size_t site, int c = 0) const;
+    T const& atSite(size_t site, ImgCoord c = 0) const;
 
     /**
      * Retrieve a pixel value
@@ -171,7 +178,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T& atSite(size_t site, int c = 0);
+    T& atSite(size_t site, ImgCoord c = 0);
 
     /**
      * @return Minimum and maximum value
@@ -221,7 +228,7 @@ using LabelImage = Image<Label, 1>;
 
 
 template<typename T, int C>
-Image<T, C>::Image(int width, int height) noexcept
+Image<T, C>::Image(size_t width, size_t height) noexcept
         : m_width(width),
           m_height(height),
           m_data(width * height * C, 0)
@@ -304,19 +311,19 @@ Image<T, C>::operator cv::Mat() const
 }
 
 template<typename T, int C>
-int Image<T, C>::width() const
+size_t Image<T, C>::width() const
 {
     return m_width;
 }
 
 template<typename T, int C>
-int Image<T, C>::height() const
+size_t Image<T, C>::height() const
 {
     return m_height;
 }
 
 template<typename T, int C>
-int Image<T, C>::channels() const
+size_t Image<T, C>::channels() const
 {
     return C;
 }
@@ -334,28 +341,28 @@ ColorSpace Image<T, C>::colorSpace() const
 }
 
 template<typename T, int C>
-T const& Image<T, C>::at(int x, int y, int c) const
+T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 {
     assert(c < C);
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
 template<typename T, int C>
-T& Image<T, C>::at(int x, int y, int c)
+T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
 {
     assert(c < C);
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
 template<typename T, int C>
-T const& Image<T, C>::atSite(size_t site, int c) const
+T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
 {
     assert(c < C);
     return m_data[site + (c * m_width * m_height)];
 }
 
 template<typename T, int C>
-T& Image<T, C>::atSite(size_t site, int c)
+T& Image<T, C>::atSite(size_t site, ImgCoord c)
 {
     assert(c < C);
     return m_data[site + (c * m_width * m_height)];

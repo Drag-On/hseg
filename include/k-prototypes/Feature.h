@@ -28,8 +28,8 @@ public:
     Feature(Image<T, 3> const& color, size_t site)
     {
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
-        m_x = m_spatialWeight * coords.first;
-        m_y = m_spatialWeight * coords.second;
+        m_x = m_spatialWeight * coords.x();
+        m_y = m_spatialWeight * coords.y();
         m_r = m_colorWeight * color.atSite(site, 0);
         m_g = m_colorWeight * color.atSite(site, 1);
         m_b = m_colorWeight * color.atSite(site, 2);
