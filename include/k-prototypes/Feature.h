@@ -25,14 +25,14 @@ public:
      * @param site Site
      */
     template<typename T>
-    Feature(Image<T, 3> const& color, size_t site)
+    Feature(Image<T, 3> const& color, size_t site, float spatialWeight, float colorWeight)
     {
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
-        m_x = m_spatialWeight * coords.x();
-        m_y = m_spatialWeight * coords.y();
-        m_r = m_colorWeight * color.atSite(site, 0);
-        m_g = m_colorWeight * color.atSite(site, 1);
-        m_b = m_colorWeight * color.atSite(site, 2);
+        m_x = spatialWeight * coords.x();
+        m_y = spatialWeight * coords.y();
+        m_r = colorWeight * color.atSite(site, 0);
+        m_g = colorWeight * color.atSite(site, 1);
+        m_b = colorWeight * color.atSite(site, 2);
     }
 
     /**
@@ -118,8 +118,6 @@ public:
 private:
     float m_x = 0.f, m_y = 0.f;
     float m_r = 0.f, m_g = 0.f, m_b = 0.f;
-    float m_spatialWeight = 0.7f;
-    float m_colorWeight = 1.f - m_spatialWeight;
 };
 
 #endif //HSEG_FEATURE_H

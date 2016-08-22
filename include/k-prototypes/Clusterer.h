@@ -115,7 +115,7 @@ void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& lab
             continue;
 
         size_t site = distribution(generator);
-        c.feature = Feature(color, site);
+        c.feature = Feature(color, site, m_energy.weights().spatial, m_energy.weights().color);
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
         c.label = labels.at(coords.x(), coords.y(), 0);
     }
@@ -126,7 +126,7 @@ void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const&
 {
     for (size_t i = 0; i < color.pixels(); ++i)
     {
-        Feature curFeature(color, i);
+        Feature curFeature(color, i, m_energy.weights().spatial, m_energy.weights().color);
         Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
@@ -148,7 +148,7 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
     size_t moves = 0;
     for (size_t i = 0; i < color.pixels(); ++i)
     {
-        Feature curFeature(color, i);
+        Feature curFeature(color, i, m_energy.weights().spatial, m_energy.weights().color);
         Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
@@ -185,7 +185,7 @@ float Clusterer::computeEnergy(ColorImage<T> const& color, LabelImage const& lab
 
     for (size_t i = 0; i < m_clustership.pixels(); ++i)
     {
-        Feature f(color, i);
+        Feature f(color, i, m_energy.weights().spatial, m_energy.weights().color);
         Label l = labels.atSite(i);
         size_t j = m_clustership.atSite(i);
         float pxEnergy = m_energy.pixelToClusterDistance(f, l, m_clusters[j].feature, m_clusters[j].label);

@@ -121,6 +121,11 @@ public:
     template<typename T>
     inline float simplePotts(T l1, T l2) const;
 
+    /**
+     * @return The used weights
+     */
+    HsegProperties::weightsGroup const& weights() const;
+
 private:
     UnaryFile m_unaryScores;
     HsegProperties::weightsGroup m_weights;
@@ -192,7 +197,7 @@ float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> con
         labelFrequencies[spLabel][classLabel]++;
 
         // Update accumulated features
-        Feature f(img, i);
+        Feature f(img, i, m_weights.spatial, m_weights.color);
         meanFeatures[spLabel].first += f;
         meanFeatures[spLabel].second++;
     }
@@ -209,7 +214,7 @@ float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> con
     float spEnergy = 0;
     for (size_t i = 0; i < labeling.pixels(); ++i)
     {
-        float featureEnergy = featureDistance(Feature(img, i), meanFeatures[sp.atSite(i)].first);
+        float featureEnergy = featureDistance(Feature(img, i, m_weights.spatial, m_weights.color), meanFeatures[sp.atSite(i)].first);
         float classEnergy = m_weights.spGamma * classDistance(labeling.atSite(i), dominantLabels[sp.atSite(i)]);
         spEnergy += featureEnergy + classEnergy;
     }

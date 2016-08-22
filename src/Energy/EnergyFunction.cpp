@@ -49,3 +49,8 @@ float EnergyFunction::classWeight() const
 {
     return m_weights.spGamma;
 }
+
+HsegProperties::weightsGroup const& EnergyFunction::weights() const
+{
+    return m_weights;
+}
