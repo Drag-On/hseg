@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <boost/endian/conversion.hpp>
-#include "UnaryFile.h"
+#include "Energy/UnaryFile.h"
 
 UnaryFile::UnaryFile(std::string const& filename)
 {

@@ -5,7 +5,7 @@
 #ifndef HSEG_GRAPHOPTIMIZER_H
 #define HSEG_GRAPHOPTIMIZER_H
 
-#include <UnaryFile.h>
+#include <Energy/UnaryFile.h>
 #include <Image/Image.h>
 #include <Energy/EnergyFunction.h>
 #include "GCoptimization.h"
@@ -61,12 +61,12 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
         if (coordsR.x() < img.width())
         {
             size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
-            graph.setNeighbors(i, siteR, m_energy.pairwiseWeight(img, i, siteR));
+            graph.setNeighbors(i, siteR, m_energy.pairwisePixelWeight(img, i, siteR));
         }
         if (coordsD.y() < img.height())
         {
             size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
-            graph.setNeighbors(i, siteD, m_energy.pairwiseWeight(img, i, siteD));
+            graph.setNeighbors(i, siteD, m_energy.pairwisePixelWeight(img, i, siteD));
         }
 
         // Set up connection to auxiliary nodes
@@ -83,7 +83,7 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
     {
         for (size_t l2 = 0; l2 < m_energy.numClasses(); ++l2)
         {
-            float cost = l1 == l2 ? 0 : 1;
+            float cost = m_energy.pairwiseClassWeight(l1, l2);
             graph.setSmoothCost(l1, l2, cost);
             graph.setSmoothCost(l2, l1, cost);
         }

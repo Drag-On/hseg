@@ -29,16 +29,6 @@ float Feature::b() const
     return m_b;
 }
 
-float Feature::sqDistanceTo(Feature const& other) const
-{
-    auto xDiff = m_x - other.m_x;
-    auto yDiff = m_y - other.m_y;
-    auto rDiff = m_r - other.m_r;
-    auto gDiff = m_g - other.m_g;
-    auto bDiff = m_b - other.m_b;
-    return xDiff * xDiff + yDiff * yDiff + rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-}
-
 Feature& Feature::operator+=(Feature const& other)
 {
     m_x += other.m_x;

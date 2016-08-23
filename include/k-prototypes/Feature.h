@@ -25,22 +25,15 @@ public:
      * @param site Site
      */
     template<typename T>
-    Feature(Image<T, 3> const& color, size_t site, float spatialWeight, float colorWeight)
+    Feature(Image<T, 3> const& color, size_t site)
     {
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
-        m_x = spatialWeight * coords.x();
-        m_y = spatialWeight * coords.y();
-        m_r = colorWeight * color.atSite(site, 0);
-        m_g = colorWeight * color.atSite(site, 1);
-        m_b = colorWeight * color.atSite(site, 2);
+        m_x = coords.x();
+        m_y = coords.y();
+        m_r = color.atSite(site, 0);
+        m_g = color.atSite(site, 1);
+        m_b = color.atSite(site, 2);
     }
-
-    /**
-     * Computes the squared euclidean distance to another feature
-     * @param other Other feature
-     * @return Distance
-     */
-    float sqDistanceTo(Feature const& other) const;
 
     /**
      * Adds features component-wise

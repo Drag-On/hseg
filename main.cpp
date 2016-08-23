@@ -1,5 +1,5 @@
 #include <iostream>
-#include <UnaryFile.h>
+#include <Energy/UnaryFile.h>
 #include <k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <GraphOptimizer/GraphOptimizer.h>
@@ -10,7 +10,7 @@ int main()
     std::vector<std::string> files = {"2007_000027", "2007_000032", "2007_000033", "2007_000039", "2007_000042",
                                       "2007_000061", "2007_000063", "2007_000068", "2007_000121", "2007_000123",
                                       "2007_000129", "2007_000170"};
-    // std::string filename = "2007_000129";
+    std::string filename = "2007_000129";
 
     HsegProperties properties;
     properties.read("properties.info");
@@ -19,10 +19,12 @@ int main()
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
+    Weights weights(21ul);
+
     size_t numClusters = properties.clustering.numClusters;
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(21ul, numClusters));
 
-    for (std::string filename : files)
+    //for (std::string filename : files)
     {
         UnaryFile unary("data/" + filename + "_prob.dat");
 
@@ -39,7 +41,7 @@ int main()
         LabelImage maxLabeling = unary.maxLabeling();
 
         LabelImage fakeSpLabeling(unary.width(), unary.height());
-        EnergyFunction energyFun(unary, properties.weights);
+        EnergyFunction energyFun(unary, weights);
         float lastEnergy, energy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling);
         std::cout << "Energy before anything: " << energy << std::endl;
 
@@ -78,16 +80,16 @@ int main()
         cv::Mat spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
         cv::Mat newLabelMat = static_cast<cv::Mat>(helper::image::colorize(classLabeling, cmap));
 
-        /*cv::imshow("max labeling", labelMat);
+        cv::imshow("max labeling", labelMat);
         cv::imshow("rgb", rgbMat);
         cv::imshow("sp", spLabelMat);
         cv::imshow("class labeling", newLabelMat);
-        cv::waitKey();*/
+        cv::waitKey();
 
-        cv::imwrite("out/" + filename + "_unary.png", labelMat);
+        /*cv::imwrite("out/" + filename + "_unary.png", labelMat);
         cv::imwrite("out/" + filename + "_rgb.png", rgbMat);
         cv::imwrite("out/" + filename + "_sp.png", spLabelMat);
-        cv::imwrite("out/" + filename + "_labeling.png", newLabelMat);
+        cv::imwrite("out/" + filename + "_labeling.png", newLabelMat);*/
     }
 
     return 0;
