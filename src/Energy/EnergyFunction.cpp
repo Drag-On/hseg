@@ -34,12 +34,15 @@ float EnergyFunction::featureDistance(Feature const& feature, Feature const& fea
 
 float EnergyFunction::classDistance(Label l1, Label l2) const
 {
-    return simplePotts(l1, l2);
+    if (l1 == l2)
+        return 0;
+    else
+        return m_weights.classWeight();
 }
 
 float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Feature const& fCl, Label lCl) const
 {
-    return featureDistance(fPx, fCl) + m_weights.classWeight() * classDistance(lPx, lCl);
+    return featureDistance(fPx, fCl) + classDistance(lPx, lCl);
 }
 
 float EnergyFunction::unaryCost(size_t i, Label l) const
@@ -56,9 +59,4 @@ float EnergyFunction::pairwiseClassWeight(Label l1, Label l2) const
 Label EnergyFunction::numClasses() const
 {
     return static_cast<Label>(m_unaryScores.classes());
-}
-
-float EnergyFunction::classWeight() const
-{
-    return m_weights.classWeight();
 }

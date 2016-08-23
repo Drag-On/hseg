@@ -92,11 +92,6 @@ public:
     float pairwiseClassWeight(Label l1, Label l2) const;
 
     /**
-     * @return The cost of non-identical class labels
-     */
-    float classWeight() const;
-
-    /**
      * Computes the feature distance between two features
      * @param feature The first feature
      * @param feature2 The second feature
