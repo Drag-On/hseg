@@ -8,6 +8,8 @@
 #include <Energy/UnaryFile.h>
 #include <Image/Image.h>
 #include <Energy/EnergyFunction.h>
+#include <unordered_map>
+#include <helper/hash_helper.h>
 #include "GCoptimization.h"
 
 /**
@@ -45,13 +47,15 @@ private:
     template<typename T>
     class PairwiseCost : public GCoptimization::SmoothCostFunctor
     {
-    private:
-        EnergyFunction const& m_energy;
-        ColorImage<T> const& m_color;
     public:
         using EnergyTermType = GCoptimization::EnergyTermType;
         using SiteID = GCoptimization::SiteID;
         using LabelID = GCoptimization::LabelID;
+        using TupleType = std::tuple<SiteID, SiteID, LabelID, LabelID>;
+
+        EnergyFunction const& m_energy;
+        ColorImage<T> const& m_color;
+        std::unordered_map<TupleType, EnergyTermType, helper::hash::hash<TupleType>> m_energies;
 
         PairwiseCost(EnergyFunction const& energy, ColorImage<T> const& color);
 
@@ -129,15 +133,25 @@ GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID
                                          GraphOptimizer::PairwiseCost<T>::LabelID l2)
 {
     // If the labels are identical it's always zero
-    if(l1 == l2)
+    if (l1 == l2)
         return 0;
 
-    // If both sites are normal nodes just compute the normal pairwise
-    if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
-        return m_energy.pairwisePixelWeight(m_color, s1, s2) * m_energy.pairwiseClassWeight(l1, l2);
-
-    // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
-    return m_energy.classDistance(l1, l2);
+    // Check if this combination has already been cached
+    if (l2 < l1)
+        std::swap(l1, l2);
+    if(s2 < s1)
+        std::swap(s1, s2);
+    std::tuple<SiteID, SiteID, LabelID, LabelID> tuple = std::make_tuple(s1, s2, l1, l2);
+    if (m_energies.count(tuple) != 1)
+    {
+        // If both sites are normal nodes just compute the normal pairwise
+        if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
+            m_energies[tuple] = m_energy.pairwisePixelWeight(m_color, s1, s2) * m_energy.pairwiseClassWeight(l1, l2);
+        else
+            // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
+            m_energies[tuple] = m_energy.classDistance(l1, l2);
+    }
+    return m_energies[tuple];
 }
 
 #endif //HSEG_GRAPHOPTIMIZER_H
