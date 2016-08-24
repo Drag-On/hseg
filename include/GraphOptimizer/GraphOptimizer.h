@@ -8,8 +8,8 @@
 #include <Energy/UnaryFile.h>
 #include <Image/Image.h>
 #include <Energy/EnergyFunction.h>
-#include <unordered_map>
-#include <helper/hash_helper.h>
+#include <boost/unordered_map.hpp>
+//#include <helper/hash_helper.h>
 #include "GCoptimization.h"
 
 /**
@@ -51,11 +51,11 @@ private:
         using EnergyTermType = GCoptimization::EnergyTermType;
         using SiteID = GCoptimization::SiteID;
         using LabelID = GCoptimization::LabelID;
-        using TupleType = std::tuple<SiteID, SiteID, LabelID, LabelID>;
+        using PixelPairType = std::pair<SiteID, SiteID>;
 
         EnergyFunction const& m_energy;
         ColorImage<T> const& m_color;
-        std::unordered_map<TupleType, EnergyTermType, helper::hash::hash<TupleType>> m_energies;
+        boost::unordered_map<PixelPairType, EnergyTermType/*, helper::hash::hash<PixelPairType>*/> m_pixelEnergies;
 
         PairwiseCost(EnergyFunction const& energy, ColorImage<T> const& color);
 
@@ -123,6 +123,20 @@ GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, Colo
         : m_energy(energy),
           m_color(color)
 {
+    // Pre-compute the pixel energies
+    for (size_t x = 0; x < color.width() - 1; ++x)
+    {
+        for (size_t y = 0; y < color.height() - 1; ++y)
+        {
+            Site s = helper::coord::coordinateToSite(x, y, color.width());
+            Site r = helper::coord::coordinateToSite(x + 1, y, color.width());
+            Site d = helper::coord::coordinateToSite(x, y + 1, color.width());
+            std::pair<SiteID, SiteID> right{s, r};
+            std::pair<SiteID, SiteID> down{s, d};
+            m_pixelEnergies[right] = m_energy.pairwisePixelWeight(color, s, r);
+            m_pixelEnergies[down] = m_energy.pairwisePixelWeight(color, s, d);
+        }
+    }
 }
 
 template<typename T>
@@ -136,22 +150,15 @@ GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID
     if (l1 == l2)
         return 0;
 
-    // Check if this combination has already been cached
-    if (l2 < l1)
-        std::swap(l1, l2);
-    if(s2 < s1)
+    // Cached entries always have the lower index first
+    if (s2 < s1)
         std::swap(s1, s2);
-    std::tuple<SiteID, SiteID, LabelID, LabelID> tuple = std::make_tuple(s1, s2, l1, l2);
-    if (m_energies.count(tuple) != 1)
-    {
-        // If both sites are normal nodes just compute the normal pairwise
-        if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
-            m_energies[tuple] = m_energy.pairwisePixelWeight(m_color, s1, s2) * m_energy.pairwiseClassWeight(l1, l2);
-        else
-            // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
-            m_energies[tuple] = m_energy.classDistance(l1, l2);
-    }
-    return m_energies[tuple];
+
+    // If both sites are normal nodes just compute the normal pairwise
+    if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
+        return m_pixelEnergies[{s1, s2}] * m_energy.pairwiseClassWeight(l1, l2);
+    else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
+        return m_energy.classDistance(l1, l2);
 }
 
 #endif //HSEG_GRAPHOPTIMIZER_H

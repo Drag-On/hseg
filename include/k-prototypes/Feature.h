@@ -86,27 +86,42 @@ public:
     /**
      * @return X coordinate
      */
-    float x() const;
+    inline float x() const
+    {
+        return m_x;
+    }
 
     /**
      * @return Y coordinate
      */
-    float y() const;
+    inline float y() const
+    {
+        return m_y;
+    }
 
     /**
      * @return R component
      */
-    float r() const;
+    inline float r() const
+    {
+        return m_r;
+    }
 
     /**
      * @return G component
      */
-    float g() const;
+    inline float g() const
+    {
+        return m_g;
+    }
 
     /**
      * @return B component
      */
-    float b() const;
+    inline float b() const
+    {
+        return m_b;
+    }
 
 private:
     float m_x = 0.f, m_y = 0.f;

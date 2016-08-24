@@ -61,6 +61,17 @@ namespace helper
                 return seed;
             }
         };
+
+        template<typename TT, typename UU>
+        struct hash<std::pair<TT, UU>>
+        {
+            size_t operator()(std::pair<TT, UU> const& tt) const
+            {
+                size_t seed = 0;
+                HashValueImpl<std::pair<TT, UU>>::apply(seed, tt);
+                return seed;
+            }
+        };
     }
 }
 

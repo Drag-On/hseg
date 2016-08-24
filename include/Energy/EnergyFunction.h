@@ -63,7 +63,10 @@ public:
     /**
      * @return Amount of classes
      */
-    Label numClasses() const;
+    inline Label numClasses() const
+    {
+        return static_cast<Label>(m_unaryScores.classes());
+    }
 
     /**
      * Computes the cost of a unary-class label combination
@@ -71,7 +74,11 @@ public:
      * @param l Class label to compute score for
      * @return The cost of assigning class label \p l to pixel \p i
      */
-    float unaryCost(size_t i, Label l) const;
+    inline float unaryCost(size_t i, Label l) const
+    {
+        auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
+        return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
+    }
 
     /**
      * Computes the partial cost of a pairwise connection as given by the color of the pixels
@@ -89,7 +96,10 @@ public:
      * @param l2 Second label
      * @return The partial cost
      */
-    float pairwiseClassWeight(Label l1, Label l2) const;
+    inline float pairwiseClassWeight(Label l1, Label l2) const
+    {
+        return m_weights.pairwise(l1, l2);
+    }
 
     /**
      * Computes the feature distance between two features
@@ -105,7 +115,13 @@ public:
      * @param l2 Second class label
      * @return The class label distance
      */
-    float classDistance(Label l1, Label l2) const;
+    inline float classDistance(Label l1, Label l2) const
+    {
+        if (l1 == l2)
+            return 0;
+        else
+            return m_weights.classWeight();
+    }
 
     /**
      * Computes the pixel-to-cluster distance
@@ -115,7 +131,10 @@ public:
      * @param lCl Class label of the cluster
      * @return The pixel-to-cluster distance
      */
-    float pixelToClusterDistance(Feature const& fPx, Label lPx, Feature const& fCl, Label lCl) const;
+    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, Feature const& fCl, Label lCl) const
+    {
+        return featureDistance(fPx, fCl) + classDistance(lPx, lCl);
+    }
 
     /**
      * Simple potts model.
@@ -216,7 +235,7 @@ float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> con
 }
 
 template<typename T>
-float EnergyFunction::simplePotts(T l1, T l2) const
+inline float EnergyFunction::simplePotts(T l1, T l2) const
 {
     if (l1 == l2)
         return 0;

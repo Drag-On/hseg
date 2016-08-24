@@ -4,31 +4,6 @@
 
 #include "k-prototypes/Feature.h"
 
-float Feature::x() const
-{
-    return m_x;
-}
-
-float Feature::y() const
-{
-    return m_y;
-}
-
-float Feature::r() const
-{
-    return m_r;
-}
-
-float Feature::g() const
-{
-    return m_g;
-}
-
-float Feature::b() const
-{
-    return m_b;
-}
-
 Feature& Feature::operator+=(Feature const& other)
 {
     m_x += other.m_x;
@@ -48,7 +23,7 @@ Feature Feature::operator+(Feature const& other) const
 
 Feature& Feature::operator/=(size_t count)
 {
-    float fCount = static_cast<float>(count);
+    float const fCount = static_cast<float>(count);
     m_x /= fCount;
     m_y /= fCount;
     m_r /= fCount;

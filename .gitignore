@@ -48,3 +48,4 @@ fabric.properties
 # Gprof data
 gmon.out
 analysis.txt
+gprof.sh

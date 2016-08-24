@@ -14,12 +14,6 @@ Weights::Weights(Label numLabels)
     m_classWeight = 30.f;
 }
 
-Weight Weights::unary(Label l) const
-{
-    assert(l < m_unaryWeights.size());
-    return m_unaryWeights[l];
-}
-
 Weight Weights::pairwise(Label l1, Label l2) const
 {
     // Diagonal is always zero
@@ -31,22 +25,7 @@ Weight Weights::pairwise(Label l1, Label l2) const
         std::swap(l1, l2);
 
     // Pairwise indices are stored as upper triangular matrix
-    size_t index = l1 + l2 * (l2 - 1) / 2;
+    size_t const index = l1 + l2 * (l2 - 1) / 2;
     assert(index < m_pairwiseWeights.size());
     return m_pairwiseWeights[index];
-}
-
-Weight Weights::pairwiseSigmaSq() const
-{
-    return m_pairwiseSigmaSq;
-}
-
-Weights::FeatureWeights const& Weights::featureWeights() const
-{
-    return m_featureWeights;
-}
-
-Weight Weights::classWeight() const
-{
-    return m_classWeight;
 }

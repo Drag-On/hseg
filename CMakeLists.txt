@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(hseg)
 
+### Full optimization ###
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+
 ### BOOST ###
 find_package(Boost 1.54 COMPONENTS filesystem system REQUIRED)
 

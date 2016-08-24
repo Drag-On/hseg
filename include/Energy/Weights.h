@@ -34,15 +34,51 @@ public:
      */
     explicit Weights(Label numLabels);
 
-    Weight unary(Label l) const;
+    /**
+     * Weight of the unary term
+     * @param l Class label
+     * @return The approriate weight
+     */
+    inline Weight unary(Label l) const
+    {
+        assert(l < m_unaryWeights.size());
+        return m_unaryWeights[l];
+    }
 
+    /**
+     * Weight of the pairwise term
+     * @param l1 First label
+     * @param l2 Second label
+     * @return The approriate weight
+     */
     Weight pairwise(Label l1, Label l2) const;
 
-    Weight pairwiseSigmaSq() const;
+    /**
+     * @return The sigma-square in the exponential of the pairwise term
+     */
+    inline Weight pairwiseSigmaSq() const
+    {
+        return m_pairwiseSigmaSq;
+    }
 
-    FeatureWeights const& featureWeights() const;
+    /**
+     * The feature weights.
+     * @details a is the factor for all 3 color channels, b and c are factors for x and y respectively, and d is the
+     *          off-diagonal for the spatial feature
+     * @return The feature weights
+     */
+    inline FeatureWeights const& featureWeights() const
+    {
+        return m_featureWeights;
+    }
 
-    Weight classWeight() const;
+    /**
+     * @return The class weight
+     */
+    inline Weight classWeight() const
+    {
+        return m_classWeight;
+    }
 };
 
 
