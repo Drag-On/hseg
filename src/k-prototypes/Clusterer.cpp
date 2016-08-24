@@ -21,8 +21,8 @@ size_t Clusterer::findClosestCluster(Feature const& feature, Label classLabel) c
     size_t minCluster = 0;
     for (size_t j = 1; j < m_clusters.size(); ++j)
     {
-        float distance = m_energy.pixelToClusterDistance(feature, classLabel, m_clusters[j].feature,
-                                                         m_clusters[j].label);
+        float const distance = m_energy.pixelToClusterDistance(feature, classLabel, m_clusters[j].feature,
+                                                               m_clusters[j].label);
         if (distance < minDistance)
         {
             minDistance = distance;

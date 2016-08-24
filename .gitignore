@@ -49,3 +49,6 @@ fabric.properties
 gmon.out
 analysis.txt
 gprof.sh
+
+# Cachegrind data
+cachegrind.out.*
