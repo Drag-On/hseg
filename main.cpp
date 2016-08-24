@@ -3,6 +3,7 @@
 #include <k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <GraphOptimizer/GraphOptimizer.h>
+#include <boost/filesystem.hpp>
 
 
 int main()
@@ -36,7 +37,7 @@ int main()
             std::cerr << "Couldn't load image " << actualFile << std::endl;
             return -1;
         }
-        std::cout  << std::endl << "Loaded image " << actualFile << std::endl;
+        std::cout << std::endl << "Loaded image " << actualFile << std::endl;
         CieLabImage cieLab = rgb.getCieLabImg();
         LabelImage maxLabeling = unary.maxLabeling();
 
@@ -50,6 +51,8 @@ int main()
         float energyDecrease;
         LabelImage spLabeling;
         LabelImage classLabeling = maxLabeling;
+        cv::Mat spLabelMat;
+        cv::Mat newLabelMat;
         Clusterer clusterer(energyFun);
         GraphOptimizer optimizer(energyFun);
         size_t iter = 0;
@@ -72,24 +75,31 @@ int main()
 
             threshold = eps * std::abs(energy);
             energyDecrease = lastEnergy - energy;
-            std::cout << iter << ": Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")" << std::endl;
+            std::cout << iter << ": Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")"
+                      << std::endl;
+
+            // Write out the current labeling and segmentation
+            spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
+            newLabelMat = static_cast<cv::Mat>(helper::image::colorize(classLabeling, cmap));
+            boost::filesystem::path spPath("out/" + filename + "/sp/");
+            boost::filesystem::create_directories(spPath);
+            boost::filesystem::path labelPath("out/" + filename + "/labeling/");
+            boost::filesystem::create_directories(labelPath);
+            cv::imwrite(spPath.string() + std::to_string(iter) + ".png", spLabelMat);
+            cv::imwrite(labelPath.string() + std::to_string(iter) + ".png", newLabelMat);
         } while (energyDecrease > threshold);
 
         cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
         cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));
-        cv::Mat spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
-        cv::Mat newLabelMat = static_cast<cv::Mat>(helper::image::colorize(classLabeling, cmap));
+
+        cv::imwrite("out/" + filename + "/rgb.png", rgbMat);
+        cv::imwrite("out/" + filename + "/unary.png", labelMat);
 
         cv::imshow("max labeling", labelMat);
         cv::imshow("rgb", rgbMat);
         cv::imshow("sp", spLabelMat);
         cv::imshow("class labeling", newLabelMat);
         cv::waitKey();
-
-        /*cv::imwrite("out/" + filename + "_unary.png", labelMat);
-        cv::imwrite("out/" + filename + "_rgb.png", rgbMat);
-        cv::imwrite("out/" + filename + "_sp.png", spLabelMat);
-        cv::imwrite("out/" + filename + "_labeling.png", newLabelMat);*/
     }
 
     return 0;
