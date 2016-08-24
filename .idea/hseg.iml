@@ -6,11 +6,12 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/sanitizer/gprof/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/sanitizer/thread/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/sanitizer/leak/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sanitizer/undefined/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sanitizer/profile/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sanitizer/gprof/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sanitizer/address/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sanitizer/leak/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sanitizer/thread/CMakeLists.txt" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/data" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />

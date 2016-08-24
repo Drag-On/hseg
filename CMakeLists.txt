@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(hseg)
 
 ### Full optimization ###
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fprofile-use=.profiling")
 
 
 ### BOOST ###
@@ -44,3 +44,4 @@ add_subdirectory(sanitizer/leak)
 add_subdirectory(sanitizer/thread)
 add_subdirectory(sanitizer/undefined)
 add_subdirectory(sanitizer/gprof)
+add_subdirectory(sanitizer/profile)
