@@ -115,7 +115,7 @@ void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& lab
             continue;
 
         size_t site = distribution(generator);
-        c.feature = Feature(color, site);
+        c.mean = Feature(color, site);
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
         c.label = labels.at(coords.x(), coords.y(), 0);
     }
@@ -136,9 +136,11 @@ void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const&
         m_clustership.atSite(i) = minCluster;
         m_clusters[minCluster].size++;
         m_clusters[minCluster].accumFeature += curFeature;
-        m_clusters[minCluster].updateFeature();
+        m_clusters[minCluster].updateMean();
         m_clusters[minCluster].labelFrequencies[curLabel]++;
         m_clusters[minCluster].updateLabel();
+        /* m_clusters[minCluster].accumSqFeature += curFeature.getSquaredElements();
+        m_clusters[minCluster].updateVariance(); */ // TODO: Compute variances?
     }
 }
 
@@ -163,12 +165,17 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
             m_clusters[oldCluster].size--;
             m_clusters[minCluster].accumFeature += curFeature;
             m_clusters[oldCluster].accumFeature -= curFeature;
-            m_clusters[minCluster].updateFeature();
-            m_clusters[oldCluster].updateFeature();
+            m_clusters[minCluster].updateMean();
+            m_clusters[oldCluster].updateMean();
             m_clusters[minCluster].labelFrequencies[curLabel]++;
             m_clusters[oldCluster].labelFrequencies[curLabel]--;
             m_clusters[minCluster].updateLabel();
             m_clusters[oldCluster].updateLabel();
+            /*auto sqFeature = curFeature.getSquaredElements();
+            m_clusters[minCluster].accumSqFeature += sqFeature;
+            m_clusters[oldCluster].accumSqFeature -= sqFeature;
+            m_clusters[minCluster].updateVariance();
+            m_clusters[oldCluster].updateVariance();*/ // TODO: Compute variances?
         }
     }
 
@@ -188,7 +195,7 @@ float Clusterer::computeEnergy(ColorImage<T> const& color, LabelImage const& lab
         Feature f(color, i);
         Label l = labels.atSite(i);
         size_t j = m_clustership.atSite(i);
-        float pxEnergy = m_energy.pixelToClusterDistance(f, l, m_clusters[j].feature, m_clusters[j].label);
+        float pxEnergy = m_energy.pixelToClusterDistance(f, l, m_clusters[j].mean, m_clusters[j].label);
         energy += pxEnergy;
     }
 

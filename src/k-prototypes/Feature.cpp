@@ -62,3 +62,19 @@ Feature Feature::operator-() const
     f -= Feature();
     return f;
 }
+
+void Feature::squareElements()
+{
+    m_x *= m_x;
+    m_y *= m_y;
+    m_r *= m_r;
+    m_g *= m_g;
+    m_b *= m_b;
+}
+
+Feature Feature::getSquaredElements() const
+{
+    Feature f = *this;
+    f.squareElements();
+    return f;
+}

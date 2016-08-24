@@ -84,6 +84,16 @@ public:
     Feature operator/(size_t count) const;
 
     /**
+     * Squares all elements of this feature
+     */
+    void squareElements();
+
+    /**
+     * @return Feature with all elements squared
+     */
+    Feature getSquaredElements() const;
+
+    /**
      * @return X coordinate
      */
     inline float x() const

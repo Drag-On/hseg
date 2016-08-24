@@ -9,9 +9,14 @@ Cluster::Cluster(size_t numClasses)
     labelFrequencies.resize(numClasses, 0);
 }
 
-void Cluster::updateFeature()
+void Cluster::updateMean()
 {
-    feature = accumFeature / size;
+    mean = accumFeature / size;
+}
+
+void Cluster::updateVariance()
+{
+    variance = accumSqFeature / size - mean.getSquaredElements();
 }
 
 void Cluster::updateLabel()
@@ -19,3 +24,4 @@ void Cluster::updateLabel()
     label = static_cast<Label>(std::distance(labelFrequencies.begin(),
                                              std::max_element(labelFrequencies.begin(), labelFrequencies.end())));
 }
+
