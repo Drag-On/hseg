@@ -4,6 +4,7 @@
 #include <helper/image_helper.h>
 #include <GraphOptimizer/GraphOptimizer.h>
 #include <boost/filesystem.hpp>
+#include "Timer.h"
 
 
 int main()
@@ -56,6 +57,7 @@ int main()
         Clusterer clusterer(energyFun);
         GraphOptimizer optimizer(energyFun);
         size_t iter = 0;
+        Timer timer(true);
         do
         {
             iter++;
@@ -65,16 +67,29 @@ int main()
             spLabeling = clusterer.clustership();
 
             energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling);
+
+            timer.pause();
+
             std::cout << iter << ": Energy after clustering: " << energy << std::endl;
+
+            timer.start();
 
             optimizer.run(cieLab, spLabeling, numClusters);
             classLabeling = optimizer.labeling();
 
             energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling);
+
+            timer.pause();
+
             std::cout << iter << ": Energy after labeling: " << energy << std::endl;
+
+            timer.start();
 
             threshold = eps * std::abs(energy);
             energyDecrease = lastEnergy - energy;
+
+            timer.pause();
+
             std::cout << iter << ": Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")"
                       << std::endl;
 
@@ -87,7 +102,11 @@ int main()
             boost::filesystem::create_directories(labelPath);
             cv::imwrite(spPath.string() + std::to_string(iter) + ".png", spLabelMat);
             cv::imwrite(labelPath.string() + std::to_string(iter) + ".png", newLabelMat);
+
+            timer.start();
         } while (energyDecrease > threshold);
+
+        std::cout << "Time: " << timer.elapsed<Timer::seconds>() << std::endl;
 
         cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
         cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));

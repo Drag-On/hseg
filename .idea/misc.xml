@@ -10,7 +10,9 @@
       <file path="$PROJECT_DIR$/lib" />
     </libraryRoots>
     <excludeRoots>
+      <file path="$PROJECT_DIR$/.profiling" />
       <file path="$PROJECT_DIR$/data" />
+      <file path="$PROJECT_DIR$/out" />
     </excludeRoots>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
