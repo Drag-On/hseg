@@ -44,13 +44,9 @@ public:
     LabelImage const& clustership() const;
 
     /**
-     * Computes the energy of the current configuration given a color image and a label image
-     * @param color Color image
-     * @param labels Label image
-     * @return Energy of the current configuration
+     * @return Current clusters
      */
-    template<typename T>
-    float computeEnergy(ColorImage<T> const& color, LabelImage const& labels) const;
+    std::vector<Cluster> const& clusters() const;
 
 private:
     EnergyFunction m_energy;
@@ -183,23 +179,6 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
     //initPrototypes(color, labels);
 
     return moves;
-}
-
-template<typename T>
-float Clusterer::computeEnergy(ColorImage<T> const& color, LabelImage const& labels) const
-{
-    float energy = 0;
-
-    for (size_t i = 0; i < m_clustership.pixels(); ++i)
-    {
-        Feature f(color, i);
-        Label l = labels.atSite(i);
-        size_t j = m_clustership.atSite(i);
-        float pxEnergy = m_energy.pixelToClusterDistance(f, l, m_clusters[j].mean, m_clusters[j].label);
-        energy += pxEnergy;
-    }
-
-    return energy;
 }
 
 #endif //HSEG_CLUSTERER_H

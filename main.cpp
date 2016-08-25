@@ -43,8 +43,12 @@ int main()
         LabelImage maxLabeling = unary.maxLabeling();
 
         LabelImage fakeSpLabeling(unary.width(), unary.height());
+        std::vector<Cluster> fakeClusters(1, Cluster(unary.classes()));
         EnergyFunction energyFun(unary, weights);
-        float lastEnergy, energy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling);
+        // NOTE: This first energy is not really correct because it's computed assuming that the whole image is one
+        // cluster and it has null-features and label 0. It would be more correct to actually compute the mean feature
+        // and the dominant label, but that's computationally heavy and I don't want to do that in the moment.
+        float lastEnergy, energy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling, fakeClusters);
         std::cout << "Energy before anything: " << energy << std::endl;
 
         float eps = properties.convergence.overall;
@@ -66,7 +70,7 @@ int main()
             clusterer.run(numClusters, unary.classes(), cieLab, classLabeling);
             spLabeling = clusterer.clustership();
 
-            energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling);
+            energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
 
             timer.pause();
 
@@ -77,7 +81,7 @@ int main()
             optimizer.run(cieLab, spLabeling, numClusters);
             classLabeling = optimizer.labeling();
 
-            energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling);
+            energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
 
             timer.pause();
 

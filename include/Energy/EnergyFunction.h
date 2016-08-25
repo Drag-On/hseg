@@ -9,6 +9,7 @@
 #include <Energy/UnaryFile.h>
 #include <k-prototypes/Feature.h>
 #include <Properties.h>
+#include <k-prototypes/Cluster.h>
 #include "Weights.h"
 
 /**
@@ -29,10 +30,12 @@ public:
      * @param labeling Class labeling
      * @param img Color image
      * @param sp Superpixel labeling
+     * @param clusters List of clusters
      * @return The energy of the given configuration
      */
     template<typename T>
-    float giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp) const;
+    float giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                     std::vector<Cluster> const& clusters) const;
 
     /**
      * Computes the unary energy
@@ -55,10 +58,12 @@ public:
      * @param labeling Class labeling
      * @param img Color image
      * @param sp Superpixel labeling
+     * @param clusters List of clusters
      * @return The superpixel energy of the given configuration
      */
     template<typename T>
-    float giveSpEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp) const;
+    float giveSpEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                       std::vector<Cluster> const& clusters) const;
 
     /**
      * @return Amount of classes
@@ -127,13 +132,12 @@ public:
      * Computes the pixel-to-cluster distance
      * @param fPx Feature of the pixel
      * @param lPx Class label of the pixel
-     * @param fCl Feature of the cluster
-     * @param lCl Class label of the cluster
+     * @param cl Cluster
      * @return The pixel-to-cluster distance
      */
-    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, Feature const& fCl, Label lCl) const
+    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl) const
     {
-        return featureDistance(fPx, fCl) + classDistance(lPx, lCl);
+        return featureDistance(fPx, cl.mean) + classDistance(lPx, cl.label);
     }
 
     /**
@@ -151,11 +155,12 @@ private:
 };
 
 template<typename T>
-float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp) const
+float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                                 std::vector<Cluster> const& clusters) const
 {
     auto unaryEnergy = giveUnaryEnergy(labeling);
     auto pairwiseEnergy = givePairwiseEnergy(labeling, img);
-    auto spEnergy = giveSpEnergy(labeling, img, sp);
+    auto spEnergy = giveSpEnergy(labeling, img, sp, clusters);
     return unaryEnergy + pairwiseEnergy + spEnergy;
 }
 
@@ -195,41 +200,15 @@ float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, si
 }
 
 template<typename T>
-float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp) const
+float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                                   std::vector<Cluster> const& clusters) const
 {
-    size_t numSp = sp.minMax().second + 1;
-    size_t numClasses = labeling.minMax().second + 1;
-
-    // Find dominant labels and mean features
-    std::vector<std::pair<Feature, size_t>> meanFeatures(numSp);
-    std::vector<Label> dominantLabels(numSp);
-    std::vector<std::vector<int>> labelFrequencies(numSp, std::vector<int>(numClasses, 0));
-    for (size_t i = 0; i < sp.pixels(); ++i)
-    {
-        // Update label frequencies
-        Label spLabel = sp.atSite(i);
-        Label classLabel = labeling.atSite(i);
-        labelFrequencies[spLabel][classLabel]++;
-
-        // Update accumulated features
-        Feature f(img, i);
-        meanFeatures[spLabel].first += f;
-        meanFeatures[spLabel].second++;
-    }
-    for (size_t i = 0; i < dominantLabels.size(); ++i)
-    {
-        // Computed dominant labels
-        auto const& freq = labelFrequencies[i];
-        dominantLabels[i] = std::distance(freq.begin(), std::max_element(freq.begin(), freq.end()));
-
-        // Compute mean features
-        meanFeatures[i].first /= meanFeatures[i].second;
-    }
-
     float spEnergy = 0;
     for (size_t i = 0; i < labeling.pixels(); ++i)
-        spEnergy += pixelToClusterDistance(Feature(img, i), labeling.atSite(i), meanFeatures[sp.atSite(i)].first,
-                                           dominantLabels[sp.atSite(i)]);
+    {
+        assert(clusters.size() > sp.atSite(i));
+        spEnergy += pixelToClusterDistance(Feature(img, i), labeling.atSite(i), clusters[sp.atSite(i)]);
+    }
 
     return spEnergy;
 }

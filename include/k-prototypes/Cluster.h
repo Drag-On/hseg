@@ -19,7 +19,7 @@ struct Cluster
     Feature accumFeature; //< Accumulated feature. Divide by size to get the current mean!
     Feature variance; //< Feature variance of the cluster
     Feature accumSqFeature; //< Accumulated squared feature.
-    Label label; //< Dominant class label
+    Label label = 0; //< Dominant class label
     std::vector<Label> labelFrequencies; //< Label frequencies inside the cluster
     size_t size = 0; //< Amount of attached pixels
 
