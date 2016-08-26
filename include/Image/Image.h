@@ -14,12 +14,6 @@
 #include <helper/opencv_helper.h>
 #include "Coordinates.h"
 
-enum class ColorSpace
-{
-    BGR,
-    CieLab,
-};
-
 using ImgCoord = size_t;
 
 using ImgCoords = Coords2d<ImgCoord>;
@@ -63,9 +57,8 @@ public:
      * Construct image from open cv matrix
      * @details If the given matrix doesn't fit, this will create an empty image
      * @param mat Matrix
-     * @param colorSpace Color space the matrix is in
      */
-    Image(cv::Mat const& mat, ColorSpace colorSpace = ColorSpace::BGR) noexcept;
+    Image(cv::Mat const& mat) noexcept;
 
     /**
      * Destructor
@@ -108,11 +101,6 @@ public:
     bool read(std::string const& filename);
 
     /**
-     * Convert image to another color space
-     */
-    void convertTo(ColorSpace space);
-
-    /**
      * Converts the image to CieLab in the floating point range. Note that this is better for the CieLab color space:
      * While it can be represented in bytes, this messes up its euclidean distance. In floating point notation the
      * distances are fine.
@@ -140,11 +128,6 @@ public:
      * @return Amount of pixels
      */
     size_t pixels() const;
-
-    /**
-     * @return Color space of the image
-     */
-    ColorSpace colorSpace() const;
 
     /**
      * Retrieve a pixel value
@@ -197,7 +180,6 @@ private:
     size_t m_width = 0;
     size_t m_height = 0;
     std::vector<T> m_data;
-    ColorSpace m_colorSpace = ColorSpace::BGR;
 };
 
 /**
@@ -236,7 +218,7 @@ Image<T, C>::Image(size_t width, size_t height) noexcept
 }
 
 template<typename T, size_t C>
-Image<T, C>::Image(cv::Mat const& mat, ColorSpace colorSpace) noexcept
+Image<T, C>::Image(cv::Mat const& mat) noexcept
 {
     if (!mat.data || mat.channels() != C)
         return;
@@ -254,7 +236,6 @@ Image<T, C>::Image(cv::Mat const& mat, ColorSpace colorSpace) noexcept
                 at(x, y, c) = color[c];
         }
     }
-    m_colorSpace = colorSpace;
 }
 
 template<typename T, size_t C>
@@ -335,12 +316,6 @@ size_t Image<T, C>::pixels() const
 }
 
 template<typename T, size_t C>
-ColorSpace Image<T, C>::colorSpace() const
-{
-    return m_colorSpace;
-}
-
-template<typename T, size_t C>
 T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 {
     assert(c < C);
@@ -373,36 +348,15 @@ T& Image<T, C>::atSite(size_t site, ImgCoord c)
 }
 
 template<typename T, size_t C>
-void Image<T, C>::convertTo(ColorSpace space)
-{
-    if (m_colorSpace != space)
-    {
-        cv::Mat mat = static_cast<cv::Mat>(*this);
-        switch (space)
-        {
-            case ColorSpace::BGR:
-                cv::cvtColor(mat, mat, CV_Lab2BGR);
-                break;
-            case ColorSpace::CieLab:
-                cv::cvtColor(mat, mat, CV_BGR2Lab);
-                break;
-        }
-        *this = mat;
-    }
-}
-
-template<typename T, size_t C>
 Image<float, C> Image<T, C>::getCieLabImg() const
 {
-    assert(colorSpace() == ColorSpace::BGR);
-
     cv::Mat mat = static_cast<cv::Mat>(*this);
     cv::Mat floatMat;
     mat.convertTo(floatMat, CV_32FC(C));
     floatMat /= 255;
     cv::Mat floatMatCieLab;
     cv::cvtColor(floatMat, floatMatCieLab, CV_BGR2Lab);
-    Image<float, C> img(floatMatCieLab, ColorSpace::CieLab);
+    Image<float, C> img(floatMatCieLab);
     return img;
 }
 
