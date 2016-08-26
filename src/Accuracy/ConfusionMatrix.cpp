@@ -41,15 +41,15 @@ std::vector<float> ConfusionMatrix::accuracies(float* mean) const
     std::vector<float> accuracies(m_numClasses, 0.f);
     std::vector<size_t> trueSums(m_numClasses, 0);
     std::vector<size_t> predictedSums(m_numClasses, 0);
-    for(Label predicted = 0; predicted < m_numClasses; ++predicted)
+    for (Label predicted = 0; predicted < m_numClasses; ++predicted)
     {
-        for(Label truth = 0; truth < m_numClasses; ++truth)
+        for (Label truth = 0; truth < m_numClasses; ++truth)
         {
             trueSums[predicted] += at(truth, predicted);
             predictedSums[truth] += at(truth, predicted);
         }
     }
-    for(Label l = 0; l < m_numClasses; ++l)
+    for (Label l = 0; l < m_numClasses; ++l)
     {
         float truePositives = at(l, l);
         float falsePositives = predictedSums[l] - truePositives;
@@ -57,13 +57,13 @@ std::vector<float> ConfusionMatrix::accuracies(float* mean) const
         accuracies[l] = truePositives / (truePositives + falsePositives + falseNegatives);
     }
 
-    if(mean != nullptr)
+    if (mean != nullptr)
     {
         *mean = 0.f;
         size_t nonNullEntries = 0;
-        for(auto const& a : accuracies)
+        for (auto const& a : accuracies)
         {
-            if(!std::isnan(a))
+            if (!std::isnan(a))
             {
                 nonNullEntries++;
                 *mean += a;
@@ -73,4 +73,16 @@ std::vector<float> ConfusionMatrix::accuracies(float* mean) const
     }
 
     return accuracies;
+}
+
+void ConfusionMatrix::join(LabelImage const& labeling, LabelImage const& groundTruth)
+{
+    for (size_t i = 0; i < labeling.pixels(); ++i)
+    {
+        Label inferredLabel = labeling.atSite(i);
+        Label trueLabel = groundTruth.atSite(i);
+
+        if (inferredLabel < m_numClasses && trueLabel < m_numClasses)
+            at(trueLabel, inferredLabel)++;
+    }
 }

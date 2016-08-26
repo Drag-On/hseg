@@ -45,6 +45,13 @@ public:
      */
     std::vector<float> accuracies(float* mean = nullptr) const;
 
+    /**
+     * Adds more data to this confusion matrix
+     * @param labeling Label image
+     * @param groundTruth Ground truth image
+     */
+    void join(LabelImage const& labeling, LabelImage const& groundTruth);
+
 private:
     size_t m_numClasses;
     std::vector<size_t> m_mat; // First index is true label, second index is inferred label
