@@ -38,6 +38,16 @@ namespace helper
          * @return The colored image
          */
         RGBImage colorize(LabelImage const& labelImg, ColorMap const& colorMap);
+
+        /**
+         * Reverts the colorization by a color map
+         * @param rgb Color image that has been colorized
+         * @param colorMap Color map that has been used to colorize the image
+         * @return The index image
+         * @note The Pascal VOC ground truth images have white pixels which are not part of the classes. Therefore, for
+         *       these images, the color map should have 255 entries (the 255th is white) or have white manually added.
+         */
+        LabelImage decolorize(RGBImage const& rgb, ColorMap const& colorMap);
     }
 }
 

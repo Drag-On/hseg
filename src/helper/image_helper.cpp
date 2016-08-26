@@ -2,6 +2,7 @@
 // Created by jan on 18.08.16.
 //
 
+#include <boost/unordered_map.hpp>
 #include "helper/image_helper.h"
 
 namespace helper
@@ -51,6 +52,26 @@ namespace helper
             }
 
             return rgb;
+        }
+
+        LabelImage decolorize(RGBImage const& rgb, ColorMap const& colorMap)
+        {
+            // Generate lookup-table by colors
+            using Color = std::array<unsigned char, 3>;
+            boost::unordered_map<Color, size_t> lookup;
+            for (size_t i = 0; i < colorMap.size(); ++i)
+                lookup[colorMap[i]] = i;
+
+            // Compute label image
+            LabelImage labels(rgb.width(), rgb.height());
+            for (Site s = 0; s < labels.pixels(); ++s)
+            {
+                Color c = {rgb.atSite(s, 0), rgb.atSite(s, 1), rgb.atSite(s, 2)};
+                assert(lookup.count(c) > 0);
+                labels.atSite(s) = lookup[c];
+            }
+
+            return labels;
         }
     }
 }

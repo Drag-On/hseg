@@ -6,13 +6,13 @@
 #include <boost/filesystem.hpp>
 #include "Timer.h"
 
-
 int main()
 {
     std::vector<std::string> files = {"2007_000027", "2007_000032", "2007_000033", "2007_000039", "2007_000042",
                                       "2007_000061", "2007_000063", "2007_000068", "2007_000121", "2007_000123",
                                       "2007_000129", "2007_000170"};
     std::string filename = "2007_000129";
+    std::string groundTruthFolder = "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/";
 
     HsegProperties properties;
     properties.read("properties.info");
@@ -38,6 +38,14 @@ int main()
             std::cerr << "Couldn't load image " << actualFile << std::endl;
             return -1;
         }
+        RGBImage groundTruthRGB;
+        groundTruthRGB.read(groundTruthFolder + filename + ".png");
+        if(groundTruthRGB.pixels() == 0)
+        {
+            std::cerr << "Couldn't load ground truth image" << std::endl;
+            return -2;
+        }
+        LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
         std::cout << std::endl << "Loaded image " << actualFile << std::endl;
         CieLabImage cieLab = rgb.getCieLabImg();
         LabelImage maxLabeling = unary.maxLabeling();
@@ -50,7 +58,7 @@ int main()
         // and the dominant label, but that's computationally heavy and I don't want to do that in the moment.
         float startEnergy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling, fakeClusters);
 
-        int const tries = 5;
+        int const tries = 1;
         std::vector<LabelImage> classLabelTries;
         float eps = properties.convergence.overall;
         for (int i = 0; i < tries; ++i)
