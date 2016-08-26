@@ -48,81 +48,106 @@ int main()
         // NOTE: This first energy is not really correct because it's computed assuming that the whole image is one
         // cluster and it has null-features and label 0. It would be more correct to actually compute the mean feature
         // and the dominant label, but that's computationally heavy and I don't want to do that in the moment.
-        float lastEnergy, energy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling, fakeClusters);
-        std::cout << "Energy before anything: " << energy << std::endl;
+        float startEnergy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling, fakeClusters);
 
+        int const tries = 5;
+        std::vector<LabelImage> classLabelTries;
         float eps = properties.convergence.overall;
-        float threshold;
-        float energyDecrease;
-        LabelImage spLabeling;
-        LabelImage classLabeling = maxLabeling;
-        cv::Mat spLabelMat;
-        cv::Mat newLabelMat;
-        Clusterer clusterer(energyFun);
-        GraphOptimizer optimizer(energyFun);
-        size_t iter = 0;
-        Timer timer(true);
-        do
+        for (int i = 0; i < tries; ++i)
         {
-            iter++;
-            lastEnergy = energy;
+            std::cout << "Try " << i << std::endl;
 
-            clusterer.run(numClusters, unary.classes(), cieLab, classLabeling);
-            spLabeling = clusterer.clustership();
+            float lastEnergy, energy = startEnergy;
+            std::cout << "Energy before anything: " << energy << std::endl;
 
-            energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
+            float threshold;
+            float energyDecrease;
+            LabelImage spLabeling;
+            LabelImage classLabeling = maxLabeling;
+            cv::Mat spLabelMat;
+            cv::Mat newLabelMat;
+            Clusterer clusterer(energyFun);
+            GraphOptimizer optimizer(energyFun);
+            size_t iter = 0;
+            Timer timer(true);
+            do
+            {
+                iter++;
+                lastEnergy = energy;
 
-            timer.pause();
+                clusterer.run(numClusters, unary.classes(), cieLab, classLabeling);
+                spLabeling = clusterer.clustership();
 
-            std::cout << iter << ": Energy after clustering: " << energy << std::endl;
+                energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
 
-            timer.start();
+                timer.pause();
 
-            optimizer.run(cieLab, spLabeling, numClusters);
-            classLabeling = optimizer.labeling();
+                std::cout << iter << ": Energy after clustering: " << energy << std::endl;
 
-            energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
+                timer.start();
 
-            timer.pause();
+                optimizer.run(cieLab, spLabeling, numClusters);
+                classLabeling = optimizer.labeling();
 
-            std::cout << iter << ": Energy after labeling: " << energy << std::endl;
+                energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
 
-            timer.start();
+                timer.pause();
 
-            threshold = eps * std::abs(energy);
-            energyDecrease = lastEnergy - energy;
+                std::cout << iter << ": Energy after labeling: " << energy << std::endl;
 
-            timer.pause();
+                timer.start();
 
-            std::cout << iter << ": Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")"
-                      << std::endl;
+                threshold = eps * std::abs(energy);
+                energyDecrease = lastEnergy - energy;
 
-            // Write out the current labeling and segmentation
-            spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
-            newLabelMat = static_cast<cv::Mat>(helper::image::colorize(classLabeling, cmap));
-            boost::filesystem::path spPath("out/" + filename + "/sp/");
-            boost::filesystem::create_directories(spPath);
-            boost::filesystem::path labelPath("out/" + filename + "/labeling/");
-            boost::filesystem::create_directories(labelPath);
-            cv::imwrite(spPath.string() + std::to_string(iter) + ".png", spLabelMat);
-            cv::imwrite(labelPath.string() + std::to_string(iter) + ".png", newLabelMat);
+                timer.pause();
 
-            timer.start();
-        } while (energyDecrease > threshold);
+                std::cout << iter << ": Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")"
+                          << std::endl;
 
-        std::cout << "Time: " << timer.elapsed<Timer::seconds>() << std::endl;
+                // Write out the current labeling and segmentation
+                spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
+                newLabelMat = static_cast<cv::Mat>(helper::image::colorize(classLabeling, cmap));
+                boost::filesystem::path basePath("out/" + filename + "/" + std::to_string(i) + "/");
+                boost::filesystem::path spPath(basePath.string() + "/sp/");
+                boost::filesystem::create_directories(spPath);
+                boost::filesystem::path labelPath(basePath.string() + "/labeling/");
+                boost::filesystem::create_directories(labelPath);
+                cv::imwrite(spPath.string() + std::to_string(iter) + ".png", spLabelMat);
+                cv::imwrite(labelPath.string() + std::to_string(iter) + ".png", newLabelMat);
+
+                timer.start();
+            } while (energyDecrease > threshold);
+
+            std::cout << "Time: " << timer.elapsed<Timer::seconds>() << std::endl;
+
+            classLabelTries.push_back(classLabeling);
+        }
+
+        // Merge the tries to one final segmentation
+        LabelImage finalLabeling(maxLabeling.width(), maxLabeling.height());
+        for(size_t i = 0; i < finalLabeling.pixels(); ++i)
+        {
+            std::vector<int> classes(unary.classes(), 0);
+            for(auto const& t : classLabelTries)
+                classes[t.atSite(i)]++;
+            Label l = std::distance(classes.begin(), std::max_element(classes.begin(), classes.end()));
+            finalLabeling.atSite(i) = l;
+        }
 
         cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
         cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));
+        cv::Mat finalLabelingMat = static_cast<cv::Mat>(helper::image::colorize(finalLabeling, cmap));
 
         cv::imwrite("out/" + filename + "/rgb.png", rgbMat);
         cv::imwrite("out/" + filename + "/unary.png", labelMat);
+        cv::imwrite("out/" + filename + "/merged.png", finalLabelingMat);
 
-        cv::imshow("max labeling", labelMat);
+        /*cv::imshow("max labeling", labelMat);
         cv::imshow("rgb", rgbMat);
         cv::imshow("sp", spLabelMat);
         cv::imshow("class labeling", newLabelMat);
-        cv::waitKey();
+        cv::waitKey();*/
     }
 
     return 0;
