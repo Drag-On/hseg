@@ -38,6 +38,8 @@ public:
 
     /**
      * Computes the accuracies of each class according to this confusion matrix
+     * @details This uses the intersection / union measure, i.e.
+     *              true positives / (true positives + false positives + false negatives)
      * @param[out] mean If this is not a nullptr the mean value will be stored here
      * @return The computed accuracies per class
      */
