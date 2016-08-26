@@ -68,7 +68,8 @@ namespace helper
             {
                 Color c = {rgb.atSite(s, 0), rgb.atSite(s, 1), rgb.atSite(s, 2)};
                 assert(lookup.count(c) > 0);
-                labels.atSite(s) = lookup[c];
+                Label l = lookup[c];
+                labels.atSite(s) = l;
             }
 
             return labels;

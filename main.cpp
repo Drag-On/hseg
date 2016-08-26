@@ -4,6 +4,7 @@
 #include <helper/image_helper.h>
 #include <GraphOptimizer/GraphOptimizer.h>
 #include <boost/filesystem.hpp>
+#include <Accuracy/ConfusionMatrix.h>
 #include "Timer.h"
 
 int main()
@@ -61,7 +62,15 @@ int main()
         auto diff = maxLabeling.diff(groundTruth);
         std::cout << "Unary difference to ground truth: " << diff << "/" << maxLabeling.pixels() << " or " << (float)diff/maxLabeling.pixels() << "%" << std::endl;
 
-        int const tries = 5;
+        ConfusionMatrix cf(unary.classes(), maxLabeling, groundTruth);
+        float mean;
+        auto accuracies = cf.accuracies(&mean);
+        std::string str;
+        properties::toString(accuracies, str);
+        std::cout << "IoU accuracies: " << str << std::endl;
+        std::cout << "IoU mean: " << mean << std::endl;
+
+        int const tries = 1;
         std::vector<LabelImage> classLabelTries;
         float eps = properties.convergence.overall;
         for (int i = 0; i < tries; ++i)
@@ -129,6 +138,13 @@ int main()
 
                 size_t diff = classLabeling.diff(groundTruth);
                 std::cout << iter << ": Difference to ground truth: " << diff << "/" << classLabeling.pixels() << " or " << (float)diff/classLabeling.pixels() << "%" << std::endl;
+                ConfusionMatrix cf(unary.classes(), classLabeling, groundTruth);
+                float mean;
+                auto accuracies = cf.accuracies(&mean);
+                std::string str;
+                properties::toString(accuracies, str);
+                std::cout << "IoU accuracies: " << str << std::endl;
+                std::cout << "IoU mean: " << mean << std::endl;
 
                 timer.start();
             } while (energyDecrease > threshold);
