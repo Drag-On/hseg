@@ -58,7 +58,10 @@ int main()
         // and the dominant label, but that's computationally heavy and I don't want to do that in the moment.
         float startEnergy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling, fakeClusters);
 
-        int const tries = 1;
+        auto diff = maxLabeling.diff(groundTruth);
+        std::cout << "Unary difference to ground truth: " << diff << "/" << maxLabeling.pixels() << " or " << (float)diff/maxLabeling.pixels() << "%" << std::endl;
+
+        int const tries = 5;
         std::vector<LabelImage> classLabelTries;
         float eps = properties.convergence.overall;
         for (int i = 0; i < tries; ++i)
@@ -124,6 +127,9 @@ int main()
                 cv::imwrite(spPath.string() + std::to_string(iter) + ".png", spLabelMat);
                 cv::imwrite(labelPath.string() + std::to_string(iter) + ".png", newLabelMat);
 
+                size_t diff = classLabeling.diff(groundTruth);
+                std::cout << iter << ": Difference to ground truth: " << diff << "/" << classLabeling.pixels() << " or " << (float)diff/classLabeling.pixels() << "%" << std::endl;
+
                 timer.start();
             } while (energyDecrease > threshold);
 
@@ -142,6 +148,8 @@ int main()
             Label l = std::distance(classes.begin(), std::max_element(classes.begin(), classes.end()));
             finalLabeling.atSite(i) = l;
         }
+
+        std::cout << "Difference to ground truth: " << finalLabeling.diff(groundTruth) << std::endl;
 
         cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
         cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));

@@ -130,6 +130,13 @@ public:
     size_t pixels() const;
 
     /**
+     * Computes the amount of pixels that are different from another image of the same size
+     * @param other Other image
+     * @return Amount of differing pixels
+     */
+    size_t diff(Image<T, C> const& other) const;
+
+    /**
      * Retrieve a pixel value
      * @param x X coordinate
      * @param y Y coordinate
@@ -383,6 +390,19 @@ Image<T, C>& Image<T, C>::scaleColorSpace(T min, T max)
         px = ((max - min) * (px - minMax.first)) / (minMax.second - minMax.first) + min;
 
     return *this;
+}
+
+template<typename T, size_t C>
+size_t Image<T, C>::diff(Image<T, C> const& other) const
+{
+    assert(other.width() == width() && other.height() == height());
+
+    size_t result = 0;
+    for (size_t i = 0; i < pixels(); ++i)
+        for (size_t c = 0; c < C; ++c)
+            if (atSite(i, c) != other.atSite(i, c))
+                result++;
+    return result;
 }
 
 #endif //HSEG_IMAGE_H
