@@ -86,3 +86,18 @@ void ConfusionMatrix::join(LabelImage const& labeling, LabelImage const& groundT
             at(trueLabel, inferredLabel)++;
     }
 }
+
+std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf)
+{
+    float mean = 0;
+    auto acc = cf.accuracies(&mean);
+
+    stream << "Mean = " << mean << "; Per class = ";
+    stream << "{ ";
+    for (size_t i = 0; i < acc.size() - 1; ++i)
+        stream << acc[i] << ", ";
+    if (!acc.empty())
+        stream << acc.back();
+    stream << " }";
+    return stream;
+}

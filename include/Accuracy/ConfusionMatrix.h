@@ -59,5 +59,6 @@ private:
     size_t& at(Label trueLabel, Label inferredLabel);
 };
 
+std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf);
 
 #endif //HSEG_CONFUSIONMATRIX_H
