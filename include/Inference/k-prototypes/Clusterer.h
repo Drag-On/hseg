@@ -30,13 +30,14 @@ public:
      * @param numLabels Amount of class labels that can occur on the label image
      * @param color Color image
      * @param labels Label image
+     * @returns The amount of iterations that have been done
      * @tparam T Type of the image data
      * @details The resulting clustering will never have more clusters than specified, but it might well not use all
      *          of them. If this is called multiple times on the same object, the algorithm will be warm-started with
      *          the previous result.
      */
     template<typename T>
-    void run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels);
+    size_t run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels);
 
     /**
      * @return Clustering result
@@ -67,7 +68,7 @@ private:
 };
 
 template<typename T>
-void Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels)
+size_t Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels)
 {
     assert(color.pixels() == labels.pixels());
 
@@ -91,12 +92,14 @@ void Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& c
         //std::cout << iter << ": moves: " << moves << ", diff: " << std::abs(lastMoves - moves) << ", threshold: " << rgb.pixels() * m_conv << std::endl;
     } while (std::abs(lastMoves - moves) > color.pixels() * m_conv);
 
-    std::cout << "Converged after " << iter << " iterations (up to convergence criterion)" << std::endl;
+    //std::cout << "Converged after " << iter << " iterations (up to convergence criterion)" << std::endl;
     //energy = computeEnergy(color, labels);
     //std::cout << "Energy: " << energy << std::endl;
     //long int lostClusters = std::count_if(m_clusters.begin(), m_clusters.end(),
     //                                      [](Cluster const& c) { return c.size == 0; });
     //std::cout << lostClusters << " clusters are empty." << std::endl;
+
+    return iter;
 }
 
 template<typename T>
