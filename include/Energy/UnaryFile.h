@@ -16,6 +16,11 @@ class UnaryFile
 {
 public:
     /**
+     * Default constructor
+     */
+    UnaryFile() = default;
+
+    /**
      * Loads the data from file
      * @param filename File to load from
      */

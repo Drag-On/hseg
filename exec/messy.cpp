@@ -25,7 +25,7 @@ int main()
     Weights weights(21ul);
 
     size_t numClusters = properties.clustering.numClusters;
-    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(21ul, numClusters));
+    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(255, numClusters));
 
     //for (std::string filename : files)
     {

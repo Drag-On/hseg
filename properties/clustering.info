@@ -1,0 +1,6 @@
+; Properties for hseg_cluster
+;
+
+numClusters 300 ; Amount of clusters
+image "data/2007_000129.jpg" ; Color image
+labeling "data/2007_000129.png" ; Label image
