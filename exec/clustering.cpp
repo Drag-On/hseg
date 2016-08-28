@@ -37,6 +37,7 @@ int main()
         std::cerr << "Couldn't load image " << properties.image << std::endl;
         return -1;
     }
+    CieLabImage cieLab = rgb.getCieLabImg();
     RGBImage labelingRGB;
     labelingRGB.read(properties.labeling);
     if(labelingRGB.pixels() == 0)
@@ -59,7 +60,7 @@ int main()
 
     Timer t(true);
     Clusterer clusterer(energyFun);
-    size_t iter = clusterer.run(properties.numClusters, numClasses, rgb.getCieLabImg(), labeling);
+    size_t iter = clusterer.run(properties.numClusters, numClasses, cieLab, labeling);
     t.pause();
 
     std::cout << "Converged after " << iter << " iterations (" << t.elapsed<Timer::milliseconds>() << ")" << std::endl;
