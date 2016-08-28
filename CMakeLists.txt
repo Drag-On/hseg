@@ -62,6 +62,11 @@ add_executable(hseg_cluster exec/clustering.cpp)
 target_include_directories(hseg_cluster PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_cluster ${LIBS} hseg)
 
+### Compile inference executable ###
+add_executable(hseg_infer exec/inference.cpp)
+target_include_directories(hseg_infer PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_infer ${LIBS} hseg)
+
 ### Compile messy executable (i.e. the one where I do all my testing) ###
 add_executable(hseg_mess exec/messy.cpp)
 target_include_directories(hseg_mess PUBLIC ${INCLUDE_DIRS})
