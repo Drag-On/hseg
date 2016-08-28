@@ -2,7 +2,7 @@
 // Created by jan on 20.08.16.
 //
 
-#include "GraphOptimizer/GraphOptimizer.h"
+#include "Inference/GraphOptimizer/GraphOptimizer.h"
 
 GraphOptimizer::GraphOptimizer(EnergyFunction const& energy) noexcept
         : m_energy(energy)

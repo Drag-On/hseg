@@ -2,7 +2,7 @@
 // Created by jan on 18.08.16.
 //
 
-#include "k-prototypes/Clusterer.h"
+#include "Inference/k-prototypes/Clusterer.h"
 
 Clusterer::Clusterer(EnergyFunction const& energy)
         : m_energy(energy)

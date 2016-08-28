@@ -2,7 +2,7 @@
 // Created by jan on 18.08.16.
 //
 
-#include "k-prototypes/Feature.h"
+#include "Inference/k-prototypes/Feature.h"
 
 Feature& Feature::operator+=(Feature const& other)
 {

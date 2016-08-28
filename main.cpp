@@ -1,8 +1,8 @@
 #include <iostream>
 #include <Energy/UnaryFile.h>
-#include <k-prototypes/Clusterer.h>
+#include <Inference/k-prototypes/Clusterer.h>
+#include <Inference/GraphOptimizer/GraphOptimizer.h>
 #include <helper/image_helper.h>
-#include <GraphOptimizer/GraphOptimizer.h>
 #include <boost/filesystem.hpp>
 #include <Accuracy/ConfusionMatrix.h>
 #include "Timer.h"

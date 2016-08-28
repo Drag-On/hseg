@@ -7,9 +7,9 @@
 
 
 #include <Energy/UnaryFile.h>
-#include <k-prototypes/Feature.h>
+#include <Inference/k-prototypes/Feature.h>
+#include <Inference/k-prototypes/Cluster.h>
 #include <Properties.h>
-#include <k-prototypes/Cluster.h>
 #include "Weights.h"
 
 /**
