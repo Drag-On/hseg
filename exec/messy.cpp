@@ -15,16 +15,9 @@ int main()
     std::string filename = "2007_000129";
     std::string groundTruthFolder = "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/";
 
-    HsegProperties properties;
-    properties.read("properties.info");
-    std::cout << "----------------------------------------------------------------" << std::endl;
-    std::cout << "Used properties: " << std::endl;
-    std::cout << properties << std::endl;
-    std::cout << "----------------------------------------------------------------" << std::endl;
-
     Weights weights(21ul);
 
-    size_t numClusters = properties.clustering.numClusters;
+    size_t numClusters = 300;
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(255ul, numClusters));
 
     //for (std::string filename : files)
@@ -63,16 +56,11 @@ int main()
         std::cout << "Unary difference to ground truth: " << diff << "/" << maxLabeling.pixels() << " or " << (float)diff/maxLabeling.pixels() << "%" << std::endl;
 
         ConfusionMatrix cf(unary.classes(), maxLabeling, groundTruth);
-        float mean;
-        auto accuracies = cf.accuracies(&mean);
-        std::string str;
-        properties::toString(accuracies, str);
-        std::cout << "IoU accuracies: " << str << std::endl;
-        std::cout << "IoU mean: " << mean << std::endl;
+        std::cout << cf << std::endl;
 
         int const tries = 1;
         std::vector<LabelImage> classLabelTries;
-        float eps = properties.convergence.overall;
+        float eps = 0.001f;
         for (int i = 0; i < tries; ++i)
         {
             std::cout << "Try " << i << std::endl;
@@ -139,12 +127,7 @@ int main()
                 size_t diff = classLabeling.diff(groundTruth);
                 std::cout << iter << ": Difference to ground truth: " << diff << "/" << classLabeling.pixels() << " or " << (float)diff/classLabeling.pixels() << "%" << std::endl;
                 ConfusionMatrix cf(unary.classes(), classLabeling, groundTruth);
-                float mean;
-                auto accuracies = cf.accuracies(&mean);
-                std::string str;
-                properties::toString(accuracies, str);
-                std::cout << "IoU accuracies: " << str << std::endl;
-                std::cout << "IoU mean: " << mean << std::endl;
+                std::cout << cf << std::endl;
 
                 timer.start();
             } while (energyDecrease > threshold);
