@@ -31,3 +31,8 @@ float EnergyFunction::featureDistance(Feature const& feature, Feature const& fea
     auto const spatialDist = w.b * (xDiff * xDiff) + w.c * (yDiff * yDiff) + 2 * w.d * (xDiff * yDiff);
     return colorDist + spatialDist;
 }
+
+UnaryFile const& EnergyFunction::unaryFile() const
+{
+    return m_unaryScores;
+}

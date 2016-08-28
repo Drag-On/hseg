@@ -149,6 +149,11 @@ public:
     template<typename T>
     inline float simplePotts(T l1, T l2) const;
 
+    /**
+     * @return The unary file
+     */
+    UnaryFile const& unaryFile() const;
+
 private:
     UnaryFile m_unaryScores;
     Weights m_weights;
