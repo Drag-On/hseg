@@ -79,6 +79,7 @@ float InferenceIterator::computeInitialEnergy(LabelImage const& labeling) const
         c.accumFeature += Feature(m_color, i);
         c.labelFrequencies[labeling.atSite(i)]++;
     }
+    c.size = m_color.pixels();
     c.updateMean();
     c.updateLabel();
     std::vector<Cluster> fakeClusters(1, c);
