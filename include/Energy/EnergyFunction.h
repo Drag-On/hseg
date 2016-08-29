@@ -12,7 +12,8 @@
 #include "Weights.h"
 
 /**
- * Provides functionality to compute (partial) energies of the target energy function
+ * Provides functionality to compute (partial) energies of the target energy function.
+ * @note This will ignore pixels that have been assigned labels not in the range [0, classMax].
  */
 class EnergyFunction
 {
@@ -99,7 +100,10 @@ public:
      */
     inline float pairwiseClassWeight(Label l1, Label l2) const
     {
-        return m_weights.pairwise(l1, l2);
+        if (l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
+            return 0;
+        else
+            return m_weights.pairwise(l1, l2);
     }
 
     /**
@@ -118,7 +122,7 @@ public:
      */
     inline float classDistance(Label l1, Label l2) const
     {
-        if (l1 == l2)
+        if (l1 == l2 || l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
             return 0;
         else
             return m_weights.classWeight();
@@ -150,7 +154,7 @@ public:
      */
     UnaryFile const& unaryFile() const;
 
-private:
+protected:
     UnaryFile const& m_unaryScores;
     Weights const& m_weights;
     float m_pairWiseSigmaSq;
@@ -177,14 +181,23 @@ float EnergyFunction::givePairwiseEnergy(LabelImage const& labeling, ColorImage<
             Label l = labeling.at(x, y);
             Label lR = labeling.at(x + 1, y);
             if (l != lR)
-                pairwiseEnergy += pairwiseClassWeight(l, lR)
-                                  * pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
-                                                        helper::coord::coordinateToSite(x + 1, y, labeling.width()));
+            {
+                auto energy = pairwiseClassWeight(l, lR);
+                if (energy != 0)
+                    energy *= pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
+                                                  helper::coord::coordinateToSite(x + 1, y, labeling.width()));
+                pairwiseEnergy += energy;
+            }
+
             Label lD = labeling.at(x, y + 1);
             if (l != lD)
-                pairwiseEnergy += pairwiseClassWeight(l, lD)
-                                  * pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
-                                                        helper::coord::coordinateToSite(x, y + 1, labeling.width()));
+            {
+                auto energy = pairwiseClassWeight(l, lD);
+                if (energy != 0)
+                    energy *= pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
+                                                  helper::coord::coordinateToSite(x, y + 1, labeling.width()));
+                pairwiseEnergy += energy;
+            }
         }
     }
     return pairwiseEnergy;

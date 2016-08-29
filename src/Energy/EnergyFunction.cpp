@@ -22,6 +22,9 @@ float EnergyFunction::giveUnaryEnergy(LabelImage const& labeling) const
 
 float EnergyFunction::unaryCost(size_t i, Label l) const
 {
+    if(l >= m_unaryScores.classes())
+        return 0;
+
     auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
     return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
 }
