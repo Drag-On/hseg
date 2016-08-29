@@ -11,7 +11,7 @@
 #include <helper/opencv_helper.h>
 #include "Coordinates.h"
 #include <cv.hpp>
-#if CV_VERSION_MAJOR >= 3
+#if CV_VERSION_MAJOR==3
 #include <opencv2/imgcodecs.hpp>
 #else
 #include "opencv2/highgui/highgui.hpp"
