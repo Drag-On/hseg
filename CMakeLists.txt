@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(hseg)
 
 ### Full optimization ###
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fprofile-use=.profiling")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3") # -fprofile-use=.profiling
 
 ### Using any of the advanced compiler features? ###
 option(ASAN "Enable gcc address sanitizer" OFF)
