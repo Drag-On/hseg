@@ -20,6 +20,12 @@ float EnergyFunction::giveUnaryEnergy(LabelImage const& labeling) const
     return unaryEnergy;
 }
 
+float EnergyFunction::unaryCost(size_t i, Label l) const
+{
+    auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
+    return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
+}
+
 float EnergyFunction::featureDistance(Feature const& feature, Feature const& feature2) const
 {
     auto const xDiff = feature.x() - feature2.x();

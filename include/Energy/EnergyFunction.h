@@ -19,8 +19,8 @@ class EnergyFunction
 public:
     /**
      * Constructor
-     * @param unaries Unary scores
-     * @param weights Weights to use
+     * @param unaries Unary scores. The reference must stay valid as long as this object persists.
+     * @param weights Weights to use. The reference must stay valid as long as this object persists.
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      */
     EnergyFunction(UnaryFile const& unaries, Weights const& weights, float pairwiseSigmaSq = 0.05f);
@@ -79,11 +79,7 @@ public:
      * @param l Class label to compute score for
      * @return The cost of assigning class label \p l to pixel \p i
      */
-    inline float unaryCost(size_t i, Label l) const
-    {
-        auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
-        return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
-    }
+    virtual float unaryCost(size_t i, Label l) const;
 
     /**
      * Computes the partial cost of a pairwise connection as given by the color of the pixels
@@ -155,8 +151,8 @@ public:
     UnaryFile const& unaryFile() const;
 
 private:
-    UnaryFile m_unaryScores;
-    Weights m_weights;
+    UnaryFile const& m_unaryScores;
+    Weights const& m_weights;
     float m_pairWiseSigmaSq;
 };
 
