@@ -33,7 +33,7 @@ namespace helper
 
         /**
          * Generates a colormap with \p n distinct entries
-         * @param n Amount of entries. May not be larger than 712
+         * @param n Amount of entries. May not be larger than 556
          * @return The generated colormap
          */
         ColorMap generateColorMap(size_t n);
