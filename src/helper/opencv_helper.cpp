@@ -2,7 +2,7 @@
 // Created by jan on 19.08.16.
 //
 
-#include <opencv2/core/cvdef.h>
+#include <cv.hpp>
 #include "helper/opencv_helper.h"
 
 namespace helper
