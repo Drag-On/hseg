@@ -1,7 +1,39 @@
 ; Properties for hseg_cluster
 ;
 
-numClusters 300 ; Amount of clusters
-pairwiseSigmaSq 0.05 ; Value of sigma square
-image "data/2007_000129.jpg" ; Color image
-labeling "data/2007_000129.png" ; Label image
+; Amount of clusters
+numClusters 250
+
+; Color and label image (used if not empty)
+image ""
+labeling ""
+
+; If image is empty, tries to batch-process the files in a list
+batch
+{
+    imgListFile "train.txt"
+    imgPath "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
+    imgExtension ".jpg"
+    labelListFile "train.txt"
+    labelPath "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
+    labelExtension ".png"
+}
+
+; Output file (or directory, in case of batch processing)
+out "spGroundTruth/"
+
+; Flag indicating whether or not to show the result
+showResult false
+
+; Weights to use
+weights
+{
+    feature
+    {
+        a 0.05
+        b 0.95
+        c 0.95
+        d 0.0
+    }
+    label 10000.0
+}
