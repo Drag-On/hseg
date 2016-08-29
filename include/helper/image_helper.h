@@ -32,6 +32,13 @@ namespace helper
         ColorMap generateColorMapVOC(size_t n);
 
         /**
+         * Generates a colormap with \p n distinct entries
+         * @param n Amount of entries. May not be larger than 712
+         * @return The generated colormap
+         */
+        ColorMap generateColorMap(size_t n);
+
+        /**
          * Colorizes a label image according to a color map
          * @param labelImg Image to colorize
          * @param colorMap Color map
