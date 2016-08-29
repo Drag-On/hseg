@@ -8,6 +8,7 @@
 #include <cassert>
 #include <string>
 #include <boost/type_index.hpp>
+#include <cv.hpp>
 
 namespace helper
 {

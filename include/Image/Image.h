@@ -8,11 +8,15 @@
 #include <cstddef>
 #include <vector>
 #include <string>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
-#include <cv.hpp>
 #include <helper/opencv_helper.h>
 #include "Coordinates.h"
+#include <cv.hpp>
+#if CV_VERSION_MAJOR >= 3
+#include <opencv2/imgcodecs.hpp>
+#else
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#endif
 
 using ImgCoord = size_t;
 
@@ -32,7 +36,7 @@ public:
     /**
      * Default constructor
      */
-    Image() noexcept = default;
+    Image() = default;
 
     /**
      * Construct an empty image
