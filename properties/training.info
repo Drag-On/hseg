@@ -1,0 +1,15 @@
+; Properties for hseg_train
+;
+
+numClusters 300         ; Amount of clusters
+numIter 100             ; Amount of iterations
+learningRate 1.         ; Learning rate
+C 1.                    ; Constant factor
+pairwiseSigmaSq 0.05    ; Value of sigma square
+imageListFile ""        ; List of color images
+groundTruthListFile ""  ; List of ground truth images
+unaryListFile ""        ; List of unary score files
+imageBasePath ""        ; Directory that contains all the color images
+groundTruthBasePath ""  ; Directory that contains all the ground truth images
+unaryBasePath ""        ; Directory that contains all the unary score files
+outDir "out/"           ; Directory to write results to

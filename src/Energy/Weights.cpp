@@ -4,14 +4,23 @@
 
 #include "Energy/Weights.h"
 
-Weights::Weights(Label numLabels)
+Weights::Weights(Label numLabels, bool defaultInit)
         : m_numLabels(numLabels)
 {
-    m_unaryWeights.resize(numLabels, 5.f);
-    m_pairwiseWeights.resize((numLabels * numLabels) / 2, 300.f);
-    m_pairwiseSigmaSq = 0.05f;
-    m_featureWeights = { 0.3f, 0.7f, 0.7f, 0.f };
-    m_classWeight = 30.f;
+    if(defaultInit)
+    {
+        m_unaryWeights.resize(numLabels, 5.f);
+        m_pairwiseWeights.resize((numLabels * numLabels) / 2, 300.f);
+        m_featureWeights = { 0.3f, 0.7f, 0.7f, 0.f };
+        m_classWeight = 30.f;
+    }
+    else
+    {
+        m_unaryWeights.resize(numLabels, 0.f);
+        m_pairwiseWeights.resize((numLabels * numLabels) / 2, 0.f);
+        m_featureWeights = { 0.f, 0.f, 0.f, 0.f };
+        m_classWeight = 0.f;
+    }
 }
 
 Weight Weights::pairwise(Label l1, Label l2) const

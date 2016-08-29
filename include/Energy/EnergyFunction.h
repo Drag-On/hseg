@@ -21,8 +21,9 @@ public:
      * Constructor
      * @param unaries Unary scores
      * @param weights Weights to use
+     * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      */
-    EnergyFunction(UnaryFile const& unaries, Weights const& weights);
+    EnergyFunction(UnaryFile const& unaries, Weights const& weights, float pairwiseSigmaSq = 0.05f);
 
     /**
      * Computes the overall energy
@@ -156,6 +157,7 @@ public:
 private:
     UnaryFile m_unaryScores;
     Weights m_weights;
+    float m_pairWiseSigmaSq;
 };
 
 template<typename T>
@@ -199,7 +201,7 @@ float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, si
     float gDiff = img.atSite(i, 1) - img.atSite(j, 1);
     float bDiff = img.atSite(i, 2) - img.atSite(j, 2);
     float colorDiffNormSq = rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-    float weight = std::exp(-m_weights.pairwiseSigmaSq() * colorDiffNormSq);
+    float weight = std::exp(-m_pairWiseSigmaSq * colorDiffNormSq);
     return weight;
 }
 

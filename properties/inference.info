@@ -2,6 +2,7 @@
 ;
 
 numClusters 300 ; Amount of clusters
+pairwiseSigmaSq 0.05 ; Value of sigma square
 image "data/2007_000129.jpg" ; Color image
 groundTruth "data/2007_000129_gt.png" ; Ground Truth image
 unary "data/2007_000129_prob.dat" ; File with unary scores

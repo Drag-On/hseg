@@ -12,7 +12,7 @@
 using Weight = float;
 
 /**
- * Contains all weights needed by the energy function
+ * Contains all (trainable) weights needed by the energy function
  */
 class Weights
 {
@@ -20,7 +20,6 @@ private:
     Label m_numLabels;
     std::vector<Weight> m_unaryWeights;
     std::vector<Weight> m_pairwiseWeights;
-    Weight m_pairwiseSigmaSq;
     struct FeatureWeights
     {
         Weight a, b, c, d;
@@ -31,8 +30,9 @@ public:
     /**
      * Creates default weights
      * @param numLabels Amount of class labels
+     * @param defaultInit Determines if the weights will be initialized with default values or with zeros
      */
-    explicit Weights(Label numLabels);
+    explicit Weights(Label numLabels, bool defaultInit = true);
 
     /**
      * Weight of the unary term
@@ -52,14 +52,6 @@ public:
      * @return The approriate weight
      */
     Weight pairwise(Label l1, Label l2) const;
-
-    /**
-     * @return The sigma-square in the exponential of the pairwise term
-     */
-    inline Weight pairwiseSigmaSq() const
-    {
-        return m_pairwiseSigmaSq;
-    }
 
     /**
      * The feature weights.

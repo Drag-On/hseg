@@ -13,6 +13,7 @@
 
 PROPERTIES_DEFINE(Inference,
                   PROP_DEFINE(size_t, numClusters, 300)
+                  PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, image, "")
                   PROP_DEFINE(std::string, groundTruth, "")
                   PROP_DEFINE(std::string, unary, "")
@@ -67,7 +68,7 @@ int main()
     }
 
     // Create energy function
-    EnergyFunction energyFun(unaryFile, weights);
+    EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq);
 
     // Do the inference!
     Timer t(true);

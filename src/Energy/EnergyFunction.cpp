@@ -5,9 +5,10 @@
 #include <helper/coordinate_helper.h>
 #include "Energy/EnergyFunction.h"
 
-EnergyFunction::EnergyFunction(UnaryFile const& unaries, Weights const& weights)
+EnergyFunction::EnergyFunction(UnaryFile const& unaries, Weights const& weights, float pairwiseSigmaSq)
         : m_unaryScores(unaries),
-          m_weights(weights)
+          m_weights(weights),
+          m_pairWiseSigmaSq(pairwiseSigmaSq)
 {
 }
 

@@ -10,6 +10,7 @@
 
 PROPERTIES_DEFINE(Clustering,
                   PROP_DEFINE(size_t, numClusters, 300)
+                  PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, image, "")
                   PROP_DEFINE(std::string, labeling, "")
 )
@@ -56,7 +57,7 @@ int main()
 
     // Do the clustering
     UnaryFile fakeUnary;
-    EnergyFunction energyFun(fakeUnary, weights);
+    EnergyFunction energyFun(fakeUnary, weights, properties.pairwiseSigmaSq);
 
     Timer t(true);
     Clusterer clusterer(energyFun);

@@ -67,6 +67,11 @@ add_executable(hseg_infer exec/inference.cpp)
 target_include_directories(hseg_infer PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_infer ${LIBS} hseg)
 
+### Compile training executable ###
+add_executable(hseg_train exec/train.cpp)
+target_include_directories(hseg_train PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_train ${LIBS} hseg)
+
 ### Compile messy executable (i.e. the one where I do all my testing) ###
 add_executable(hseg_mess exec/messy.cpp)
 target_include_directories(hseg_mess PUBLIC ${INCLUDE_DIRS})
