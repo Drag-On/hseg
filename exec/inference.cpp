@@ -18,6 +18,17 @@ PROPERTIES_DEFINE(Inference,
                   PROP_DEFINE(std::string, groundTruth, "")
                   PROP_DEFINE(std::string, unary, "")
                   PROP_DEFINE(std::string, outDir, "")
+                  GROUP_DEFINE(weights,
+                               PROP_DEFINE(float, unary, 5.f)
+                               PROP_DEFINE(float, pairwise, 500)
+                               GROUP_DEFINE(feature,
+                                            PROP_DEFINE(float, a, 0.1f)
+                                            PROP_DEFINE(float, b, 0.9f)
+                                            PROP_DEFINE(float, c, 0.9f)
+                                            PROP_DEFINE(float, d, 0.0f)
+                               )
+                               PROP_DEFINE(float, label, 30.f)
+                  )
 )
 
 int main()
@@ -32,7 +43,9 @@ int main()
 
     size_t const numClasses = 21;
 
-    Weights weights(numClasses); // TODO: Load weights instead of always using the default ones
+    Weights weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature.a,
+                    properties.weights.feature.b, properties.weights.feature.c, properties.weights.feature.d,
+                    properties.weights.label);
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, properties.numClusters));
 
     // Load images
@@ -106,9 +119,15 @@ int main()
     {
         cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(result.labelings[i], cmap));
         cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels[i], cmap));
-        cv::imwrite(spPath.string() + std::to_string(i) + ".png", spMat);
-        cv::imwrite(labelPath.string() + std::to_string(i) + ".png", labelMat);
+        cv::imwrite(spPath.string() + std::to_string(i + 1) + ".png", spMat);
+        cv::imwrite(labelPath.string() + std::to_string(i + 1) + ".png", labelMat);
     }
+    LabelImage unaryLabeling = unaryFile.maxLabeling();
+    cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(unaryLabeling, cmap));
+    cv::imwrite(basePath.string() + "unary.png", labelMat);
+    cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
+    cv::imwrite(basePath.string() + "rgb.png", rgbMat);
+
 
     // Show results
     if (useGroundTruth)
@@ -116,7 +135,6 @@ int main()
         cv::Mat gtMat = static_cast<cv::Mat>(groundTruthRgb);
         cv::imshow("ground truth", gtMat);
     }
-    cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
     cv::imshow("rgb", rgbMat);
 
     for(size_t i = 0; i < result.numIter; ++i)

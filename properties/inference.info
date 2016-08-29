@@ -7,3 +7,18 @@ image "data/2007_000129.jpg" ; Color image
 groundTruth "data/2007_000129_gt.png" ; Ground Truth image
 unary "data/2007_000129_prob.dat" ; File with unary scores
 outDir "out/" ; Directory to write results to
+
+; Weights to use
+weights
+{
+    unary 5
+    pairwise 500
+    feature
+    {
+        a 0.08
+        b 0.92
+        c 0.92
+        d 0.0
+    }
+    label 230.0
+}
