@@ -113,10 +113,18 @@ void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& lab
         if (c.size > 0)
             continue;
 
-        size_t site = distribution(generator);
+        size_t site;
+        while(true)
+        {
+            // Only pick this site if the label is valid. It might be invalid for clustering on ground truth images,
+            // where some pixels are marked as "any label".
+            site = distribution(generator);
+            auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
+            c.label = labels.at(coords.x(), coords.y(), 0);
+            if(c.label < m_energy.unaryFile().classes())
+                break;
+        }
         c.mean = Feature(color, site);
-        auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
-        c.label = labels.at(coords.x(), coords.y(), 0);
     }
 }
 
@@ -136,8 +144,12 @@ void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const&
         m_clusters[minCluster].size++;
         m_clusters[minCluster].accumFeature += curFeature;
         m_clusters[minCluster].updateMean();
-        m_clusters[minCluster].labelFrequencies[curLabel]++;
-        m_clusters[minCluster].updateLabel();
+        if(curLabel < m_energy.unaryFile().classes())
+        {
+            // Only update for valid labels
+            m_clusters[minCluster].labelFrequencies[curLabel]++;
+            m_clusters[minCluster].updateLabel();
+        }
         /* m_clusters[minCluster].accumSqFeature += curFeature.getSquaredElements();
         m_clusters[minCluster].updateVariance(); */ // TODO: Compute variances?
     }
@@ -166,10 +178,14 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
             m_clusters[oldCluster].accumFeature -= curFeature;
             m_clusters[minCluster].updateMean();
             m_clusters[oldCluster].updateMean();
-            m_clusters[minCluster].labelFrequencies[curLabel]++;
-            m_clusters[oldCluster].labelFrequencies[curLabel]--;
-            m_clusters[minCluster].updateLabel();
-            m_clusters[oldCluster].updateLabel();
+            if(curLabel < m_energy.unaryFile().classes())
+            {
+                // Only update valid labels
+                m_clusters[minCluster].labelFrequencies[curLabel]++;
+                m_clusters[oldCluster].labelFrequencies[curLabel]--;
+                m_clusters[minCluster].updateLabel();
+                m_clusters[oldCluster].updateLabel();
+            }
             /*auto sqFeature = curFeature.getSquaredElements();
             m_clusters[minCluster].accumSqFeature += sqFeature;
             m_clusters[oldCluster].accumSqFeature -= sqFeature;
