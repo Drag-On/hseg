@@ -21,7 +21,7 @@ InferenceResult InferenceIterator::run(size_t numIter)
     GraphOptimizer optimizer(m_energy);
 
     InferenceResult result;
-    result.superpixels = m_energy.unaryFile().maxLabeling();
+    result.labeling = m_energy.unaryFile().maxLabeling();
     for (size_t iter = 0; iter < numIter; ++iter)
     {
         // Update superpixels using the latest class labeling
