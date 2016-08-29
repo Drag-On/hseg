@@ -35,6 +35,19 @@ public:
     explicit Weights(Label numLabels, bool defaultInit = true);
 
     /**
+     * Initialize some basic weights
+     * @param numLabels Amount of class labels
+     * @param unaryWeight Weight of the unary term
+     * @param pairwiseWeight Weight of the pairwise term
+     * @param featA Color weight
+     * @param featB X distance weight
+     * @param featC Y distance weight
+     * @param featD XY distance weight
+     * @param labelWeight Label weight
+     */
+    Weights(Label numLabels, float unaryWeight, float pairwiseWeight, float featA, float featB, float featC, float featD, float labelWeight);
+
+    /**
      * Weight of the unary term
      * @param l Class label
      * @return The approriate weight
