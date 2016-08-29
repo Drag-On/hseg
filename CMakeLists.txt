@@ -24,7 +24,7 @@ endif()
 
 
 ### BOOST ###
-find_package(Boost 1.54 COMPONENTS filesystem system REQUIRED)
+find_package(Boost 1.58 COMPONENTS filesystem system REQUIRED)
 
 ### OpenCV ###
 find_package(OpenCV REQUIRED)
