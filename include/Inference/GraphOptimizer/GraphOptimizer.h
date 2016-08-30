@@ -110,7 +110,14 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
     }
 
     // Do alpha-expansion
-    graph.expansion();
+    try
+    {
+        graph.expansion();
+    }
+    catch(GCException e)
+    {
+        e.Report();
+    }
 
     // Copy over result
     m_labeling = LabelImage(img.width(), img.height());
