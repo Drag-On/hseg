@@ -163,9 +163,12 @@ GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID
 
     // If both sites are normal nodes just compute the normal pairwise
     if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
-        return std::max(0.f, m_pixelEnergies[{s1, s2}] * m_energy.pairwiseClassWeight(l1, l2));
+    {
+        assert(m_pixelEnergies.count({s1, s2}) != 0);
+        return m_pixelEnergies[{s1, s2}] * m_energy.pairwiseClassWeight(l1, l2);
+    }
     else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
-        return std::max(0.f, m_energy.classDistance(l1, l2));
+        return m_energy.classDistance(l1, l2);
 }
 
 #endif //HSEG_GRAPHOPTIMIZER_H
