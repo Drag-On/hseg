@@ -11,13 +11,15 @@
 std::vector<Cluster> computeClusters(LabelImage const& sp, CieLabImage const& cieLab, LabelImage const& labeling, size_t numClusters, size_t numClasses)
 {
     std::vector<Cluster> clusters(numClusters, Cluster(numClasses));
-    for(size_t i = 0; i < sp.pixels(); ++i)
+    for (size_t i = 0; i < sp.pixels(); ++i)
     {
+        assert(sp.atSite(i) < numClusters);
         clusters[sp.atSite(i)].accumFeature += Feature(cieLab, i);
-        ++clusters[sp.atSite(i)].size;
-        ++clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)];
+        clusters[sp.atSite(i)].size++;
+        if (labeling.atSite(i) < numClasses)
+            clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)]++;
     }
-    for(auto& c : clusters)
+    for (auto& c : clusters)
     {
         c.updateMean();
         c.updateLabel();

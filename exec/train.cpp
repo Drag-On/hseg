@@ -46,13 +46,15 @@ std::vector<std::string> readFileNames(std::string const& listFile)
 std::vector<Cluster> computeClusters(LabelImage const& sp, CieLabImage const& cieLab, LabelImage const& labeling, size_t numClusters, size_t numClasses)
 {
     std::vector<Cluster> clusters(numClusters, Cluster(numClasses));
-    for(size_t i = 0; i < sp.pixels(); ++i)
+    for (size_t i = 0; i < sp.pixels(); ++i)
     {
+        assert(sp.atSite(i) < numClusters);
         clusters[sp.atSite(i)].accumFeature += Feature(cieLab, i);
-        ++clusters[sp.atSite(i)].size;
-        ++clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)];
+        clusters[sp.atSite(i)].size++;
+        if (labeling.atSite(i) < numClasses)
+            clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)]++;
     }
-    for(auto& c : clusters)
+    for (auto& c : clusters)
     {
         c.updateMean();
         c.updateLabel();
@@ -71,8 +73,8 @@ int main()
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     size_t const numClasses = 21;
-    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
-    helper::image::ColorMap cmap2 = helper::image::generateColorMap(properties.numClusters);
+    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
+    helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     WeightsVec curWeights(numClasses, false); // Zero-weights
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
 
