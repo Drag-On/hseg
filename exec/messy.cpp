@@ -80,6 +80,11 @@ int main()
         found.insert(groundTruthSp.atSite(i));
     std::cout << "Ground truth superpixel segmentation has " << found.size() << " unique indices." << std::endl;
 
+    cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(groundTruthSp, cmap2));
+    cv::imshow("sp mat colorized", spMat);
+    cv::imshow("sp mat loaded", static_cast<cv::Mat>(groundTruthSpRGB));
+    cv::waitKey();
+
 
     /*
      * Check some energy

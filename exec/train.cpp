@@ -109,6 +109,10 @@ int main()
             }
             CieLabImage cieLabImage = rgbImage.getCieLabImg();
             LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
+
+            //cv::imshow("sp mat loaded", static_cast<cv::Mat>(groundTruthSpRGB));
+            //cv::waitKey();
+
             LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
             UnaryFile unary(properties.unaryBasePath + unaryFilenames[n] + "_prob.dat");
             if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
@@ -120,7 +124,7 @@ int main()
             // Predict with loss-augmented energy
             LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, groundTruth);
             InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
-            InferenceResult result = inference.run();
+            InferenceResult result = inference.run(2);
 
             // Compute energy without weights on the ground truth
             EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
@@ -136,14 +140,24 @@ int main()
             //float normal = normalEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
             //assert(std::abs(byWeight - normal) < std::max(byWeight, normal) * 0.001f);
 
+            std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
+
             // Update step
             gtEnergy -= predEnergy;
+            //std::cout << "-----------------" << std::endl;
+            //std::cout << gtEnergy << std::endl;
             gtEnergy *= properties.C / N;
+            //std::cout << "-----------------" << std::endl;
+            //std::cout << gtEnergy << std::endl;
             gtEnergy += curWeights;
-            gtEnergy *= properties.learningRate / (t + 1);
+            //std::cout << "-----------------" << std::endl;
+            //std::cout << gtEnergy << std::endl;
+            gtEnergy *= properties.learningRate / (t + n + 1);
+            //std::cout << "-----------------" << std::endl;
+            //std::cout << gtEnergy << std::endl;
             curWeights -= gtEnergy;
-
-            std::cout << "<<< " << t << "/" << n << " >>>" << std::endl << curWeights << std::endl;
+            //std::cout << "-----------------" << std::endl;
+            std::cout << curWeights << std::endl;
         }
     }
 
