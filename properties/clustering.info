@@ -5,8 +5,8 @@
 numClusters 250
 
 ; Color and label image (used if not empty)
-image ""
-labeling ""
+image "data/2007_000129.jpg"
+labeling "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/2007_000129.png"
 
 ; If image is empty, tries to batch-process the files in a list
 batch
@@ -20,7 +20,7 @@ batch
 }
 
 ; Output file (or directory, in case of batch processing)
-out "spGroundTruth/"
+out "spGroundTruth/2007_000129.png"
 
 ; Flag indicating whether or not to show the result
 showResult false

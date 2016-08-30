@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/Weights.h>
+#include <Energy/WeightsVec.h>
 #include <helper/image_helper.h>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Timer.h>
@@ -122,7 +122,7 @@ int main()
 
     size_t const numClasses = 21;
 
-    Weights weights(numClasses, 1, 1, properties.weights.feature.a, properties.weights.feature.b,
+    WeightsVec weights(numClasses, 1, 1, properties.weights.feature.a, properties.weights.feature.b,
                     properties.weights.feature.c, properties.weights.feature.d, properties.weights.label);
     UnaryFile fakeUnary;
     EnergyFunction energyFun(fakeUnary, weights, 0.05f);

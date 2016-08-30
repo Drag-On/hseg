@@ -9,7 +9,7 @@
 #include <Energy/UnaryFile.h>
 #include <Inference/k-prototypes/Feature.h>
 #include <Inference/k-prototypes/Cluster.h>
-#include "Weights.h"
+#include "WeightsVec.h"
 
 /**
  * Provides functionality to compute (partial) energies of the target energy function.
@@ -24,7 +24,7 @@ public:
      * @param weights Weights to use. The reference must stay valid as long as this object persists.
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      */
-    EnergyFunction(UnaryFile const& unaries, Weights const& weights, float pairwiseSigmaSq = 0.05f);
+    EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq = 0.05f);
 
     /**
      * Computes the overall energy
@@ -39,20 +39,33 @@ public:
                      std::vector<Cluster> const& clusters) const;
 
     /**
-     * Computes the unary energy
-     * @param labeling Class labeling
-     * @return The unary energy of the given configuration
-     */
-    float giveUnaryEnergy(LabelImage const& labeling) const;
-
-    /**
-     * Computes the pairwise energy
-     * @param labeling Class labeling
+     * Computes the overall energy by weights
+     *  @param labeling Class labeling
      * @param img Color image
-     * @return The pairwise energy of the given configuration
+     * @param sp Superpixel labeling
+     * @param clusters List of clusters
+     * @return The energy of the given configuration by weights
      */
     template<typename T>
-    float givePairwiseEnergy(LabelImage const& labeling, ColorImage<T> const& img) const;
+    WeightsVec giveEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                                  std::vector<Cluster> const& clusters) const;
+
+    /**
+    * Computes the unary energy by weights
+    * @param labeling Class labeling
+    * @param[out] energyW The unary energy of the given configuration will be stored here by (unary) weights
+    * @return The unary energy of the given configuration
+    */
+    void computeUnaryEnergyByWeight(LabelImage const& labeling, WeightsVec& energyW) const;
+
+    /**
+     * Computes the pairwise energy by weights
+     * @param labeling Class labeling
+     * @param img Color image
+     * @param[out] energyW The pairwise energy of the given configuration will be stored here by (pairwise) weights
+     */
+    template<typename T>
+    void computePairwiseEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, WeightsVec& energyW) const;
 
     /**
      * Computes the superpixel energy
@@ -60,11 +73,11 @@ public:
      * @param img Color image
      * @param sp Superpixel labeling
      * @param clusters List of clusters
-     * @return The superpixel energy of the given configuration
+     * @param[out] energyW The superpixel energy of the given configuration will be stored here by (superpixel) weights
      */
     template<typename T>
-    float giveSpEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
-                       std::vector<Cluster> const& clusters) const;
+    void computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                                 std::vector<Cluster> const& clusters, WeightsVec& energyW) const;
 
     /**
      * @return Amount of classes
@@ -115,6 +128,14 @@ public:
     float featureDistance(Feature const& feature, Feature const& feature2) const;
 
     /**
+     * Computes the feature distance between two features
+     * @param feature The first feature
+     * @param feature2 The second feature
+     * @param[out] energyW The feature distance will be stored here
+     */
+    void computeFeatureDistanceByWeight(Feature const& feature, Feature const& feature2, WeightsVec& energyW) const;
+
+    /**
      * Computes the class label distance between two class labels
      * @param l1 First class label
      * @param l2 Second class label
@@ -154,9 +175,14 @@ public:
      */
     UnaryFile const& unaryFile() const;
 
+    /**
+     * @return The weights
+     */
+    WeightsVec const& weights() const;
+
 protected:
     UnaryFile const& m_unaryScores;
-    Weights const& m_weights;
+    WeightsVec const& m_weights;
     float m_pairWiseSigmaSq;
 };
 
@@ -164,43 +190,35 @@ template<typename T>
 float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                                  std::vector<Cluster> const& clusters) const
 {
-    auto unaryEnergy = giveUnaryEnergy(labeling);
-    auto pairwiseEnergy = givePairwiseEnergy(labeling, img);
-    auto spEnergy = giveSpEnergy(labeling, img, sp, clusters);
-    return unaryEnergy + pairwiseEnergy + spEnergy;
+    return giveEnergyByWeight(labeling, img, sp, clusters).sum();
 }
 
 template<typename T>
-float EnergyFunction::givePairwiseEnergy(LabelImage const& labeling, ColorImage<T> const& img) const
+void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img,
+                                                   WeightsVec& energyW) const
 {
-    float pairwiseEnergy = 0;
     for (size_t x = 0; x < labeling.width() - 1; ++x)
     {
         for (size_t y = 0; y < labeling.height() - 1; ++y)
         {
             Label l = labeling.at(x, y);
             Label lR = labeling.at(x + 1, y);
-            if (l != lR)
+            if (l != lR && l < m_unaryScores.classes() && lR < m_unaryScores.classes())
             {
-                auto energy = pairwiseClassWeight(l, lR);
-                if (energy != 0)
-                    energy *= pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
+                auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
                                                   helper::coord::coordinateToSite(x + 1, y, labeling.width()));
-                pairwiseEnergy += energy;
+                energyW.pairwise(l, lR) += energy;
             }
 
             Label lD = labeling.at(x, y + 1);
-            if (l != lD)
+            if (l != lD && l < m_unaryScores.classes() && lD < m_unaryScores.classes())
             {
-                auto energy = pairwiseClassWeight(l, lD);
-                if (energy != 0)
-                    energy *= pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
+                auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
                                                   helper::coord::coordinateToSite(x, y + 1, labeling.width()));
-                pairwiseEnergy += energy;
+                energyW.pairwise(l, lD) += energy;
             }
         }
     }
-    return pairwiseEnergy;
 }
 
 template<typename T>
@@ -215,17 +233,37 @@ float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, si
 }
 
 template<typename T>
-float EnergyFunction::giveSpEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
-                                   std::vector<Cluster> const& clusters) const
+void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+                                             std::vector<Cluster> const& clusters, WeightsVec& energyW) const
 {
-    float spEnergy = 0;
     for (size_t i = 0; i < labeling.pixels(); ++i)
     {
         assert(clusters.size() > sp.atSite(i));
-        spEnergy += pixelToClusterDistance(Feature(img, i), labeling.atSite(i), clusters[sp.atSite(i)]);
-    }
 
-    return spEnergy;
+        // Only consider pixels with a valid label
+        if (labeling.atSite(i) < m_unaryScores.classes())
+        {
+            computeFeatureDistanceByWeight(Feature(img, i), clusters[sp.atSite(i)].mean, energyW);
+            if (labeling.atSite(i) != clusters[sp.atSite(i)].label)
+                energyW.m_classWeight++;
+        }
+    }
+}
+
+template<typename T>
+WeightsVec EnergyFunction::giveEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img,
+                                              LabelImage const& sp,
+                                              std::vector<Cluster> const& clusters) const
+{
+    WeightsVec w(m_unaryScores.classes(), false); // Zero-initialized weights
+
+    computeUnaryEnergyByWeight(labeling, w);
+    computePairwiseEnergyByWeight(labeling, img, w);
+    computeSpEnergyByWeight(labeling, img, sp, clusters, w);
+
+    w *= m_weights;
+
+    return w;
 }
 
 template<typename T>

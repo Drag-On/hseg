@@ -1,169 +1,98 @@
 #include <iostream>
 #include <Energy/UnaryFile.h>
-#include <Inference/k-prototypes/Clusterer.h>
-#include <Inference/GraphOptimizer/GraphOptimizer.h>
 #include <helper/image_helper.h>
 #include <boost/filesystem.hpp>
-#include <Accuracy/ConfusionMatrix.h>
+#include <Energy/WeightsVec.h>
+#include <map>
+#include <set>
+#include <Energy/EnergyFunction.h>
 #include "Timer.h"
+
+std::vector<Cluster> computeClusters(LabelImage const& sp, CieLabImage const& cieLab, LabelImage const& labeling, size_t numClusters, size_t numClasses)
+{
+    std::vector<Cluster> clusters(numClusters, Cluster(numClasses));
+    for(size_t i = 0; i < sp.pixels(); ++i)
+    {
+        clusters[sp.atSite(i)].accumFeature += Feature(cieLab, i);
+        ++clusters[sp.atSite(i)].size;
+        ++clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)];
+    }
+    for(auto& c : clusters)
+    {
+        c.updateMean();
+        c.updateLabel();
+    }
+    return clusters;
+}
 
 int main()
 {
-    std::vector<std::string> files = {"2007_000027", "2007_000032", "2007_000033", "2007_000039", "2007_000042",
-                                      "2007_000061", "2007_000063", "2007_000068", "2007_000121", "2007_000123",
-                                      "2007_000129", "2007_000170"};
     std::string filename = "2007_000129";
     std::string groundTruthFolder = "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/";
-
-    Weights weights(21ul);
+    std::string groundTruthSpFolder = "/home/jan/Dokumente/Git/hseg/spGroundTruth/";
 
     size_t numClusters = 300;
-    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(255ul, numClusters));
+    size_t numClasses = 21;
+    WeightsVec weights(numClasses, 5, 500, 0.1, 0.9, 0.9, 0.9, 220);
+    helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
+    helper::image::ColorMap cmap2 = helper::image::generateColorMap(numClusters);
+    UnaryFile unary("data/" + filename + "_prob.dat");
+    LabelImage maxLabeling = unary.maxLabeling();
 
-    //for (std::string filename : files)
+    /*
+     * Load images
+     */
+    RGBImage rgb;
+    std::string actualFile = "data/" + filename + ".jpg";
+    rgb.read(actualFile);
+    if (rgb.pixels() == 0)
     {
-        UnaryFile unary("data/" + filename + "_prob.dat");
-
-        RGBImage rgb;
-        std::string actualFile = "data/" + filename + ".jpg";
-        rgb.read(actualFile);
-        if (rgb.pixels() == 0)
-        {
-            std::cerr << "Couldn't load image " << actualFile << std::endl;
-            return -1;
-        }
-        RGBImage groundTruthRGB;
-        groundTruthRGB.read(groundTruthFolder + filename + ".png");
-        if(groundTruthRGB.pixels() == 0)
-        {
-            std::cerr << "Couldn't load ground truth image" << std::endl;
-            return -2;
-        }
-        LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-        std::cout << std::endl << "Loaded image " << actualFile << std::endl;
-        CieLabImage cieLab = rgb.getCieLabImg();
-        LabelImage maxLabeling = unary.maxLabeling();
-
-        LabelImage fakeSpLabeling(unary.width(), unary.height());
-        std::vector<Cluster> fakeClusters(1, Cluster(unary.classes()));
-        EnergyFunction energyFun(unary, weights);
-        // NOTE: This first energy is not really correct because it's computed assuming that the whole image is one
-        // cluster and it has null-features and label 0. It would be more correct to actually compute the mean feature
-        // and the dominant label, but that's computationally heavy and I don't want to do that in the moment.
-        float startEnergy = energyFun.giveEnergy(maxLabeling, cieLab, fakeSpLabeling, fakeClusters);
-
-        auto diff = maxLabeling.diff(groundTruth);
-        std::cout << "Unary difference to ground truth: " << diff << "/" << maxLabeling.pixels() << " or " << (float)diff/maxLabeling.pixels() << "%" << std::endl;
-
-        ConfusionMatrix cf(unary.classes(), maxLabeling, groundTruth);
-        std::cout << cf << std::endl;
-
-        int const tries = 1;
-        std::vector<LabelImage> classLabelTries;
-        float eps = 0.001f;
-        for (int i = 0; i < tries; ++i)
-        {
-            std::cout << "Try " << i << std::endl;
-
-            float lastEnergy, energy = startEnergy;
-            std::cout << "Energy before anything: " << energy << std::endl;
-
-            float threshold;
-            float energyDecrease;
-            LabelImage spLabeling;
-            LabelImage classLabeling = maxLabeling;
-            cv::Mat spLabelMat;
-            cv::Mat newLabelMat;
-            Clusterer clusterer(energyFun);
-            GraphOptimizer optimizer(energyFun);
-            size_t iter = 0;
-            Timer timer(true);
-            do
-            {
-                iter++;
-                lastEnergy = energy;
-
-                clusterer.run(numClusters, unary.classes(), cieLab, classLabeling);
-                spLabeling = clusterer.clustership();
-
-                energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
-
-                timer.pause();
-
-                std::cout << iter << ": Energy after clustering: " << energy << std::endl;
-
-                timer.start();
-
-                optimizer.run(cieLab, spLabeling, numClusters);
-                classLabeling = optimizer.labeling();
-
-                energy = energyFun.giveEnergy(classLabeling, cieLab, spLabeling, clusterer.clusters());
-
-                timer.pause();
-
-                std::cout << iter << ": Energy after labeling: " << energy << std::endl;
-
-                timer.start();
-
-                threshold = eps * std::abs(energy);
-                energyDecrease = lastEnergy - energy;
-
-                timer.pause();
-
-                std::cout << iter << ": Energy decreased by " << energyDecrease << " (threshold is " << threshold << ")"
-                          << std::endl;
-
-                // Write out the current labeling and segmentation
-                spLabelMat = static_cast<cv::Mat>(helper::image::colorize(spLabeling, cmap));
-                newLabelMat = static_cast<cv::Mat>(helper::image::colorize(classLabeling, cmap));
-                boost::filesystem::path basePath("out/" + filename + "/" + std::to_string(i) + "/");
-                boost::filesystem::path spPath(basePath.string() + "/sp/");
-                boost::filesystem::create_directories(spPath);
-                boost::filesystem::path labelPath(basePath.string() + "/labeling/");
-                boost::filesystem::create_directories(labelPath);
-                cv::imwrite(spPath.string() + std::to_string(iter) + ".png", spLabelMat);
-                cv::imwrite(labelPath.string() + std::to_string(iter) + ".png", newLabelMat);
-
-                size_t diff = classLabeling.diff(groundTruth);
-                std::cout << iter << ": Difference to ground truth: " << diff << "/" << classLabeling.pixels() << " or " << (float)diff/classLabeling.pixels() << "%" << std::endl;
-                ConfusionMatrix cf(unary.classes(), classLabeling, groundTruth);
-                std::cout << cf << std::endl;
-
-                timer.start();
-            } while (energyDecrease > threshold);
-
-            std::cout << "Time: " << timer.elapsed<Timer::seconds>() << std::endl;
-
-            classLabelTries.push_back(classLabeling);
-        }
-
-        // Merge the tries to one final segmentation
-        LabelImage finalLabeling(maxLabeling.width(), maxLabeling.height());
-        for(size_t i = 0; i < finalLabeling.pixels(); ++i)
-        {
-            std::vector<int> classes(unary.classes(), 0);
-            for(auto const& t : classLabelTries)
-                classes[t.atSite(i)]++;
-            Label l = std::distance(classes.begin(), std::max_element(classes.begin(), classes.end()));
-            finalLabeling.atSite(i) = l;
-        }
-
-        std::cout << "Difference to ground truth: " << finalLabeling.diff(groundTruth) << std::endl;
-
-        cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
-        cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(maxLabeling, cmap));
-        cv::Mat finalLabelingMat = static_cast<cv::Mat>(helper::image::colorize(finalLabeling, cmap));
-
-        cv::imwrite("out/" + filename + "/rgb.png", rgbMat);
-        cv::imwrite("out/" + filename + "/unary.png", labelMat);
-        cv::imwrite("out/" + filename + "/merged.png", finalLabelingMat);
-
-        /*cv::imshow("max labeling", labelMat);
-        cv::imshow("rgb", rgbMat);
-        cv::imshow("sp", spLabelMat);
-        cv::imshow("class labeling", newLabelMat);
-        cv::waitKey();*/
+        std::cerr << "Couldn't load image " << actualFile << std::endl;
+        return -1;
     }
+    CieLabImage cieLab = rgb.getCieLabImg();
+    RGBImage groundTruthRGB;
+    groundTruthRGB.read(groundTruthFolder + filename + ".png");
+    if (groundTruthRGB.pixels() == 0)
+    {
+        std::cerr << "Couldn't load ground truth image" << std::endl;
+        return -2;
+    }
+    LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
+    RGBImage groundTruthSpRGB;
+    groundTruthSpRGB.read(groundTruthSpFolder + filename + ".png");
+    if (groundTruthRGB.pixels() == 0)
+    {
+        std::cerr << "Couldn't load ground truth superpixel image" << std::endl;
+        return -3;
+    }
+    LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
+    std::cout << std::endl << "Loaded image " << actualFile << std::endl;
+
+    /*
+     * Print some statistics
+     */
+    std::cout << "image size: " << cieLab.width() << "x" << cieLab.height() << " (" << rgb.width() << "x" << rgb.height() << ")" << std::endl;
+    std::cout << "gt size: " << groundTruth.width() << "x" << groundTruth.height() << " (" << groundTruthRGB.width() << "x" << groundTruthRGB.height() << ")" << std::endl;
+    std::cout << "gt sp size: " << groundTruthSp.width() << "x" << groundTruthSp.height() << " (" << groundTruthSpRGB.width() << "x" << groundTruthSpRGB.height() << ")" << std::endl;
+    std::set<size_t> found;
+    for(size_t i = 0; i < groundTruthSp.pixels(); ++i)
+        found.insert(groundTruthSp.atSite(i));
+    std::cout << "Ground truth superpixel segmentation has " << found.size() << " unique indices." << std::endl;
+
+
+    /*
+     * Check some energy
+     */
+    EnergyFunction energy(unary, weights);
+    auto clusters = computeClusters(groundTruthSp, cieLab, groundTruth, numClusters, numClasses);
+    float totalEnergy = energy.giveEnergy(groundTruth, cieLab, groundTruthSp, clusters);
+    WeightsVec energyByWeights = energy.giveEnergyByWeight(groundTruth, cieLab, groundTruthSp, clusters);
+    std::cout << "total energy: " << totalEnergy << std::endl; //" ( " << energy.giveUnaryEnergy(groundTruth) << ", " << energy.givePairwiseEnergy(groundTruth, cieLab) << ", " << energy.giveSpEnergy(groundTruth, cieLab, groundTruthSp, clusters) << " )" << std::endl;
+    std::cout << "total energy by weights: " << energyByWeights.sum() << " ( " << energyByWeights.sumUnary() << ", " << energyByWeights.sumPairwise() << ", " << energyByWeights.sumSuperpixel() << " )" << std::endl;
+    std::cout << "diff : " << totalEnergy - energyByWeights.sum() << std::endl;
+    std::cout << energyByWeights << std::endl;
+
 
     return 0;
 }

@@ -20,7 +20,7 @@ public:
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      * @param groundTruth Ground truth image. The reference must stay valid as long as this object persists.
      */
-    LossAugmentedEnergyFunction(UnaryFile const& unaries, Weights const& weights, float pairwiseSigmaSq, LabelImage const& groundTruth);
+    LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq, LabelImage const& groundTruth);
 
     virtual float unaryCost(size_t i, Label l) const override;
 

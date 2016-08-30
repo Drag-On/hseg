@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/Weights.h>
+#include <Energy/WeightsVec.h>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Timer.h>
 #include <helper/image_helper.h>
@@ -43,7 +43,7 @@ int main()
 
     size_t const numClasses = 21;
 
-    Weights weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature.a,
+    WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature.a,
                     properties.weights.feature.b, properties.weights.feature.c, properties.weights.feature.d,
                     properties.weights.label);
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, properties.numClusters));
