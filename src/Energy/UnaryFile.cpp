@@ -61,6 +61,13 @@ float UnaryFile::at(size_t x, size_t y, size_t c) const
     return m_data[x + (y * m_width) + (c * m_width * m_height)];
 }
 
+float UnaryFile::atSite(size_t s, size_t c) const
+{
+    assert(s < m_width * m_height);
+    assert(s + (c * m_width * m_height) < m_data.size());
+    return m_data[s + (c * m_width * m_height)];
+}
+
 Label UnaryFile::maxLabelAt(size_t x, size_t y) const
 {
     Label maxLabel = 0;

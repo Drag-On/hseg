@@ -56,6 +56,14 @@ public:
     float at(size_t x, size_t y, size_t c) const;
 
     /**
+     * Retrieve the score of a certain pixel-label combination
+     * @param s Site
+     * @param c Class label
+     * @return Score of the given combination
+     */
+    float atSite(size_t s, size_t c) const;
+
+    /**
      * Computes the class label with the maximum score at a certain pixel
      * @param x X coordinate
      * @param y Y coordinate
