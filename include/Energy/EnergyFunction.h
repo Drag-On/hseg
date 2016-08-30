@@ -197,25 +197,31 @@ template<typename T>
 void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img,
                                                    WeightsVec& energyW) const
 {
-    for (size_t x = 0; x < labeling.width() - 1; ++x)
+    for (size_t x = 0; x < labeling.width(); ++x)
     {
-        for (size_t y = 0; y < labeling.height() - 1; ++y)
+        for (size_t y = 0; y < labeling.height(); ++y)
         {
             Label l = labeling.at(x, y);
-            Label lR = labeling.at(x + 1, y);
-            if (l != lR && l < m_unaryScores.classes() && lR < m_unaryScores.classes())
+            if(x + 1 < labeling.width())
             {
-                auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
-                                                  helper::coord::coordinateToSite(x + 1, y, labeling.width()));
-                energyW.pairwise(l, lR) += energy;
+                Label lR = labeling.at(x + 1, y);
+                if (l != lR && l < m_unaryScores.classes() && lR < m_unaryScores.classes())
+                {
+                    auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
+                                                      helper::coord::coordinateToSite(x + 1, y, labeling.width()));
+                    energyW.pairwise(l, lR) += energy;
+                }
             }
 
-            Label lD = labeling.at(x, y + 1);
-            if (l != lD && l < m_unaryScores.classes() && lD < m_unaryScores.classes())
+            if(y + 1 < labeling.height())
             {
-                auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
-                                                  helper::coord::coordinateToSite(x, y + 1, labeling.width()));
-                energyW.pairwise(l, lD) += energy;
+                Label lD = labeling.at(x, y + 1);
+                if (l != lD && l < m_unaryScores.classes() && lD < m_unaryScores.classes())
+                {
+                    auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
+                                                      helper::coord::coordinateToSite(x, y + 1, labeling.width()));
+                    energyW.pairwise(l, lD) += energy;
+                }
             }
         }
     }

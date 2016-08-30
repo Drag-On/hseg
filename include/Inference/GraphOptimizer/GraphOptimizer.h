@@ -131,17 +131,27 @@ GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, Colo
           m_color(color)
 {
     // Pre-compute the pixel energies
-    for (size_t x = 0; x < color.width() - 1; ++x)
+    for (size_t x = 0; x < color.width(); ++x)
     {
-        for (size_t y = 0; y < color.height() - 1; ++y)
+        for (size_t y = 0; y < color.height(); ++y)
         {
             Site s = helper::coord::coordinateToSite(x, y, color.width());
-            Site r = helper::coord::coordinateToSite(x + 1, y, color.width());
-            Site d = helper::coord::coordinateToSite(x, y + 1, color.width());
-            std::pair<SiteID, SiteID> right{s, r};
-            std::pair<SiteID, SiteID> down{s, d};
-            m_pixelEnergies[right] = m_energy.pairwisePixelWeight(color, s, r);
-            m_pixelEnergies[down] = m_energy.pairwisePixelWeight(color, s, d);
+            if(x + 1 < color.width())
+            {
+                Site r = helper::coord::coordinateToSite(x + 1, y, color.width());
+                std::pair<SiteID, SiteID> right{s, r};
+                if(r < s)
+                    right = {r, s};
+                m_pixelEnergies[right] = m_energy.pairwisePixelWeight(color, s, r);
+            }
+            if(y + 1 < color.height())
+            {
+                Site d = helper::coord::coordinateToSite(x, y + 1, color.width());
+                std::pair<SiteID, SiteID> down{s, d};
+                if(d < s)
+                    down = {d, s};
+                m_pixelEnergies[down] = m_energy.pairwisePixelWeight(color, s, d);
+            }
         }
     }
 }
