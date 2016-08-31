@@ -20,7 +20,8 @@ class Clusterer
 public:
     /**
      * Constructor
-     * @param energy Energy function to optimize with respect to the superpixel segmentation
+     * @param energy Energy function to optimize with respect to the superpixel segmentation. The reference needs to
+     *               stay valid as long as the clusterer exists
      */
     Clusterer(EnergyFunction const& energy);
 
@@ -50,7 +51,7 @@ public:
     std::vector<Cluster> const& clusters() const;
 
 private:
-    EnergyFunction m_energy;
+    EnergyFunction const& m_energy;
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
     float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate

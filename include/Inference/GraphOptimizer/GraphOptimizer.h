@@ -20,7 +20,7 @@ class GraphOptimizer
 public:
     /**
      * Constructor
-     * @param energy Energy function to optimize for l
+     * @param energy Energy function to optimize for l. The reference needs to stay valid as long as the optimizer exists
      */
     GraphOptimizer(EnergyFunction const& energy) noexcept;
 
@@ -41,7 +41,7 @@ public:
     LabelImage const& labeling() const;
 
 private:
-    EnergyFunction m_energy;
+    EnergyFunction const& m_energy;
     LabelImage m_labeling;
 
     template<typename T>

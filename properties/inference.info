@@ -11,6 +11,7 @@ outDir "out/" ; Directory to write results to
 ; Weights to use
 weights
 {
+    file out/weights.dat
     unary 5
     pairwise 500
     feature

@@ -19,6 +19,7 @@ PROPERTIES_DEFINE(Inference,
                   PROP_DEFINE(std::string, unary, "")
                   PROP_DEFINE(std::string, outDir, "")
                   GROUP_DEFINE(weights,
+                               PROP_DEFINE(std::string, file, "")
                                PROP_DEFINE(float, unary, 5.f)
                                PROP_DEFINE(float, pairwise, 500)
                                GROUP_DEFINE(feature,
@@ -46,6 +47,8 @@ int main()
     WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature.a,
                     properties.weights.feature.b, properties.weights.feature.c, properties.weights.feature.d,
                     properties.weights.label);
+    if(!weights.read(properties.weights.file))
+        std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, properties.numClusters));
 
     // Load images
