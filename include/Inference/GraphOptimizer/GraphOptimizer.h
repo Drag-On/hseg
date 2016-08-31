@@ -109,10 +109,10 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
             graph.setLabel(s, m_labeling.atSite(s));
     }
 
-    // Do alpha-expansion
+    // Do alpha-beta-swap
     try
     {
-        graph.expansion();
+        graph.swap();
     }
     catch(GCException e)
     {
@@ -142,7 +142,7 @@ GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, Colo
                 std::pair<SiteID, SiteID> right{s, r};
                 if(r < s)
                     right = {r, s};
-                m_pixelEnergies[right] = m_energy.pairwisePixelWeight(color, s, r);
+                m_pixelEnergies[right] = std::round(m_energy.pairwisePixelWeight(color, s, r));
             }
             if(y + 1 < color.height())
             {
@@ -150,7 +150,7 @@ GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, Colo
                 std::pair<SiteID, SiteID> down{s, d};
                 if(d < s)
                     down = {d, s};
-                m_pixelEnergies[down] = m_energy.pairwisePixelWeight(color, s, d);
+                m_pixelEnergies[down] = std::round(m_energy.pairwisePixelWeight(color, s, d));
             }
         }
     }
@@ -163,6 +163,7 @@ GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID
                                          GraphOptimizer::PairwiseCost<T>::LabelID l1,
                                          GraphOptimizer::PairwiseCost<T>::LabelID l2)
 {
+    using EnergyTermType = GraphOptimizer::PairwiseCost<T>::EnergyTermType;
     // If the labels are identical it's always zero
     if (l1 == l2)
         return 0;
@@ -174,11 +175,14 @@ GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID
     // If both sites are normal nodes just compute the normal pairwise
     if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
     {
-        assert(m_pixelEnergies.count({s1, s2}) != 0);
-        return m_pixelEnergies[{s1, s2}] * m_energy.pairwiseClassWeight(l1, l2);
+        std::pair<SiteID, SiteID> pair{s1, s2};
+        assert(m_pixelEnergies.count(pair) != 0);
+        EnergyTermType pxEnergy = m_pixelEnergies[pair];
+        float classWeight = m_energy.pairwiseClassWeight(l1, l2);
+        return pxEnergy * std::round(classWeight);
     }
     else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
-        return m_energy.classDistance(l1, l2);
+        return std::round(m_energy.classDistance(l1, l2));
 }
 
 #endif //HSEG_GRAPHOPTIMIZER_H
