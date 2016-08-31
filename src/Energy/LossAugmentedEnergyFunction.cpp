@@ -9,10 +9,11 @@ LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unarie
         : EnergyFunction(unaries, weights, pairwiseSigmaSq),
           m_groundTruth(groundTruth)
 {
+    m_lossFactor = 0;
     for(size_t i = 0; i < m_groundTruth.pixels(); ++i)
         if(m_groundTruth.atSite(i) < m_unaryScores.classes())
             m_lossFactor++;
-    m_lossFactor = 1 / m_lossFactor;
+    m_lossFactor = 1e8f / m_lossFactor;
 }
 
 float LossAugmentedEnergyFunction::unaryCost(size_t i, Label l) const
