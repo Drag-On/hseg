@@ -89,20 +89,28 @@ int main()
         std::cerr << "File lists don't match up!" << std::endl;
         return -1;
     }
+    std::vector<size_t> indices(colorImageFilenames.size());
+    std::iota(indices.begin(), indices.end(), 0);
     size_t T = properties.numIter;
     size_t N = colorImageFilenames.size();
 
     // Iterate T times
     for(size_t t = 0; t < T; ++t)
     {
+        std::shuffle(indices.begin(), indices.end(), std::default_random_engine());
         // Iterate over all images
         for(size_t n = 0; n < N; ++n)
         {
+            auto colorImgFilename = colorImageFilenames[indices[n]];
+            auto gtImageFilename = gtImageFilenames[indices[n]];
+            auto gtSpImageFilename = gtSpImageFilenames[indices[n]];
+            auto unaryFilename = unaryFilenames[indices[n]];
+
             // Load images etc...
             RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
-            rgbImage.read(properties.imageBasePath + colorImageFilenames[n] + properties.imageExtension);
-            groundTruthRGB.read(properties.groundTruthBasePath + gtImageFilenames[n] + properties.gtExtension);
-            groundTruthSpRGB.read(properties.groundTruthSpBasePath + gtSpImageFilenames[n] + properties.gtExtension);
+            rgbImage.read(properties.imageBasePath + colorImgFilename + properties.imageExtension);
+            groundTruthRGB.read(properties.groundTruthBasePath + gtImageFilename + properties.gtExtension);
+            groundTruthSpRGB.read(properties.groundTruthSpBasePath + gtSpImageFilename + properties.gtExtension);
             if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height() ||
                 rgbImage.width() != groundTruthSpRGB.width() || rgbImage.height() != groundTruthSpRGB.height())
             {
@@ -116,7 +124,7 @@ int main()
             //cv::waitKey();
 
             LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
-            UnaryFile unary(properties.unaryBasePath + unaryFilenames[n] + "_prob.dat");
+            UnaryFile unary(properties.unaryBasePath + unaryFilename + "_prob.dat");
             if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
             {
                 std::cerr << "Invalid unary scores " << unaryFilenames[n] << std::endl;
@@ -146,19 +154,10 @@ int main()
 
             // Update step
             gtEnergy -= predEnergy;
-            //std::cout << "-----------------" << std::endl;
-            //std::cout << gtEnergy << std::endl;
             gtEnergy *= properties.C / N;
-            //std::cout << "-----------------" << std::endl;
-            //std::cout << gtEnergy << std::endl;
             gtEnergy += curWeights;
-            //std::cout << "-----------------" << std::endl;
-            //std::cout << gtEnergy << std::endl;
             gtEnergy *= properties.learningRate / (t + n + 1);
-            //std::cout << "-----------------" << std::endl;
-            //std::cout << gtEnergy << std::endl;
             curWeights -= gtEnergy;
-            //std::cout << "-----------------" << std::endl;
             std::cout << curWeights << std::endl;
         }
     }
