@@ -26,7 +26,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, unaryBasePath, "")
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
-                  PROP_DEFINE(std::string, outDir, "out/")
+                  PROP_DEFINE(std::string, out, "out/weights.dat")
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -158,6 +158,9 @@ int main()
             gtEnergy += curWeights;
             gtEnergy *= properties.learningRate / (t + n + 1);
             curWeights -= gtEnergy;
+
+            if(!curWeights.write(properties.out))
+                std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
             std::cout << curWeights << std::endl;
         }
     }

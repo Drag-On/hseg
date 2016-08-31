@@ -16,4 +16,4 @@ groundTruthSpBasePath "/home/jan/Dokumente/Git/hseg/spGroundTruth/"; Directory t
 unaryBasePath "data/"        ; Directory that contains all the unary score files
 imageExtension .jpg
 gtExtension .png
-outDir "out/"           ; Directory to write results to
+out "out/weights.dat"           ; Directory to write results to

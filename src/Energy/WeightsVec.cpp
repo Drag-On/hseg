@@ -2,6 +2,7 @@
 // Created by jan on 23.08.16.
 //
 
+#include <fstream>
 #include "Energy/WeightsVec.h"
 
 WeightsVec::WeightsVec(Label numLabels, bool defaultInit)
@@ -178,6 +179,60 @@ std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights)
            << weights.m_featureWeights.c() << ", " << weights.m_featureWeights.d() << std::endl;
     stream << "class: " << weights.m_classWeight;
     return stream;
+}
+
+bool WeightsVec::write(std::string const& filename) const
+{
+    std::ofstream out(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+    if(out.is_open())
+    {
+        out.write("WEIGHT", 6);
+        size_t noUnaries = m_unaryWeights.size();
+        out.write(reinterpret_cast<const char*>(&noUnaries), sizeof(noUnaries));
+        out.write(reinterpret_cast<const char*>(m_unaryWeights.data()), sizeof(m_unaryWeights[0]) * noUnaries);
+        size_t noPairwise = m_pairwiseWeights.size();
+        out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
+        out.write(reinterpret_cast<const char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
+        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_a), sizeof(m_featureWeights.m_a));
+        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_b), sizeof(m_featureWeights.m_b));
+        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_c), sizeof(m_featureWeights.m_c));
+        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_d), sizeof(m_featureWeights.m_d));
+        out.write(reinterpret_cast<const char*>(&m_classWeight), sizeof(m_classWeight));
+        out.close();
+        return true;
+    }
+    return false;
+}
+
+bool WeightsVec::read(std::string const& filename)
+{
+    std::ifstream in(filename, std::ios::in | std::ios::binary);
+    if(in.is_open())
+    {
+        char id[6];
+        in.read(id, 6);
+        if(std::strncmp(id, "WEIGHT", 6) != 0)
+        {
+            in.close();
+            return false;
+        }
+        size_t noUnaries;
+        in.read(reinterpret_cast<char*>(&noUnaries), sizeof(noUnaries));
+        m_unaryWeights.resize(noUnaries);
+        in.read(reinterpret_cast<char*>(m_unaryWeights.data()), sizeof(m_unaryWeights[0]) * noUnaries);
+        size_t noPairwise;
+        in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
+        m_pairwiseWeights.resize(noPairwise);
+        in.read(reinterpret_cast<char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
+        in.read(reinterpret_cast<char*>(&m_featureWeights.m_a), sizeof(m_featureWeights.m_a));
+        in.read(reinterpret_cast<char*>(&m_featureWeights.m_b), sizeof(m_featureWeights.m_b));
+        in.read(reinterpret_cast<char*>(&m_featureWeights.m_c), sizeof(m_featureWeights.m_c));
+        in.read(reinterpret_cast<char*>(&m_featureWeights.m_d), sizeof(m_featureWeights.m_d));
+        in.read(reinterpret_cast<char*>(&m_classWeight), sizeof(m_classWeight));
+        in.close();
+        return true;
+    }
+    return false;
 }
 
 Weight WeightsVec::FeatureWeights::a() const
