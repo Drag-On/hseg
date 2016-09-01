@@ -8,11 +8,9 @@ C 1.                    ; Constant factor
 pairwiseSigmaSq 0.05    ; Value of sigma square
 imageListFile "imageList.txt"        ; List of color images
 groundTruthListFile "imageList.txt"  ; List of ground truth images
-groundTruthSpListFile "imageList.txt"; List of superpixel segmentation of the ground truth images
 unaryListFile "imageList.txt"        ; List of unary score files
 imageBasePath "data/"        ; Directory that contains all the color images
 groundTruthBasePath "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"  ; Directory that contains all the ground truth images
-groundTruthSpBasePath "/home/jan/Dokumente/Git/hseg/spGroundTruth/"; Directory that contains all the superpixel segmentations of the ground truth images
 unaryBasePath "data/"        ; Directory that contains all the unary score files
 imageExtension .jpg
 gtExtension .png

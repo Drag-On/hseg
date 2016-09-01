@@ -18,11 +18,9 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, imageListFile, "")
                   PROP_DEFINE(std::string, groundTruthListFile, "")
-                  PROP_DEFINE(std::string, groundTruthSpListFile, "")
                   PROP_DEFINE(std::string, unaryListFile, "")
                   PROP_DEFINE(std::string, imageBasePath, "")
                   PROP_DEFINE(std::string, groundTruthBasePath, "")
-                  PROP_DEFINE(std::string, groundTruthSpBasePath, "")
                   PROP_DEFINE(std::string, unaryBasePath, "")
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
@@ -43,25 +41,6 @@ std::vector<std::string> readFileNames(std::string const& listFile)
     return list;
 }
 
-std::vector<Cluster> computeClusters(LabelImage const& sp, CieLabImage const& cieLab, LabelImage const& labeling, size_t numClusters, size_t numClasses)
-{
-    std::vector<Cluster> clusters(numClusters, Cluster(numClasses));
-    for (size_t i = 0; i < sp.pixels(); ++i)
-    {
-        assert(sp.atSite(i) < numClusters);
-        clusters[sp.atSite(i)].accumFeature += Feature(cieLab, i);
-        clusters[sp.atSite(i)].size++;
-        if (labeling.atSite(i) < numClasses)
-            clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)]++;
-    }
-    for (auto& c : clusters)
-    {
-        c.updateMean();
-        c.updateLabel();
-    }
-    return clusters;
-}
-
 int main()
 {
     // Read properties
@@ -73,6 +52,7 @@ int main()
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     size_t const numClasses = 21;
+    size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     WeightsVec curWeights(numClasses, 1, 0, 0, 0, 0, 0, 0); // Start with the result from the unary only
@@ -81,10 +61,8 @@ int main()
     // Load filenames of all images
     std::vector<std::string> colorImageFilenames = readFileNames(properties.imageListFile);
     std::vector<std::string> gtImageFilenames = readFileNames(properties.groundTruthListFile);
-    std::vector<std::string> gtSpImageFilenames = readFileNames(properties.groundTruthSpListFile);
     std::vector<std::string> unaryFilenames = readFileNames(properties.unaryListFile);
-    if (colorImageFilenames.size() != gtImageFilenames.size() || gtImageFilenames.size() != unaryFilenames.size() ||
-        gtImageFilenames.size() != gtSpImageFilenames.size())
+    if (colorImageFilenames.size() != gtImageFilenames.size() || gtImageFilenames.size() != unaryFilenames.size())
     {
         std::cerr << "File lists don't match up!" << std::endl;
         return -1;
@@ -103,23 +81,19 @@ int main()
         {
             auto colorImgFilename = colorImageFilenames[indices[n]];
             auto gtImageFilename = gtImageFilenames[indices[n]];
-            auto gtSpImageFilename = gtSpImageFilenames[indices[n]];
             auto unaryFilename = unaryFilenames[indices[n]];
 
             // Load images etc...
             RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
             rgbImage.read(properties.imageBasePath + colorImgFilename + properties.imageExtension);
             groundTruthRGB.read(properties.groundTruthBasePath + gtImageFilename + properties.gtExtension);
-            groundTruthSpRGB.read(properties.groundTruthSpBasePath + gtSpImageFilename + properties.gtExtension);
-            if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height() ||
-                rgbImage.width() != groundTruthSpRGB.width() || rgbImage.height() != groundTruthSpRGB.height())
+            if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
             {
                 std::cerr << "Image " << colorImageFilenames[n] << " and its ground truth don't match." << std::endl;
                 continue;
             }
             CieLabImage cieLabImage = rgbImage.getCieLabImg();
             LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-            LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
 
             UnaryFile unary(properties.unaryBasePath + unaryFilename + "_prob.dat");
             if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
@@ -135,17 +109,13 @@ int main()
 
             // Compute energy without weights on the ground truth
             EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
-            auto clusters = computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
-            auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, clusters);
+            EnergyFunction curWEnergy(unary, curWeights, properties.pairwiseSigmaSq);
+            Clusterer clusterer(curWEnergy);
+            clusterer.run(numClusters, numClasses, cieLabImage, groundTruth);
+            auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, clusterer.clustership(), clusterer.clusters());
 
             // Compute energy without weights on the prediction
-            clusters = computeClusters(result.superpixels, cieLabImage, result.labeling, properties.numClusters, numClasses);
-            auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
-                                                              clusters);
-
-            //float byWeight = predEnergy.sum();
-            //float normal = normalEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
-            //assert(std::abs(byWeight - normal) < std::max(byWeight, normal) * 0.001f);
+            auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
 
             std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
 
