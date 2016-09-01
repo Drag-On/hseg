@@ -119,11 +119,8 @@ int main()
             }
             CieLabImage cieLabImage = rgbImage.getCieLabImg();
             LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-
-            //cv::imshow("sp mat loaded", static_cast<cv::Mat>(groundTruthSpRGB));
-            //cv::waitKey();
-
             LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
+
             UnaryFile unary(properties.unaryBasePath + unaryFilename + "_prob.dat");
             if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
             {
