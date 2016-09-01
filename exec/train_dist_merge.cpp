@@ -18,6 +18,14 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(std::string, out, "out/weights.dat")
 )
 
+/**
+ * Arguments:
+ *  1 - Current iteration t
+ *  2 - Output file
+ * @param argc
+ * @param argv
+ * @param properties
+ */
 void parseArguments(int argc, char* argv[], TrainDistMergeProperties& properties)
 {
     if (argc > 1)

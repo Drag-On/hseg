@@ -17,13 +17,19 @@ PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE(std::string, groundTruthFile, "")
                   PROP_DEFINE(std::string, groundTruthSpFile, "")
                   PROP_DEFINE(std::string, unaryFile, "")
-                  PROP_DEFINE(std::string, imageBasePath, "")
-                  PROP_DEFINE(std::string, groundTruthBasePath, "")
-                  PROP_DEFINE(std::string, groundTruthSpBasePath, "")
-                  PROP_DEFINE(std::string, unaryBasePath, "")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
 )
 
+/**
+ * Arguments:
+ *  1 - Image file
+ *  2 - Ground truth file
+ *  3 - Unary file
+ *  4 - Output file
+ * @param argc
+ * @param argv
+ * @param properties
+ */
 void parseArguments(int argc, char* argv[], TrainDistPredProperties& properties)
 {
     if (argc > 1)
@@ -61,9 +67,9 @@ int main(int argc, char* argv[])
 
     // Load images etc...
     RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
-    rgbImage.read(properties.imageBasePath + properties.imageFile);
-    groundTruthRGB.read(properties.groundTruthBasePath + properties.groundTruthFile);
-    groundTruthSpRGB.read(properties.groundTruthSpBasePath + properties.groundTruthSpFile);
+    rgbImage.read(properties.imageFile);
+    groundTruthRGB.read(properties.groundTruthFile);
+    groundTruthSpRGB.read(properties.groundTruthSpFile);
     if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height() ||
         rgbImage.width() != groundTruthSpRGB.width() || rgbImage.height() != groundTruthSpRGB.height())
     {
@@ -74,7 +80,7 @@ int main(int argc, char* argv[])
     LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
     LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
 
-    UnaryFile unary(properties.unaryBasePath + properties.unaryFile);
+    UnaryFile unary(properties.unaryFile);
     if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
     {
         std::cerr << "Invalid unary scores " << properties.unaryFile << std::endl;
