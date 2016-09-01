@@ -15,3 +15,4 @@ unaryBasePath "data/"        ; Directory that contains all the unary score files
 imageExtension .jpg
 gtExtension .png
 out "out/weights.dat"           ; Directory to write results to
+stochastic false    ; Use stochastic gradient descent or not

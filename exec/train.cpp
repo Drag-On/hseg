@@ -8,7 +8,6 @@
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
-#include <Inference/k-prototypes/Clusterer.h>
 
 PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(size_t, numClusters, 300)
@@ -25,6 +24,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
+                  PROP_DEFINE(bool, stochastic, false)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -75,9 +75,11 @@ int main()
     // Iterate T times
     for(size_t t = 0; t < T; ++t)
     {
-        std::shuffle(indices.begin(), indices.end(), std::default_random_engine());
+        if (properties.stochastic)
+            std::shuffle(indices.begin(), indices.end(), std::default_random_engine());
+        WeightsVec sum(numClasses, 0, 0, 0, 0, 0, 0, 0); // All zeros
         // Iterate over all images
-        for(size_t n = 0; n < N; ++n)
+        for (size_t n = 0; n < N; ++n)
         {
             auto colorImgFilename = colorImageFilenames[indices[n]];
             auto gtImageFilename = gtImageFilenames[indices[n]];
@@ -121,10 +123,29 @@ int main()
 
             // Update step
             gtEnergy -= predEnergy;
-            gtEnergy *= properties.C / N;
-            gtEnergy += curWeights;
-            gtEnergy *= properties.learningRate / (t + n + 1);
-            curWeights -= gtEnergy;
+
+            if(properties.stochastic)
+            {
+                gtEnergy *= properties.C / N;
+                gtEnergy += curWeights;
+                gtEnergy *= properties.learningRate / (t + n + 1);
+                curWeights -= gtEnergy;
+
+                if(!curWeights.write(properties.out))
+                    std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+                std::cout << curWeights << std::endl;
+            }
+            else
+            {
+                sum += gtEnergy;
+            }
+        }
+        if(!properties.stochastic)
+        {
+            sum *= properties.C / N;
+            sum += curWeights;
+            sum *= properties.learningRate / (t + 1);
+            curWeights -= sum;
 
             if(!curWeights.write(properties.out))
                 std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
