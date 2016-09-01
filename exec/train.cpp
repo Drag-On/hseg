@@ -141,13 +141,8 @@ int main()
             auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, clusters);
 
             // Compute energy without weights on the prediction
-            clusters = computeClusters(result.superpixels, cieLabImage, result.labeling, properties.numClusters, numClasses);
             auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
-                                                              clusters);
-
-            //float byWeight = predEnergy.sum();
-            //float normal = normalEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
-            //assert(std::abs(byWeight - normal) < std::max(byWeight, normal) * 0.001f);
+                                                              result.clusterer.clusters());
 
             std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
 
