@@ -43,25 +43,6 @@ std::vector<std::string> readFileNames(std::string const& listFile)
     return list;
 }
 
-std::vector<Cluster> computeClusters(LabelImage const& sp, CieLabImage const& cieLab, LabelImage const& labeling, size_t numClusters, size_t numClasses)
-{
-    std::vector<Cluster> clusters(numClusters, Cluster(numClasses));
-    for (size_t i = 0; i < sp.pixels(); ++i)
-    {
-        assert(sp.atSite(i) < numClusters);
-        clusters[sp.atSite(i)].accumFeature += Feature(cieLab, i);
-        clusters[sp.atSite(i)].size++;
-        if (labeling.atSite(i) < numClasses)
-            clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)]++;
-    }
-    for (auto& c : clusters)
-    {
-        c.updateMean();
-        c.updateLabel();
-    }
-    return clusters;
-}
-
 int main()
 {
     // Read properties
@@ -137,7 +118,7 @@ int main()
 
             // Compute energy without weights on the ground truth
             EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
-            auto clusters = computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
+            auto clusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
             auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, clusters);
 
             // Compute energy without weights on the prediction
