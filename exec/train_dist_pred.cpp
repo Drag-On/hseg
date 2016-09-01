@@ -24,11 +24,24 @@ PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE(std::string, out, "out/weights.dat")
 )
 
-int main()
+void parseArguments(int argc, char* argv[], TrainDistPredProperties& properties)
+{
+    if (argc > 1)
+        properties.imageFile = std::string(argv[1]);
+    if (argc > 2)
+        properties.groundTruthFile = std::string(argv[2]);
+    if (argc > 3)
+        properties.unaryFile = std::string(argv[3]);
+    if (argc > 4)
+        properties.out = std::string(argv[4]);
+}
+
+int main(int argc, char* argv[])
 {
     // Read properties
     TrainDistPredProperties properties;
     properties.read("properties/training_dist_pred.info");
+    parseArguments(argc, argv, properties);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;

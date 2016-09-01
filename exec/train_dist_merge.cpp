@@ -18,11 +18,20 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(std::string, out, "out/weights.dat")
 )
 
-int main()
+void parseArguments(int argc, char* argv[], TrainDistMergeProperties& properties)
+{
+    if (argc > 1)
+        properties.t = std::atoi(argv[1]);
+    if (argc > 2)
+        properties.out = std::string(argv[2]);
+}
+
+int main(int argc, char* argv[])
 {
     // Read properties
     TrainDistMergeProperties properties;
     properties.read("properties/training_dist_merge.info");
+    parseArguments(argc, argv, properties);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
