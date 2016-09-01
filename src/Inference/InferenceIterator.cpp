@@ -17,10 +17,10 @@ InferenceIterator::InferenceIterator(EnergyFunction const& e, size_t numClusters
 
 InferenceResult InferenceIterator::run(size_t numIter)
 {
-    Clusterer clusterer(m_energy);
-    GraphOptimizer optimizer(m_energy);
+    InferenceResult result(m_energy);
+    Clusterer& clusterer = result.clusterer;
+    GraphOptimizer& optimizer = result.optimizer;
 
-    InferenceResult result;
     result.labeling = m_energy.unaryFile().maxLabeling();
     for (size_t iter = 0; iter < numIter; ++iter)
     {

@@ -6,6 +6,8 @@
 #define HSEG_INFERENCERESULT_H
 
 #include <Image/Image.h>
+#include <Inference/k-prototypes/Clusterer.h>
+#include <Inference/GraphOptimizer/GraphOptimizer.h>
 
 /**
  * Stores the final result from inference
@@ -15,6 +17,11 @@ struct InferenceResult
 public:
     LabelImage labeling; //< Class labeling
     LabelImage superpixels; //< Superpixel segmentation
+    Clusterer clusterer; //< Clusterer object
+    GraphOptimizer optimizer; //< Optimizer object
+
+    InferenceResult(EnergyFunction const& energy);
 };
+
 
 #endif //HSEG_INFERENCERESULT_H
