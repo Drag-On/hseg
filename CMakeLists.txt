@@ -72,6 +72,14 @@ add_executable(hseg_train exec/train.cpp)
 target_include_directories(hseg_train PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_train ${LIBS} hseg)
 
+### Compile distributed training executable ###
+add_executable(hseg_train_dist_pred exec/train_dist_pred.cpp)
+target_include_directories(hseg_train_dist_pred PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_train_dist_pred ${LIBS} hseg)
+add_executable(hseg_train_dist_merge exec/train_dist_merge.cpp)
+target_include_directories(hseg_train_dist_merge PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_train_dist_merge ${LIBS} hseg)
+
 ### Compile messy executable (i.e. the one where I do all my testing) ###
 add_executable(hseg_mess exec/messy.cpp)
 target_include_directories(hseg_mess PUBLIC ${INCLUDE_DIRS})
