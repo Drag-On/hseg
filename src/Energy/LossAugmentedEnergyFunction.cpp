@@ -13,7 +13,7 @@ LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unarie
     for(size_t i = 0; i < m_groundTruth.pixels(); ++i)
         if(m_groundTruth.atSite(i) < m_unaryScores.classes())
             m_lossFactor++;
-    m_lossFactor = 1;//1e8f / m_lossFactor;
+    m_lossFactor = 1e8f / m_lossFactor;
 }
 
 float LossAugmentedEnergyFunction::unaryCost(size_t i, Label l) const
