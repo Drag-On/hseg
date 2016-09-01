@@ -75,7 +75,7 @@ int main()
     size_t const numClasses = 21;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, false); // Zero-weights
+    WeightsVec curWeights(numClasses, 1, 0, 0, 0, 0, 0, 0); // Start with the result from the unary only
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
 
     // Load filenames of all images
