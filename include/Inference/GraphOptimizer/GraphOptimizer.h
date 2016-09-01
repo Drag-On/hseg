@@ -75,18 +75,21 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
     {
         auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
 
-        // Set up pixel neighbor connections
-        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
-        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
-        if (coordsR.x() < img.width())
+        if(m_energy.weights().hasPairwiseWeight())
         {
-            size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
-            graph.setNeighbors(i, siteR, 1);
-        }
-        if (coordsD.y() < img.height())
-        {
-            size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
-            graph.setNeighbors(i, siteD, 1);
+            // Set up pixel neighbor connections
+            decltype(coords) coordsR = {coords.x() + 1, coords.y()};
+            decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+            if (coordsR.x() < img.width())
+            {
+                size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
+                graph.setNeighbors(i, siteR, 1);
+            }
+            if (coordsD.y() < img.height())
+            {
+                size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
+                graph.setNeighbors(i, siteD, 1);
+            }
         }
 
         // Set up connection to auxiliary nodes

@@ -235,6 +235,17 @@ bool WeightsVec::read(std::string const& filename)
     return false;
 }
 
+bool WeightsVec::hasPairwiseWeight() const
+{
+    bool hasPairwise = false;
+    for(auto const& e : m_pairwiseWeights)
+    {
+        if(std::round(e) > 0)
+            return true;
+    }
+    return hasPairwise;
+}
+
 Weight WeightsVec::FeatureWeights::a() const
 {
     return std::max(0.f, m_a);

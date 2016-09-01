@@ -73,6 +73,11 @@ public:
     }
 
     /**
+     * @return True in case any pairwise weight is non-zero (when rounded), otherwise false
+     */
+    bool hasPairwiseWeight() const;
+
+    /**
      * Weight of the pairwise term
      * @param l1 First label
      * @param l2 Second label
