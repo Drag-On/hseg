@@ -49,6 +49,9 @@ int main()
                     properties.weights.label);
     if(!weights.read(properties.weights.file))
         std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;
+    std::cout << "Used weights:" << std::endl;
+    std::cout << weights << std::endl;
+
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, properties.numClusters));
 
     // Load images
