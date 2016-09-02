@@ -13,7 +13,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(float, learningRate, 1.f)
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
-                  PROP_DEFINE(std::string, weightFile, "")
+                  PROP_DEFINE(std::string, weightFile, "weights.dat")
                   PROP_DEFINE(std::string, in, "in/")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
 )
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
     size_t const numClasses = 21;
     WeightsVec curWeights(numClasses, false);
-    if(!curWeights.read(properties.weightFile))
+    if(!curWeights.read(properties.in + properties.weightFile))
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
         return -1;
