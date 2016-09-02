@@ -64,11 +64,11 @@ int main(int argc, char* argv[])
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
-    WeightsVec curWeights(numClasses);
+    WeightsVec curWeights(numClasses, 1, 0, 0, 0, 0, 0, 0);
     if(!curWeights.read(properties.weightFile))
     {
-        std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
-        return -1;
+        std::cout << "Couldn't read current weights from " << properties.weightFile << std::endl;
+        std::cout << "Using zero weights. This is only right if this is the first iteration." << std::endl;
     }
 
     // Load images etc...

@@ -22,6 +22,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
  * Arguments:
  *  1 - Current iteration t
  *  2 - Output file
+ *  3 - Input folder
  * @param argc
  * @param argv
  * @param properties
@@ -32,6 +33,8 @@ void parseArguments(int argc, char* argv[], TrainDistMergeProperties& properties
         properties.t = std::atoi(argv[1]);
     if (argc > 2)
         properties.out = std::string(argv[2]);
+    if (argc > 3)
+        properties.in = std::string(argv[3]);
 }
 
 int main(int argc, char* argv[])
