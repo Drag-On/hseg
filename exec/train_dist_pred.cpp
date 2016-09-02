@@ -27,6 +27,7 @@ PROPERTIES_DEFINE(TrainDistPred,
  *  3 - Ground truth superpixel file
  *  4 - Unary file
  *  5 - Output file
+ *  6 - Weight file
  * @param argc
  * @param argv
  * @param properties
@@ -43,6 +44,8 @@ void parseArguments(int argc, char* argv[], TrainDistPredProperties& properties)
         properties.unaryFile = std::string(argv[4]);
     if (argc > 5)
         properties.out = std::string(argv[5]);
+    if (argc > 6)
+        properties.weightFile = std::string(argv[6]);
 }
 
 int main(int argc, char* argv[])
