@@ -63,17 +63,20 @@ add_executable(hseg_cluster exec/clustering.cpp)
 target_include_directories(hseg_cluster PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_cluster ${LIBS} hseg)
 
-### Compile inference executable ###
+### Compile inference executables ###
 add_executable(hseg_infer exec/inference.cpp)
 target_include_directories(hseg_infer PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_infer ${LIBS} hseg)
+add_executable(hseg_infer_batch exec/inference_batch.cpp)
+target_include_directories(hseg_infer_batch PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_infer_batch ${LIBS} hseg)
 
 ### Compile training executable ###
 add_executable(hseg_train exec/train.cpp)
 target_include_directories(hseg_train PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_train ${LIBS} hseg)
 
-### Compile distributed training executable ###
+### Compile distributed training executables ###
 add_executable(hseg_train_dist_pred exec/train_dist_pred.cpp)
 target_include_directories(hseg_train_dist_pred PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_train_dist_pred ${LIBS} hseg)

@@ -1,0 +1,27 @@
+; Properties for hseg_infer
+;
+
+numClusters 300 ; Amount of clusters
+pairwiseSigmaSq 0.05 ; Value of sigma square
+imageList "imageList.txt" ; List of images to process
+imageDir "data/" ; Color image directory
+imageExtension ".jpg"
+unaryDir "data/" ; Directory with unary scores
+unaryExtension "_prob.dat"
+outDir "out/" ; Directory to write results to
+
+; Weights to use
+weights
+{
+    file out/weights.dat
+    unary 5
+    pairwise 500
+    feature
+    {
+        a 0.08
+        b 0.92
+        c 0.92
+        d 0.0
+    }
+    label 230.0
+}
