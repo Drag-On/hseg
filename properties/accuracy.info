@@ -1,0 +1,11 @@
+; Properties for hseg_cluster
+;
+
+; List of files to consider
+fileList "imageList.txt"
+
+; Directory containing the predictions
+predDir ""
+
+; Directory containing the ground truth
+gtDir ""

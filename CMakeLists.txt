@@ -71,6 +71,11 @@ add_executable(hseg_infer_batch exec/inference_batch.cpp)
 target_include_directories(hseg_infer_batch PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_infer_batch ${LIBS} hseg)
 
+### Compile accuracy executable ###
+add_executable(hseg_accy exec/accuracy.cpp)
+target_include_directories(hseg_accy PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_accy ${LIBS} hseg)
+
 ### Compile training executable ###
 add_executable(hseg_train exec/train.cpp)
 target_include_directories(hseg_train PUBLIC ${INCLUDE_DIRS})
