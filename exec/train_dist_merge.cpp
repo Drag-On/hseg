@@ -110,12 +110,16 @@ int main(int argc, char* argv[])
     trainEnergy *= properties.C / N;
     trainEnergy += 1.f/2.f * curWeights.sqNorm();
     std::cout << "Current training energy: " << trainEnergy << std::endl;
-    std::ofstream out(properties.out + "/training_energy.txt", std::ios::out | std::ios::app);
+    boost::filesystem::path energyFilePath(properties.out);
+    energyFilePath.remove_filename();
+    std::ofstream out(energyFilePath.string() + "/training_energy.txt", std::ios::out | std::ios::app);
     if(out.is_open())
     {
         out << properties.t << ": " << trainEnergy << std::endl;
         out.close();
     }
+    else
+        std::cerr << "Couldn't write current training energy to file " << energyFilePath << std::endl;
 
     return 0;
 }
