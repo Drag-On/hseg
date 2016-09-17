@@ -60,16 +60,19 @@ int main(int argc, char* argv[])
     WeightsVec sum(numClasses, false);
     boost::filesystem::path inPath(properties.in);
     size_t N = 0;
-    for(auto& file : boost::make_iterator_range(boost::filesystem::directory_iterator(inPath), {}))
+    for (auto& file : boost::make_iterator_range(boost::filesystem::directory_iterator(inPath), {}))
     {
-        WeightsVec vec(numClasses, false);
-        if(!vec.read(file.path().string()))
+        if (boost::filesystem::is_regular_file(file.path()))
         {
-            std::cerr << file.path() << " can not be read as a weights vector." << std::endl;
-            continue;
+            WeightsVec vec(numClasses, false);
+            if (!vec.read(file.path().string()))
+            {
+                std::cerr << file.path() << " can not be read as a weights vector." << std::endl;
+                continue;
+            }
+            sum += vec;
+            N++;
         }
-        sum += vec;
-        N++;
     }
     sum *= properties.C / N;
     sum += curWeights;
@@ -79,6 +82,40 @@ int main(int argc, char* argv[])
     if(!curWeights.write(properties.out))
         std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
     std::cout << curWeights << std::endl;
+
+    // Compute current training energy
+    float trainEnergy = 0;
+    boost::filesystem::path energyPath(properties.in + "/energy/");
+    boost::filesystem::directory_iterator endIter;
+    for (boost::filesystem::directory_iterator iter(energyPath); iter != endIter; ++iter)
+    {
+        // If it's not a directory, list it. If you want to list directories too, just remove this check.
+        if (boost::filesystem::is_regular_file(iter->path()) && iter->path().extension() == ".txt")
+        {
+            std::ifstream in(iter->path().string());
+            if(in.is_open())
+            {
+                float e = 0;
+                in >> e;
+                in.close();
+                trainEnergy += e;
+            }
+            else
+            {
+                std::cerr << "Couldn't read energy from file " << iter->path() << std::endl;
+                return -2;
+            }
+        }
+    }
+    trainEnergy *= properties.C / N;
+    trainEnergy += 1.f/2.f * curWeights.sqNorm();
+    std::cout << "Current training energy: " << trainEnergy << std::endl;
+    std::ofstream out(properties.out + "/training_energy.txt", std::ios::out | std::ios::app);
+    if(out.is_open())
+    {
+        out << properties.t << ": " << trainEnergy << std::endl;
+        out.close();
+    }
 
     return 0;
 }

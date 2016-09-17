@@ -8,6 +8,8 @@
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
 PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE(size_t, numClusters, 300)
@@ -113,6 +115,25 @@ int main(int argc, char* argv[])
     {
         std::cerr << "Couldn't write result to " << properties.out << std::endl;
         return -4;
+    }
+
+    // Compute training energy of this image and store it
+    float energyVal = energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    boost::filesystem::path energyPath(properties.out);
+    energyPath.remove_filename();
+    energyPath = energyPath / "energy";
+    boost::filesystem::create_directories(energyPath);
+    std::string filename = energyPath.string() + "/" + boost::filesystem::path(properties.imageFile).stem().string() + ".txt";
+    std::ofstream out(filename);
+    if(out.is_open())
+    {
+        out << energyVal << std::endl;
+        out.close();
+    }
+    else
+    {
+        std::cerr << "Couldn't write energy into file \"" << filename << "\"" << std::endl;
+        return -5;
     }
 
     return 0;
