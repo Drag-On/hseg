@@ -81,6 +81,8 @@ int main()
         if (properties.stochastic)
             std::shuffle(indices.begin(), indices.end(), std::default_random_engine());
         WeightsVec sum(numClasses, 0, 0, 0, 0, 0, 0, 0); // All zeros
+        float iterationEnergy = 0;
+
         // Iterate over all images
         for (size_t n = 0; n < N; ++n)
         {
@@ -115,6 +117,8 @@ int main()
             LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, groundTruth);
             InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
             InferenceResult result = inference.run(2);
+
+            iterationEnergy += energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
 
             // Compute energy without weights on the ground truth
             EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
@@ -156,6 +160,10 @@ int main()
             if(!curWeights.write(properties.out))
                 std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
             std::cout << curWeights << std::endl;
+
+            iterationEnergy *= properties.C / N;
+            iterationEnergy += 1.f/2.f * curWeights.sqNorm();
+            std::cout << "Current training energy: " << iterationEnergy << std::endl;
         }
     }
 

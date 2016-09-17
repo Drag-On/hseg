@@ -163,6 +163,23 @@ Weight WeightsVec::sumSuperpixel() const
     return result;
 }
 
+float WeightsVec::sqNorm() const
+{
+    float sqNorm = 0;
+
+    for (size_t i = 0; i < m_unaryWeights.size(); ++i)
+        sqNorm += m_unaryWeights[i] * m_unaryWeights[i];
+    for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        sqNorm += m_pairwiseWeights[i] * m_pairwiseWeights[i];
+    sqNorm += m_featureWeights.m_a * m_featureWeights.m_a;
+    sqNorm += m_featureWeights.m_b * m_featureWeights.m_b;
+    sqNorm += m_featureWeights.m_c * m_featureWeights.m_c;
+    sqNorm += m_featureWeights.m_d * m_featureWeights.m_d;
+    sqNorm += m_classWeight * m_classWeight;
+
+    return sqNorm;
+}
+
 std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights)
 {
     stream << "unary: ";

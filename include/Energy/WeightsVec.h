@@ -125,6 +125,11 @@ public:
     Weight sumSuperpixel() const;
 
     /**
+     * @return The squared norm of the vector
+     */
+    float sqNorm() const;
+
+    /**
      * Writes the weights vector to a file on harddisk
      * @param filename File to write to
      * @return True in case the file has been written properly, otherwise false
