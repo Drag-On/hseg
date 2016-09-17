@@ -23,6 +23,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
  *  1 - Current iteration t
  *  2 - Output file
  *  3 - Input folder
+ *  4 - Input weight file
  * @param argc
  * @param argv
  * @param properties
@@ -35,6 +36,8 @@ void parseArguments(int argc, char* argv[], TrainDistMergeProperties& properties
         properties.out = std::string(argv[2]);
     if (argc > 3)
         properties.in = std::string(argv[3]);
+    if (argc > 4)
+        properties.weightFile = std::string(argv[4]);
 }
 
 int main(int argc, char* argv[])
@@ -50,7 +53,7 @@ int main(int argc, char* argv[])
 
     size_t const numClasses = 21;
     WeightsVec curWeights(numClasses, false);
-    if(!curWeights.read(properties.in + properties.weightFile) && properties.t != 0)
+    if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
         return -1;
