@@ -52,6 +52,12 @@ public:
      */
     void join(LabelImage const& labeling, LabelImage const& groundTruth);
 
+    /**
+     * Convert to image
+     * @return Image
+     */
+    explicit operator cv::Mat() const;
+
 private:
     size_t m_numClasses;
     std::vector<size_t> m_mat; // First index is true label, second index is inferred label

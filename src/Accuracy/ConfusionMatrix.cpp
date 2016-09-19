@@ -87,6 +87,18 @@ void ConfusionMatrix::join(LabelImage const& labeling, LabelImage const& groundT
     }
 }
 
+ConfusionMatrix::operator cv::Mat() const
+{
+    cv::Mat img(m_numClasses, m_numClasses, CV_8UC1);
+    size_t max = *(std::max_element(m_mat.begin(), m_mat.end()));
+    for(Label i = 0; i < m_numClasses; ++i)
+    {
+        for(Label j = 0; j < m_numClasses; ++j)
+            img.at<unsigned char>(i, j) = at(i, j) * 255 / max;
+    }
+    return img;
+}
+
 std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf)
 {
     float mean = 0;

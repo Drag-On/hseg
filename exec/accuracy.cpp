@@ -10,6 +10,7 @@ PROPERTIES_DEFINE(Accuracy,
                   PROP_DEFINE(std::string, fileList, "")
                   PROP_DEFINE(std::string, predDir, "")
                   PROP_DEFINE(std::string, gtDir, "")
+                  PROP_DEFINE(std::string, outDir, "./")
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -89,6 +90,10 @@ int main()
     }
 
     std::cout << accuracy << std::endl;
+
+    cv::Mat confusionMat = static_cast<cv::Mat>(accuracy);
+    if(!cv::imwrite(properties.outDir + "confusion.png", confusionMat))
+        std::cerr << "Couldn't write confusion matrix to \"" + properties.outDir << "\"" << std::endl;
 
     return ERR_OK;
 }
