@@ -90,6 +90,15 @@ int main()
     }
 
     std::cout << accuracy << std::endl;
+    std::ofstream out(properties.outDir + "accuracy.txt");
+    if(out.is_open())
+    {
+        out << properties << std::endl << std::endl;
+        out << accuracy << std::endl;
+        out.close();
+    }
+    else
+        std::cerr << "Couldn't write accuracy to \"" + properties.outDir << "\"" << std::endl;
 
     cv::Mat confusionMat = static_cast<cv::Mat>(accuracy);
     if(!cv::imwrite(properties.outDir + "confusion.png", confusionMat))

@@ -90,11 +90,32 @@ void ConfusionMatrix::join(LabelImage const& labeling, LabelImage const& groundT
 ConfusionMatrix::operator cv::Mat() const
 {
     cv::Mat img(m_numClasses, m_numClasses, CV_8UC1);
-    size_t max = *(std::max_element(m_mat.begin(), m_mat.end()));
-    for(Label i = 0; i < m_numClasses; ++i)
+    // Compute row and column sums
+    /*std::vector<size_t> trueSum(m_numClasses, 0);
+    for(Label i = 0; i < m_numClasses; ++i) // true label
     {
-        for(Label j = 0; j < m_numClasses; ++j)
-            img.at<unsigned char>(i, j) = at(i, j) * 255 / max;
+        trueSum[i] = at(i, 0);
+        for(Label j = 1; j < m_numClasses; ++j) // predicted label
+            trueSum[i] += at(i, j);
+    }*/
+    std::vector<size_t> predSum(m_numClasses, 0);
+    for(Label j = 0; j < m_numClasses; ++j) // predicted label
+    {
+        predSum[j] = at(0, j);
+        for(Label i = 1; i < m_numClasses; ++i) // true label
+            predSum[j] += at(i, j);
+    }
+    // Normalize matrix
+    for(Label i = 0; i < m_numClasses; ++i) // true label
+    {
+        for(Label j = 0; j < m_numClasses; ++j) // predicted label
+        {
+            size_t sum = predSum[i];
+            if(sum > 0)
+                img.at<uchar>(i, j) = at(i, j) * 255 / sum;
+            else
+                img.at<uchar>(i, j) = 0;
+        }
     }
     return img;
 }
