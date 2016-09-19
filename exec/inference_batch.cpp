@@ -8,6 +8,7 @@
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/operations.hpp>
+#include <Threading/ThreadPool.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE(size_t, numClusters, 300)
@@ -18,6 +19,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE(std::string, unaryDir, "")
                   PROP_DEFINE(std::string, unaryExtension, ".dat")
                   PROP_DEFINE(std::string, outDir, "")
+                  PROP_DEFINE(unsigned short, numThreads, 4)
                   GROUP_DEFINE(weights,
                                PROP_DEFINE(std::string, file, "")
                                PROP_DEFINE(float, unary, 5.f)
@@ -124,16 +126,26 @@ int main()
     boost::filesystem::path basePath(properties.outDir);
     boost::filesystem::remove_all(basePath);
 
+    ThreadPool pool(properties.numThreads);
+    std::vector<std::future<bool>> futures;
+
     // Iterate all files
     for(auto const& f : filenames)
     {
         std::string const& imageFilename = properties.imageDir + f + properties.imageExtension;
         std::string const& unaryFilename = properties.unaryDir + f + properties.unaryExtension;
-        bool ok = process(imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties);
+        auto&& fut = pool.enqueue(process, imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties);
+        futures.push_back(std::move(fut));
+    }
+
+    // Wait for all the threads to finish
+    for(size_t i = 0; i < futures.size(); ++i)
+    {
+        bool ok = futures[i].get();
         if(!ok)
-            std::cerr << "Couldn't process image \"" + f + "\"" << std::endl;
+            std::cerr << "Couldn't process image \"" + filenames[i] + "\"" << std::endl;
         else
-            std::cout << "Done with \"" + f + "\"" << std::endl;
+            std::cout << "Done with \"" + filenames[i] + "\"" << std::endl;
     }
 
     return 0;
