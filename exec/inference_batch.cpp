@@ -124,7 +124,11 @@ int main()
 
     // Clear output directory
     boost::filesystem::path basePath(properties.outDir);
-    boost::filesystem::remove_all(basePath);
+    std::cout << "Clear output directory " << basePath << "? (y/N) ";
+    std::string response;
+    std::cin >> response;
+    if (response == "y" || response == "Y")
+        boost::filesystem::remove_all(basePath);
 
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<bool>> futures;
