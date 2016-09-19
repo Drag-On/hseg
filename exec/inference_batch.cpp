@@ -126,7 +126,7 @@ int main()
     boost::filesystem::path basePath(properties.outDir);
     std::cout << "Clear output directory " << basePath << "? (y/N) ";
     std::string response;
-    std::cin >> response;
+    std::getline(std::cin, response);
     if (response == "y" || response == "Y")
         boost::filesystem::remove_all(basePath);
 
