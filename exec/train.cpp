@@ -12,7 +12,7 @@
 PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(size_t, numClusters, 300)
                   PROP_DEFINE(size_t, numIter, 100)
-                  PROP_DEFINE(float, learningRate, 1.f)
+                  PROP_DEFINE(float, learningRate, 0.0001f)
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, imageListFile, "")
