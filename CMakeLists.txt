@@ -89,6 +89,11 @@ add_executable(hseg_train exec/train.cpp)
 target_include_directories(hseg_train PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_train ${LIBS} hseg)
 
+### Compile utility executable ###
+add_executable(hseg_util exec/util.cpp)
+target_include_directories(hseg_util PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(hseg_util ${LIBS} hseg)
+
 ### Compile distributed training executables ###
 add_executable(hseg_train_dist_pred exec/train_dist_pred.cpp)
 target_include_directories(hseg_train_dist_pred PUBLIC ${INCLUDE_DIRS})
