@@ -98,12 +98,12 @@ int main(int argc, char* argv[])
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, groundTruth);
     InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
-    InferenceResult result = inference.run(2);
+    InferenceResult result = inference.run();
 
     // Compute energy without weights on the ground truth
     EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
-    auto clusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
-    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, clusters);
+    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
+    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the prediction
     auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
@@ -118,7 +118,8 @@ int main(int argc, char* argv[])
     }
 
     // Compute training energy of this image and store it
-    float energyVal = energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    float energyVal = -energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    energyVal += energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
     boost::filesystem::path energyPath(properties.out);
     energyPath.remove_filename();
     energyPath = energyPath / "energy";

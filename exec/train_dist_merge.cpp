@@ -10,7 +10,7 @@
 PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(size_t, t, 0)
                   PROP_DEFINE(size_t, numClusters, 300)
-                  PROP_DEFINE(float, learningRate, 1.f)
+                  PROP_DEFINE(float, learningRate, 0.0001f)
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, weightFile, "weights.dat")
@@ -77,14 +77,6 @@ int main(int argc, char* argv[])
             N++;
         }
     }
-    sum *= properties.C / N;
-    sum += curWeights;
-    sum *= properties.learningRate / (properties.t + 1);
-    curWeights -= sum;
-
-    if(!curWeights.write(properties.out))
-        std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
-    std::cout << curWeights << std::endl;
 
     // Compute current training energy
     float trainEnergy = 0;
@@ -123,6 +115,17 @@ int main(int argc, char* argv[])
     }
     else
         std::cerr << "Couldn't write current training energy to file " << energyFilePath << std::endl;
+
+    // Update weights
+    sum *= properties.C / N;
+    sum += curWeights;
+    sum *= properties.learningRate / (properties.t + 1);
+    curWeights -= sum;
+
+    if(!curWeights.write(properties.out))
+        std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+    std::cout << curWeights << std::endl;
+
 
     return 0;
 }
