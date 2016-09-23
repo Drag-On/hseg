@@ -52,8 +52,8 @@ struct SampleResult
 SampleResult processSample(std::string const& colorImgFilename, std::string const& gtImageFilename,
                            std::string const& gtSpImageFilename, std::string const& unaryFilename,
                            TrainProperties const& properties, helper::image::ColorMap const& cmap,
-                           helper::image::ColorMap const& cmap2, size_t numClasses, WeightsVec const& curWeights,
-                           WeightsVec const& oneWeights)
+                           helper::image::ColorMap const& cmap2, size_t numClasses, size_t numClusters,
+                           WeightsVec const& curWeights, WeightsVec const& oneWeights)
 {
     SampleResult sampleResult;
 
@@ -84,12 +84,20 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run(2);
 
-    sampleResult.trainingEnergy = energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    /*cv::imshow("sp", static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2)));
+    cv::imshow("prediction", static_cast<cv::Mat>(helper::image::colorize(result.labeling, cmap)));
+    cv::imshow("unary", static_cast<cv::Mat>(helper::image::colorize(unary.maxLabeling(), cmap)));
+    cv::imshow("gt", static_cast<cv::Mat>(groundTruthRGB));
+    cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
+    cv::waitKey();*/
+
+    sampleResult.trainingEnergy -= energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
+    sampleResult.trainingEnergy += energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the ground truth
     EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
-    auto clusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
-    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, clusters);
+    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the prediction
     auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
@@ -114,6 +122,7 @@ int main()
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     size_t const numClasses = 21;
+    size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     WeightsVec curWeights(numClasses, 1, 0, 0, 0, 0, 0, 0); // Start with the result from the unary only
@@ -152,7 +161,7 @@ int main()
             auto unaryFilename = unaryFilenames[n];
 
             auto sampleResult = processSample(colorImgFilename, gtImageFilename, gtSpImageFilename, unaryFilename,
-                                              properties, cmap, cmap2, numClasses, curWeights, oneWeights);
+                                              properties, cmap, cmap2, numClasses, numClusters, curWeights, oneWeights);
 
             if(!sampleResult.valid)
             {
