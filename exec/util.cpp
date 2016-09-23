@@ -23,6 +23,7 @@ bool showWeight(std::string const& weightFile)
     std::cout << weightFile << ":" << std::endl;
     std::cout << w << std::endl;
     std::cout << "==========" << std::endl;
+    return true;
 }
 
 int main(int argc, char** argv)
