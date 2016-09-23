@@ -126,6 +126,7 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
     std::cout << curWeights << std::endl;
 
+    curWeights.write(energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat");
 
     return 0;
 }
