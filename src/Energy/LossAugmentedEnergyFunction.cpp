@@ -22,6 +22,6 @@ float LossAugmentedEnergyFunction::unaryCost(size_t i, Label l) const
     if (m_groundTruth.atSite(i) != l && m_groundTruth.atSite(i) < m_unaryScores.classes())
         loss = m_lossFactor;
 
-    return EnergyFunction::unaryCost(i, l) + loss;
+    return EnergyFunction::unaryCost(i, l) - loss;
 }
 
