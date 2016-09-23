@@ -26,7 +26,6 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
-                  PROP_DEFINE(bool, stochastic, false)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -70,26 +69,22 @@ int main()
         std::cerr << "File lists don't match up!" << std::endl;
         return -1;
     }
-    std::vector<size_t> indices(colorImageFilenames.size());
-    std::iota(indices.begin(), indices.end(), 0);
     size_t T = properties.numIter;
     size_t N = colorImageFilenames.size();
 
     // Iterate T times
     for(size_t t = 0; t < T; ++t)
     {
-        if (properties.stochastic)
-            std::shuffle(indices.begin(), indices.end(), std::default_random_engine());
         WeightsVec sum(numClasses, 0, 0, 0, 0, 0, 0, 0); // All zeros
         float iterationEnergy = 0;
 
         // Iterate over all images
         for (size_t n = 0; n < N; ++n)
         {
-            auto colorImgFilename = colorImageFilenames[indices[n]];
-            auto gtImageFilename = gtImageFilenames[indices[n]];
-            auto gtSpImageFilename = gtSpImageFilenames[indices[n]];
-            auto unaryFilename = unaryFilenames[indices[n]];
+            auto colorImgFilename = colorImageFilenames[n];
+            auto gtImageFilename = gtImageFilenames[n];
+            auto gtSpImageFilename = gtSpImageFilenames[n];
+            auto unaryFilename = unaryFilenames[n];
 
             // Load images etc...
             RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
@@ -133,38 +128,20 @@ int main()
 
             // Update step
             gtEnergy -= predEnergy;
-
-            if(properties.stochastic)
-            {
-                gtEnergy *= properties.C / N;
-                gtEnergy += curWeights;
-                gtEnergy *= properties.learningRate / (t + n + 1);
-                curWeights -= gtEnergy;
-
-                if(!curWeights.write(properties.out))
-                    std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
-                std::cout << curWeights << std::endl;
-            }
-            else
-            {
-                sum += gtEnergy;
-            }
+            sum += gtEnergy;
         }
-        if(!properties.stochastic)
-        {
-            sum *= properties.C / N;
-            sum += curWeights;
-            sum *= properties.learningRate / (t + 1);
-            curWeights -= sum;
+        sum *= properties.C / N;
+        sum += curWeights;
+        sum *= properties.learningRate / (t + 1);
+        curWeights -= sum;
 
-            if(!curWeights.write(properties.out))
-                std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
-            std::cout << curWeights << std::endl;
+        if (!curWeights.write(properties.out))
+            std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+        std::cout << curWeights << std::endl;
 
-            iterationEnergy *= properties.C / N;
-            iterationEnergy += 1.f/2.f * curWeights.sqNorm();
-            std::cout << "Current training energy: " << iterationEnergy << std::endl;
-        }
+        iterationEnergy *= properties.C / N;
+        iterationEnergy += 1.f / 2.f * curWeights.sqNorm();
+        std::cout << "Current training energy: " << iterationEnergy << std::endl;
     }
 
     return 0;
