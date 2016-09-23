@@ -170,6 +170,14 @@ public:
      * @return Reference to this
      */
     WeightsVec& operator*=(WeightsVec const& other);
+
+    std::vector<Weight>& unaryWeights();
+
+    std::vector<Weight>& pairwiseWeights();
+
+    FeatureWeights& featureWeights();
+
+    Weight& classWeight();
 };
 
 std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);

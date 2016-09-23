@@ -298,3 +298,23 @@ void WeightsVec::FeatureWeights::set(Weight a, Weight b, Weight c, Weight d)
     m_c = c;
     m_d = d;
 }
+
+std::vector<Weight>& WeightsVec::unaryWeights()
+{
+    return m_unaryWeights;
+}
+
+std::vector<Weight>& WeightsVec::pairwiseWeights()
+{
+    return m_pairwiseWeights;
+}
+
+WeightsVec::FeatureWeights& WeightsVec::featureWeights()
+{
+    return m_featureWeights;
+}
+
+Weight& WeightsVec::classWeight()
+{
+    return m_classWeight;
+}
