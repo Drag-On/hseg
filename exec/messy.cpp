@@ -57,6 +57,7 @@ trainingEnergy(std::vector<float> const& x, std::vector<int> const& gt, std::vec
         }
     }
     e +=  C / x.size() * sum;
+    e += 10;
     return e;
 }
 
@@ -69,7 +70,7 @@ int main()
     std::vector<int> predictions = {0, 0, 0, 0};
     int const maxLabel = 2;
 
-    size_t const T = 1000;
+    size_t const T = 5000;
     size_t const N = x.size();
     float const C = 1.f;
     float const eta = 0.03f;
