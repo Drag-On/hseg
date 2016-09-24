@@ -102,8 +102,7 @@ public:
      * @param j Second pixel id
      * @return The partial cost
      */
-    template<typename T>
-    float pairwisePixelWeight(ColorImage<T> const& img, size_t i, size_t j) const;
+    virtual float pairwisePixelWeight(CieLabImage const& img, size_t i, size_t j) const;
 
     /**
      * Computes the partial cost of a pairwise connection as given by the labels of the pixels
@@ -111,13 +110,7 @@ public:
      * @param l2 Second label
      * @return The partial cost
      */
-    inline float pairwiseClassWeight(Label l1, Label l2) const
-    {
-        if (l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
-            return 0;
-        else
-            return m_weights.pairwise(l1, l2);
-    }
+    virtual float pairwiseClassWeight(Label l1, Label l2) const;
 
     /**
      * Computes the feature distance between two features
@@ -141,13 +134,7 @@ public:
      * @param l2 Second class label
      * @return The class label distance
      */
-    inline float classDistance(Label l1, Label l2) const
-    {
-        if (l1 == l2 || l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
-            return 0;
-        else
-            return m_weights.classWeight();
-    }
+    virtual float classDistance(Label l1, Label l2) const;
 
     /**
      * Computes the pixel-to-cluster distance
@@ -156,10 +143,7 @@ public:
      * @param cl Cluster
      * @return The pixel-to-cluster distance
      */
-    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl) const
-    {
-        return featureDistance(fPx, cl.mean) + classDistance(lPx, cl.label);
-    }
+    virtual float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl) const;
 
     /**
      * Simple potts model.
@@ -225,17 +209,6 @@ void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, C
             }
         }
     }
-}
-
-template<typename T>
-float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, size_t j) const
-{
-    float rDiff = img.atSite(i, 0) - img.atSite(j, 0);
-    float gDiff = img.atSite(i, 1) - img.atSite(j, 1);
-    float bDiff = img.atSite(i, 2) - img.atSite(j, 2);
-    float colorDiffNormSq = rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-    float weight = std::exp(-m_pairWiseSigmaSq * colorDiffNormSq);
-    return weight;
 }
 
 template<typename T>

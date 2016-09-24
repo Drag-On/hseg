@@ -118,8 +118,8 @@ int main(int argc, char* argv[])
     }
 
     // Compute training energy of this image and store it
-    float energyVal = -energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
-    energyVal += energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
+    float energyVal = +energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    energyVal -= energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
     boost::filesystem::path energyPath(properties.out);
     energyPath.remove_filename();
     energyPath = energyPath / "energy";
