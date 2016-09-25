@@ -49,7 +49,7 @@ trainingEnergy(std::vector<float> const& x, std::vector<int> const& gt, std::vec
     float sum = 0;
     for(size_t n = 0; n < x.size(); ++n)
     {
-        sum += -loss(pred[n], gt[n]) - energy(x[n], gt[n], -w) + energy(x[n], pred[n], -w);
+        sum += loss(pred[n], gt[n]) + energy(x[n], gt[n], w) - energy(x[n], pred[n], w);
         if(lossVal != nullptr)
         {
             int y = predict(x[n], w, x.size());
@@ -73,21 +73,17 @@ int main()
     size_t const T = 5000;
     size_t const N = x.size();
     float const C = 1.f;
-    float const eta = 0.03f;
+    float const eta = 0.3f;
 
-    float wCur = 0;
-    float loss = 0;
+    float wCur = -10.f;
     std::vector<float> trainingEnergies;
-    float e = trainingEnergy(x, gt, y, wCur, C, &loss);
-    trainingEnergies.push_back(e);
-    std::cout << "Initial training energy = " << e << " | Loss = " << loss << std::endl;
     for (size_t t = 0; t < T; ++t)
     {
         std::cout << "Iteration " << t << std::endl;
         float sum = 0;
         for(size_t n = 0; n < N; ++n)
         {
-            int pred = predict(x[n], -wCur, maxLabel, gt[n]);
+            int pred = predict(x[n], wCur, maxLabel, gt[n]);
             y[n] = pred;
             float predEnergy = energy(x[n], pred, 1);
             float gtEnergy = energy(x[n], gt[n], 1);
@@ -97,12 +93,15 @@ int main()
             std::cout << n << ": " << predictions[n] << "/" << gt[n] << " | ";
         }
         std::cout << std::endl;
+
+        float loss = 0;
+        float e = trainingEnergy(x, gt, y, wCur, C, &loss);
+        trainingEnergies.push_back(e);
+        std::cout << "Training energy = " << e << " | Loss = " << loss << std::endl;
+
         float p = wCur + C/N * sum;
         wCur -= eta / (t+1) * p;
         std::cout << "New wCur = " << wCur << std::endl;
-        e = trainingEnergy(x, gt, y, wCur, C, &loss);
-        trainingEnergies.push_back(e);
-        std::cout << "Training energy = " << e << " | Loss = " << loss << std::endl;
     }
 
     std::cout << "-----------" << std::endl;
