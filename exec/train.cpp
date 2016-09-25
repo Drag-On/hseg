@@ -91,9 +91,9 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
     cv::waitKey();*/
 
-    sampleResult.trainingEnergy += energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    sampleResult.trainingEnergy -= energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
     auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
-    sampleResult.trainingEnergy -= energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
+    sampleResult.trainingEnergy += energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the ground truth
     EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);

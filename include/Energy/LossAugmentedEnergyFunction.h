@@ -24,18 +24,9 @@ public:
 
     virtual float unaryCost(size_t i, Label l) const override;
 
-    float pairwisePixelWeight(CieLabImage const& img, size_t i, size_t j) const override;
-
-    float pairwiseClassWeight(Label l1, Label l2) const override;
-
-    float classDistance(Label l1, Label l2) const override;
-
-    float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl) const override;
-
 private:
     LabelImage const& m_groundTruth;
     float m_lossFactor;
-    float m_constant = 1000000;
 };
 
 

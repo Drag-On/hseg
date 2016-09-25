@@ -31,24 +31,6 @@ float EnergyFunction::unaryCost(size_t i, Label l) const
     return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
 }
 
-float EnergyFunction::pairwisePixelWeight(CieLabImage const& img, size_t i, size_t j) const
-{
-    float rDiff = img.atSite(i, 0) - img.atSite(j, 0);
-    float gDiff = img.atSite(i, 1) - img.atSite(j, 1);
-    float bDiff = img.atSite(i, 2) - img.atSite(j, 2);
-    float colorDiffNormSq = rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-    float weight = std::exp(-m_pairWiseSigmaSq * colorDiffNormSq);
-    return weight;
-}
-
-float EnergyFunction::pairwiseClassWeight(Label l1, Label l2) const
-{
-    if (l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
-        return 0;
-    else
-        return m_weights.pairwise(l1, l2);
-}
-
 float EnergyFunction::featureDistance(Feature const& feature, Feature const& feature2) const
 {
     auto const xDiff = feature.x() - feature2.x();
@@ -75,19 +57,6 @@ void EnergyFunction::computeFeatureDistanceByWeight(Feature const& feature, Feat
     Weight new_c = energyW.m_featureWeights.c() + yDiff * yDiff;
     Weight new_d = energyW.m_featureWeights.d() + 2 * (xDiff * yDiff);
     energyW.m_featureWeights.set(new_a, new_b, new_c, new_d);
-}
-
-float EnergyFunction::classDistance(Label l1, Label l2) const
-{
-    if (l1 == l2 || l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
-        return 0;
-    else
-        return m_weights.classWeight();
-}
-
-float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl) const
-{
-    return featureDistance(fPx, cl.mean) + classDistance(lPx, cl.label);
 }
 
 UnaryFile const& EnergyFunction::unaryFile() const
