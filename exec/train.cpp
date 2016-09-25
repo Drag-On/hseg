@@ -8,6 +8,7 @@
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
+#include <Threading/ThreadPool.h>
 
 PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(size_t, numClusters, 300)
@@ -26,6 +27,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
+                  PROP_DEFINE(size_t, numThreads, 4)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -138,7 +140,7 @@ int main()
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 1, 0, 0, 0, 0, 0, 0); // Start with the result from the unary only
+    WeightsVec curWeights(numClasses, 100, 0, 0, 0, 0, 0, 0); // Start with the result from the unary only
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
 
     std::cout << "====================" << std::endl;
@@ -159,11 +161,15 @@ int main()
     size_t T = properties.numIter;
     size_t N = colorImageFilenames.size();
 
+    ThreadPool pool(properties.numThreads);
+    std::vector<std::future<SampleResult>> futures;
+
     // Iterate T times
     for(size_t t = 0; t < T; ++t)
     {
         WeightsVec sum(numClasses, 0, 0, 0, 0, 0, 0, 0); // All zeros
         float iterationEnergy = 0;
+        futures.clear();
 
         // Iterate over all images
         for (size_t n = 0; n < N; ++n)
@@ -173,9 +179,15 @@ int main()
             auto gtSpImageFilename = gtSpImageFilenames[n];
             auto unaryFilename = unaryFilenames[n];
 
-            auto sampleResult = processSample(colorImgFilename, gtImageFilename, gtSpImageFilename, unaryFilename,
-                                              properties, cmap, cmap2, numClasses, numClusters, curWeights, oneWeights);
+            auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, gtSpImageFilename,
+                                      unaryFilename, properties, cmap, cmap2, numClasses, numClusters, curWeights,
+                                      oneWeights);
+            futures.push_back(std::move(fut));
+        }
 
+        for(size_t n = 0; n < futures.size(); ++n)
+        {
+            auto sampleResult = futures[n].get();
             if(!sampleResult.valid)
             {
                 std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
