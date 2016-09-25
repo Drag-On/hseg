@@ -91,9 +91,22 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
     cv::waitKey();*/
 
-    sampleResult.trainingEnergy -= energy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq);
+    sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
     auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
-    sampleResult.trainingEnergy += energy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
+    sampleResult.trainingEnergy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
+
+    // Compute loss
+    float lossFactor = 0;
+    for(size_t i = 0; i < groundTruth.pixels(); ++i)
+        if(groundTruth.atSite(i) < unary.classes())
+            lossFactor++;
+    lossFactor = 1e8f / lossFactor;
+    float loss = 0;
+    for(size_t i = 0; i < groundTruth.pixels(); ++i)
+        if (groundTruth.atSite(i) != result.labeling.atSite(i) && groundTruth.atSite(i) < unary.classes())
+            loss += lossFactor;
+    sampleResult.trainingEnergy += loss;
 
     // Compute energy without weights on the ground truth
     EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
@@ -177,7 +190,7 @@ int main()
 
         // Show current training energy
         iterationEnergy *= properties.C / N;
-        iterationEnergy += 1.f / 2.f * curWeights.sqNorm();
+        iterationEnergy += curWeights.sqNorm() / 2.f;
         std::cout << "Current training energy: " << iterationEnergy << std::endl;
 
         // Update step
