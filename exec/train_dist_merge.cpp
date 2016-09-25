@@ -10,7 +10,7 @@
 PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(size_t, t, 0)
                   PROP_DEFINE(size_t, numClusters, 300)
-                  PROP_DEFINE(float, learningRate, 0.0001f)
+                  PROP_DEFINE(float, learningRate, 1e-15f)
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, weightFile, "weights.dat")
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
         }
     }
     trainEnergy *= properties.C / N;
-    trainEnergy += 1.f/2.f * curWeights.sqNorm();
+    trainEnergy += curWeights.sqNorm() / 2.f;
     std::cout << "Current training energy: " << trainEnergy << std::endl;
     boost::filesystem::path energyFilePath(properties.out);
     energyFilePath.remove_filename();
