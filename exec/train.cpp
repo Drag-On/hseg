@@ -44,6 +44,124 @@ std::vector<std::string> readFileNames(std::string const& listFile)
     return list;
 }
 
+struct TrainingEnergy
+{
+    float total = 0;
+    float pred = 0;
+    float gt = 0;
+    float loss = 0;
+    float regularizer = 0;
+
+    TrainingEnergy& operator+=(TrainingEnergy const& other)
+    {
+        total += other.total;
+        pred += other.pred;
+        gt += other.gt;
+        loss += other.loss;
+        regularizer += other.regularizer;
+        return *this;
+    }
+};
+
+std::ostream& operator<<(std::ostream& stream, TrainingEnergy const& e)
+{
+    stream << "Total: " << e.total << " ( pred: " << e.pred << ", gt: " << e.gt << ", loss: " << e.loss << ", regularizer: " << e.regularizer << ")";
+    return stream;
+}
+
+TrainingEnergy
+computeTrainingSampleEnergy(WeightsVec const& weights, UnaryFile const& unary, CieLabImage const& cieLabImg,
+                            LabelImage const& maxLabeling, LabelImage const& maxSp, LabelImage const& gtImg,
+                            LabelImage const& gtSpImg, float pairwiseSigmaSq, size_t numClusters, size_t numClasses,
+                            float C, size_t N)
+{
+    TrainingEnergy e;
+    EnergyFunction trainingEnergy(unary, weights, pairwiseSigmaSq);
+
+    float cOverN = C / N;
+
+    // Energy on prediction
+    auto clusters = Clusterer::computeClusters(maxSp, cieLabImg, maxLabeling, numClusters, numClasses);
+    e.pred = cOverN * trainingEnergy.giveEnergy(maxLabeling, cieLabImg, maxSp, clusters);
+    e.total -= e.pred;
+
+    // Energy on ground truth
+    auto gtClusters = Clusterer::computeClusters(gtSpImg, cieLabImg, gtImg, numClusters, numClasses);
+    e.gt = cOverN * trainingEnergy.giveEnergy(gtImg, cieLabImg, gtSpImg, gtClusters);
+    e.total += e.gt;
+
+    // Loss
+    float lossFactor = 0;
+    for(size_t i = 0; i < gtImg.pixels(); ++i)
+        if(gtImg.atSite(i) < unary.classes())
+            lossFactor++;
+    lossFactor = 1e8f / lossFactor;
+    for(size_t i = 0; i < gtImg.pixels(); ++i)
+        if (gtImg.atSite(i) != maxLabeling.atSite(i) && gtImg.atSite(i) < unary.classes())
+            e.loss += lossFactor;
+    e.loss *= cOverN;
+    e.total += e.loss;
+
+    return e;
+}
+
+TrainingEnergy computeTrainingEnergy(std::vector<std::string> const& clrImgs, std::vector<std::string> const& gtImgs,
+                                     std::vector<std::string> const& gtSpImgs, std::vector<std::string> const& unaries,
+                                     WeightsVec const& weights, float pairwiseSigmaSq, size_t numClusters,
+                                     size_t numClasses, float C, TrainProperties const& props,
+                                     helper::image::ColorMap const cmap, helper::image::ColorMap const& cmap2)
+{
+    TrainingEnergy totalE;
+    size_t N = clrImgs.size();
+
+    ThreadPool pool(props.numThreads);
+    std::vector<std::future<TrainingEnergy>> futures;
+
+    auto doOneSample = [&](size_t n) -> TrainingEnergy
+    {
+        // Load images etc...
+        RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
+        rgbImage.read(props.imageBasePath + clrImgs[n] + props.imageExtension);
+        groundTruthRGB.read(props.groundTruthBasePath + gtImgs[n] + props.gtExtension);
+        groundTruthSpRGB.read(props.groundTruthSpBasePath + gtSpImgs[n] + props.gtExtension);
+
+        CieLabImage cieLabImage = rgbImage.getCieLabImg();
+        LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
+        LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
+
+        UnaryFile unary(props.unaryBasePath + unaries[n] + "_prob.dat");
+
+        // Predict with loss-augmented energy
+        LossAugmentedEnergyFunction energy(unary, weights, pairwiseSigmaSq, groundTruth);
+        InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
+        InferenceResult result = inference.run(2);
+
+        // Compute training sample energy
+        TrainingEnergy e = computeTrainingSampleEnergy(weights, unary, cieLabImage, result.labeling, result.superpixels,
+                                                       groundTruth, groundTruthSp, pairwiseSigmaSq, numClusters,
+                                                       numClasses, C, N);
+        return e;
+    };
+
+    for (size_t n = 0; n < N; ++n)
+    {
+        auto&& fut = pool.enqueue(doOneSample, n);
+        futures.push_back(std::move(fut));
+    }
+
+    for(size_t n = 0; n < N; ++n)
+    {
+        TrainingEnergy e = futures[n].get();
+        std::cout << "Sample " << n << std::endl;
+        std::cout << "---> " << e << std::endl;
+        totalE += e;
+    }
+
+    // Add regularizer
+    totalE.regularizer = weights.sqNorm() / 2.f;
+    return totalE;
+}
+
 struct SampleResult
 {
     WeightsVec energyDiff{21ul, false};
@@ -94,7 +212,8 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::waitKey();*/
 
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq);
-    sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, numClusters, numClasses);
+    sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
     auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
     sampleResult.trainingEnergy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
@@ -116,7 +235,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
 
     // Compute energy without weights on the prediction
     auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
-                                                      result.clusterer.clusters());
+                                                      clusters);
     // Compute energy difference
     gtEnergy -= predEnergy;
 
@@ -124,7 +243,6 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     sampleResult.valid = true;
     return sampleResult;
 }
-
 
 int main()
 {
@@ -140,7 +258,7 @@ int main()
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 100, 0, 0, 0, 0, 0, 0); // Start with the result from the unary only
+    WeightsVec curWeights(numClasses, 5, 0, 0.08, 0.92, 0.92, 0, 230); // Start with the result from the unary only
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
 
     std::cout << "====================" << std::endl;
@@ -160,6 +278,19 @@ int main()
     }
     size_t T = properties.numIter;
     size_t N = colorImageFilenames.size();
+
+
+    // DEBUG //
+
+    /*auto e = computeTrainingEnergy(colorImageFilenames, gtImageFilenames, gtSpImageFilenames, unaryFilenames,
+                                   curWeights, properties.pairwiseSigmaSq, numClusters, numClasses, properties.C,
+                                   properties, cmap, cmap2);
+    std::cout << "Total" << std::endl;
+    std::cout << "---> " << e << std::endl;
+
+    return 0;*/
+
+
 
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<SampleResult>> futures;

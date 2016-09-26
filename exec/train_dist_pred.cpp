@@ -106,8 +106,8 @@ int main(int argc, char* argv[])
     auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the prediction
-    auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
-                                                      result.clusterer.clusters());
+    auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, properties.numClusters, numClasses);
+    auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels, clusters);
 
     // Compute difference and store result
     gtEnergy -= predEnergy;
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 
     // Compute training energy of this image and store it
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq);
-    float energyVal = -trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, result.clusterer.clusters());
+    float energyVal = -trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
     energyVal += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
     // Compute loss
     float lossFactor = 0;

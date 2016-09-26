@@ -3,7 +3,7 @@
 
 numClusters 300         ; Amount of clusters
 numIter 100             ; Amount of iterations
-learningRate 1e-15      ; Learning rate
+learningRate 1e-14      ; Learning rate
 C 1.                    ; Constant factor
 pairwiseSigmaSq 0.05    ; Value of sigma square
 imageListFile "imageList.txt"        ; List of color images
