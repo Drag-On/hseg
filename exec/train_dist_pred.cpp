@@ -61,6 +61,13 @@ int main(int argc, char* argv[])
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
+    // Check if there already is a result file
+    if(boost::filesystem::exists(properties.out))
+    {
+        std::cout << "Result for " << properties.imageFile << " already exists in " << properties.out << ". Skipping." << std::endl;
+        return 0;
+    }
+
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
