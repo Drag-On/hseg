@@ -110,7 +110,7 @@ template<typename T>
 void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     // Randomly select k objects as initial prototypes
-    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
+    std::default_random_engine generator(0/*std::chrono::system_clock::now().time_since_epoch().count()*/);
     std::uniform_int_distribution<size_t> distribution(0, color.pixels() - 1);
     for (auto& c : m_clusters)
     {
