@@ -9,7 +9,6 @@
 
 PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(size_t, t, 0)
-                  PROP_DEFINE(size_t, numClusters, 300)
                   PROP_DEFINE(float, learningRate, 1e-10f)
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
