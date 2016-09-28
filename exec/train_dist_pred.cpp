@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
     if(!curWeights.read(properties.weightFile))
     {
         std::cout << "Couldn't read current weights from " << properties.weightFile << std::endl;
-        std::cout << "Using zero weights. This is only right if this is the first iteration." << std::endl;
+        std::cout << "Using default weights. This is only right if this is the first iteration." << std::endl;
     }
 
     // Load images etc...
