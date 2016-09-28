@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     size_t const numClasses = 21;
-    WeightsVec curWeights(numClasses, false);
+    WeightsVec curWeights(numClasses, 5, 0, 0.08, 0.92, 0.92, 0, 230);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
