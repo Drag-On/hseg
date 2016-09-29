@@ -103,12 +103,13 @@ int main(int argc, char* argv[])
     }
     trainEnergy *= properties.C / N;
     trainEnergy += curWeights.sqNorm() / 2.f;
-    std::cout << "Current training energy: " << trainEnergy << std::endl;
+    std::cout << "Current training energy: " << std::setprecision(std::numeric_limits<decltype(trainEnergy)>::max_digits10) << trainEnergy << std::endl;
     boost::filesystem::path energyFilePath(properties.out);
     energyFilePath.remove_filename();
     std::ofstream out(energyFilePath.string() + "/training_energy.txt", std::ios::out | std::ios::app);
     if(out.is_open())
     {
+        out.precision(std::numeric_limits<decltype(trainEnergy)>::max_digits10);
         out << properties.t << ": " << trainEnergy << std::endl;
         out.close();
     }

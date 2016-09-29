@@ -147,6 +147,7 @@ int main(int argc, char* argv[])
     std::ofstream out(filename);
     if(out.is_open())
     {
+        out.precision(std::numeric_limits<decltype(energyVal)>::max_digits10);
         out << energyVal << std::endl;
         out.close();
     }
