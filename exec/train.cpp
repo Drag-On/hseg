@@ -26,6 +26,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, unaryBasePath, "")
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
+                  PROP_DEFINE(std::string, in, "")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
                   PROP_DEFINE(size_t, numThreads, 4)
 )
@@ -258,7 +259,9 @@ int main()
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 5, 0, 0.08, 0.92, 0.92, 0, 230); // Start with the result from the unary only
+    WeightsVec curWeights(numClasses, 5, 0, 0.08, 0.92, 0.92, 0, 230);
+    if(!curWeights.read(properties.in))
+        std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
 
     std::cout << "====================" << std::endl;
