@@ -12,59 +12,34 @@
 #include <boost/filesystem/operations.hpp>
 
 PROPERTIES_DEFINE(TrainDistPred,
-                  PROP_DEFINE(size_t, numClusters, 300)
-                  PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
-                  PROP_DEFINE(std::string, weightFile, "")
-                  PROP_DEFINE(std::string, imageFile, "")
-                  PROP_DEFINE(std::string, groundTruthFile, "")
-                  PROP_DEFINE(std::string, groundTruthSpFile, "")
-                  PROP_DEFINE(std::string, unaryFile, "")
-                  PROP_DEFINE(std::string, out, "out/weights.dat")
+                  PROP_DEFINE_A(size_t, numClusters, 300, -c)
+                  PROP_DEFINE_A(float, pairwiseSigmaSq, 0.05f, -s)
+                  PROP_DEFINE_A(std::string, weightFile, "", -w)
+                  PROP_DEFINE_A(std::string, imageFile, "", -i)
+                  PROP_DEFINE_A(std::string, groundTruthFile, "", -g)
+                  PROP_DEFINE_A(std::string, unaryFile, "", -u)
+                  PROP_DEFINE_A(std::string, out, "out/", -o)
 )
-
-/**
- * Arguments:
- *  1 - Image file
- *  2 - Ground truth file
- *  3 - Ground truth superpixel file
- *  4 - Unary file
- *  5 - Output file
- *  6 - Weight file
- * @param argc
- * @param argv
- * @param properties
- */
-void parseArguments(int argc, char* argv[], TrainDistPredProperties& properties)
-{
-    if (argc > 1)
-        properties.imageFile = std::string(argv[1]);
-    if (argc > 2)
-        properties.groundTruthFile = std::string(argv[2]);
-    if (argc > 3)
-        properties.groundTruthSpFile = std::string(argv[3]);
-    if (argc > 4)
-        properties.unaryFile = std::string(argv[4]);
-    if (argc > 5)
-        properties.out = std::string(argv[5]);
-    if (argc > 6)
-        properties.weightFile = std::string(argv[6]);
-}
 
 int main(int argc, char* argv[])
 {
     // Read properties
     TrainDistPredProperties properties;
     properties.read("properties/training_dist_pred.info");
-    parseArguments(argc, argv, properties);
+    properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     // Check if there already is a result file
-    if(boost::filesystem::exists(properties.out))
+    boost::filesystem::path imgNamePath(properties.imageFile);
+    std::string imgName = imgNamePath.filename().stem().string();
+    std::string labelPath = properties.out + "labeling/" + imgName + ".png";
+    std::string spPath = properties.out + "sp/" + imgName + ".png";
+    if(boost::filesystem::exists(labelPath) && boost::filesystem::exists(spPath))
     {
-        std::cout << "Result for " << properties.imageFile << " already exists in " << properties.out << ". Skipping." << std::endl;
+        std::cout << "Result for " << properties.imageFile << " already exists in " << labelPath << " and " << spPath << ". Skipping." << std::endl;
         return 0;
     }
 
@@ -72,7 +47,6 @@ int main(int argc, char* argv[])
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
     WeightsVec curWeights(numClasses, 5, 0, 0.08, 0.92, 0.92, 0, 230);
     if(!curWeights.read(properties.weightFile))
     {
@@ -84,16 +58,13 @@ int main(int argc, char* argv[])
     RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
     rgbImage.read(properties.imageFile);
     groundTruthRGB.read(properties.groundTruthFile);
-    groundTruthSpRGB.read(properties.groundTruthSpFile);
-    if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height() ||
-        rgbImage.width() != groundTruthSpRGB.width() || rgbImage.height() != groundTruthSpRGB.height())
+    if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
     {
         std::cerr << "Image " << properties.imageFile << " and its ground truth don't match." << std::endl;
         return -2;
     }
     CieLabImage cieLabImage = rgbImage.getCieLabImg();
     LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-    LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
 
     UnaryFile unary(properties.unaryFile);
     if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
@@ -104,57 +75,28 @@ int main(int argc, char* argv[])
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, groundTruth);
-    InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
+    InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run();
 
-    // Compute energy without weights on the ground truth
-    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
-    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, properties.numClusters, numClasses);
-    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
+    // Store prediction
+    cv::Mat labeling = static_cast<cv::Mat>(helper::image::colorize(result.labeling, cmap));
+    cv::Mat sp = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2));
 
-    // Compute energy without weights on the prediction
-    auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, properties.numClusters, numClasses);
-    auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels, clusters);
-
-    // Compute difference and store result
-    gtEnergy -= predEnergy;
-    if(!gtEnergy.write(properties.out))
+    if(labeling.empty() || sp.empty())
     {
-        std::cerr << "Couldn't write result to " << properties.out << std::endl;
+        std::cerr << "Predicted labeling and/or superpixels invalid." << std::endl;
         return -4;
     }
 
-    // Compute training energy of this image and store it
-    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq);
-    float energyVal = -trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
-    energyVal += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
-    // Compute loss
-    float lossFactor = 0;
-    for(size_t i = 0; i < groundTruth.pixels(); ++i)
-        if(groundTruth.atSite(i) < unary.classes())
-            lossFactor++;
-    lossFactor = 1e8f / lossFactor;
-    float loss = 0;
-    for(size_t i = 0; i < groundTruth.pixels(); ++i)
-        if (groundTruth.atSite(i) != result.labeling.atSite(i) && groundTruth.atSite(i) < unary.classes())
-            loss += lossFactor;
-    energyVal += loss;
-    boost::filesystem::path energyPath(properties.out);
-    energyPath.remove_filename();
-    energyPath = energyPath / "energy";
-    boost::filesystem::create_directories(energyPath);
-    std::string filename = energyPath.string() + "/" + boost::filesystem::path(properties.imageFile).stem().string() + ".txt";
-    std::ofstream out(filename);
-    if(out.is_open())
+    if(!cv::imwrite(labelPath, labeling))
     {
-        out.precision(std::numeric_limits<decltype(energyVal)>::max_digits10);
-        out << energyVal << std::endl;
-        out.close();
-    }
-    else
-    {
-        std::cerr << "Couldn't write energy into file \"" << filename << "\"" << std::endl;
+        std::cerr << "Couldn't write predicted labeling to \"" << labelPath << "\"" << std::endl;
         return -5;
+    }
+    if(!cv::imwrite(spPath, sp))
+    {
+        std::cerr << "Couldn't write predicted superpixels to \"" << spPath << "\"" << std::endl;
+        return -6;
     }
 
     return 0;
