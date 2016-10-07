@@ -26,6 +26,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(size_t, numThreads, 8, -nt)
+                  PROP_DEFINE(bool, useDiminishingStepSize, true)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -205,7 +206,11 @@ int main(int argc, char* argv[])
     std::cout << "Gradient: " << sum << std::endl;
     std::cout << "Step size: " << properties.learningRate / (t + 1) << std::endl;
 
-    sum *= properties.learningRate / (t + 1);
+    float stepSize = properties.learningRate;
+    if (properties.useDiminishingStepSize)
+        stepSize /= t + 1;
+
+    sum *= stepSize;
     curWeights -= sum;
 
     if(!curWeights.write(properties.out))
