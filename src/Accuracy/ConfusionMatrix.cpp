@@ -122,6 +122,7 @@ ConfusionMatrix::operator cv::Mat() const
 
 std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf)
 {
+    // IoU measure
     float mean = 0;
     auto acc = cf.accuracies(&mean);
 
@@ -131,6 +132,15 @@ std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf)
         stream << acc[i] << ", ";
     if (!acc.empty())
         stream << acc.back();
-    stream << " }";
+    stream << " }; ";
+
+    // Overall percentage
+    float diag = 0;
+    for(size_t i = 0; i < acc.size(); ++i)
+        diag += cf.at(i, i);
+    float all = std::accumulate(cf.m_mat.begin(), cf.m_mat.end(), 0.f);
+    float overallAcc = diag / all;
+    stream << "Overall percentage: " << overallAcc;
+
     return stream;
 }

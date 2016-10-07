@@ -63,6 +63,8 @@ private:
     std::vector<size_t> m_mat; // First index is true label, second index is inferred label
 
     size_t& at(Label trueLabel, Label inferredLabel);
+
+    friend std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf);
 };
 
 std::ostream& operator<<(std::ostream& stream, ConfusionMatrix const& cf);
