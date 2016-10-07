@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
     std::vector<std::string> list = readFileNames(properties.trainingList);
     if(list.empty())
     {
-        std::cerr << "File list \"" << properties.trainingList << "\"is empty." << std::endl;
+        std::cerr << "File list \"" << properties.trainingList << "\" is empty." << std::endl;
         return -2;
     }
 
