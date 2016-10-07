@@ -201,6 +201,10 @@ int main(int argc, char* argv[])
     // Update step
     sum *= properties.C / N;
     sum += curWeights;
+
+    std::cout << "Gradient: " << sum << std::endl;
+    std::cout << "Step size: " << properties.learningRate / (t + 1) << std::endl;
+
     sum *= properties.learningRate / (t + 1);
     curWeights -= sum;
 
