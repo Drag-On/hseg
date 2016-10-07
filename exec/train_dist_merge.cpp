@@ -204,11 +204,11 @@ int main(int argc, char* argv[])
     sum += curWeights;
 
     std::cout << "Gradient: " << sum << std::endl;
-    std::cout << "Step size: " << properties.learningRate / (t + 1) << std::endl;
 
     float stepSize = properties.learningRate;
     if (properties.useDiminishingStepSize)
         stepSize /= t + 1;
+    std::cout << "Step size: " << stepSize << std::endl;
 
     sum *= stepSize;
     curWeights -= sum;
