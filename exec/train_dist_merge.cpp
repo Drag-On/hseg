@@ -193,7 +193,8 @@ int main(int argc, char* argv[])
     if(out.is_open())
     {
         out.precision(std::numeric_limits<float>::max_digits10);
-        out << properties.t << ": " << trainingEnergy << std::endl;
+        out << std::setw(3) << properties.t << ": ";
+        out << trainingEnergy << std::endl;
         out.close();
     }
     else
