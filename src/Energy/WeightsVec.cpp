@@ -192,8 +192,8 @@ std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights)
         stream << weights.m_pairwiseWeights[i] << ", ";
     if (!weights.m_pairwiseWeights.empty())
         stream << weights.m_pairwiseWeights.back() << std::endl;
-    stream << "feature: " << weights.m_featureWeights.a() << ", " << weights.m_featureWeights.b() << ", "
-           << weights.m_featureWeights.c() << ", " << weights.m_featureWeights.d() << std::endl;
+    stream << "feature: " << weights.m_featureWeights.m_a << ", " << weights.m_featureWeights.m_b << ", "
+           << weights.m_featureWeights.m_c << ", " << weights.m_featureWeights.m_d << std::endl;
     stream << "class: " << weights.m_classWeight;
     return stream;
 }

@@ -32,6 +32,7 @@ private:
         Weight c() const;
         Weight d() const;
         void set(Weight a, Weight b, Weight c, Weight d);
+        friend std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);
     } m_featureWeights;
     Weight m_classWeight;
 
