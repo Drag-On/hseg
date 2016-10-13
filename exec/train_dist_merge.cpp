@@ -14,6 +14,7 @@
 PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(size_t, t, 0, -t)
                   PROP_DEFINE_A(float, learningRate, 1e-7f, -eta)
+                  PROP_DEFINE_A(float, T, 1.f, -T)
                   PROP_DEFINE_A(float, C, 1.f, -C)
                   PROP_DEFINE_A(float, pairwiseSigmaSq, 0.05f, -s)
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)
@@ -135,7 +136,7 @@ int main(int argc, char* argv[])
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(numClusters);
 
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
-    WeightsVec curWeights(numClasses, 5, 0, 0.08, 0.92, 0.92, 0, 230);
+    WeightsVec curWeights(numClasses, 0, 0, 0, 0, 0, 0, 0);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
@@ -208,7 +209,7 @@ int main(int argc, char* argv[])
 
     float stepSize = properties.learningRate;
     if (properties.useDiminishingStepSize)
-        stepSize /= t + 1;
+        stepSize /= 1 + t / properties.T;
     std::cout << "Step size: " << stepSize << std::endl;
 
     sum *= stepSize;
