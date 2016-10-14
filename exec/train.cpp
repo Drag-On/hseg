@@ -10,10 +10,24 @@
 #include <Inference/InferenceIterator.h>
 #include <Threading/ThreadPool.h>
 
+
 PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(size_t, numClusters, 300)
                   PROP_DEFINE(size_t, numIter, 100)
-                  PROP_DEFINE(float, learningRate, 0.0001f)
+                  PROP_DEFINE(std::string, learningRate, "Fixed")
+                  GROUP_DEFINE(FixedLearningRate,
+                      PROP_DEFINE(float, rate, 0.0001f)
+                  )
+                  GROUP_DEFINE(DiminishingLearningRate,
+                      PROP_DEFINE(float, base, 0.0001f)
+                      PROP_DEFINE(float, T, 1)
+                  )
+                  GROUP_DEFINE(BoldDriverLearningRate,
+                      PROP_DEFINE(float, base, 0.0001f)
+                      PROP_DEFINE(float, increase, 1.05f)
+                      PROP_DEFINE(float, decrease, 0.5f)
+                      PROP_DEFINE(float, margin, 1e-10f)
+                  )
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, imageListFile, "")
@@ -28,6 +42,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, gtExtension, ".png")
                   PROP_DEFINE(std::string, in, "")
                   PROP_DEFINE(std::string, out, "out/weights.dat")
+                  PROP_DEFINE(std::string, log, "train.log")
                   PROP_DEFINE(size_t, numThreads, 4)
 )
 
@@ -298,6 +313,20 @@ int main()
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<SampleResult>> futures;
 
+    float lastTrainingEnergy = std::numeric_limits<float>::max();
+    float learningRate = properties.FixedLearningRate.rate;
+    if(properties.learningRate == "BoldDriver")
+        learningRate = properties.BoldDriverLearningRate.base;
+    WeightsVec lastWeights = curWeights;
+    WeightsVec lastGradient = curWeights;
+
+    std::ofstream log(properties.log);
+    if(!log.is_open())
+    {
+        std::cerr << "Cannot write to log file \"" << properties.log << "\"" << std::endl;
+        return 50;
+    }
+
     // Iterate T times
     for(size_t t = 0; t < T; ++t)
     {
@@ -339,10 +368,40 @@ int main()
         iterationEnergy += curWeights.sqNorm() / 2.f;
         std::cout << "Current training energy: " << iterationEnergy << std::endl;
 
+        // Compute learning rate
+        if(properties.learningRate == "Diminishing")
+            learningRate = properties.DiminishingLearningRate.base / (1 + t / properties.DiminishingLearningRate.T);
+        else if(properties.learningRate == "BoldDriver")
+        {
+            if(t == 0)
+                learningRate = properties.BoldDriverLearningRate.base;
+            else
+            {
+                if(iterationEnergy < lastTrainingEnergy)
+                    learningRate *= properties.BoldDriverLearningRate.increase;
+                else if(iterationEnergy - lastTrainingEnergy > properties.BoldDriverLearningRate.margin)
+                {
+                    learningRate *= properties.BoldDriverLearningRate.decrease;
+                    auto gradient = lastGradient;
+                    gradient *= learningRate;
+                    curWeights = lastWeights;
+                    curWeights -= gradient;
+                    t--;
+                    continue;
+                }
+            }
+        }
+
+        lastWeights = curWeights;
+        lastTrainingEnergy = iterationEnergy;
+
+        log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << "\t" << std::setw(12) << learningRate << std::endl;
+
         // Update step
         sum *= properties.C / N;
         sum += curWeights;
-        sum *= properties.learningRate / (t + 1);
+        lastGradient = sum;
+        sum *= learningRate;
         curWeights -= sum;
 
         if (!curWeights.write(properties.out))
@@ -352,6 +411,8 @@ int main()
         std::cout << "Current weights:" << std::endl;
         std::cout << curWeights << std::endl;
     }
+
+    log.close();
 
     return 0;
 }
