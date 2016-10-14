@@ -184,6 +184,11 @@ int main(int argc, char* argv[])
         std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
     }
 
+    // Compute step size
+    float stepSize = properties.learningRate;
+    if (properties.useDiminishingStepSize)
+        stepSize /= 1 + t / properties.T;
+
     // Show current training energy
     trainingEnergy *= properties.C / N;
     trainingEnergy += curWeights.sqNorm() / 2.f;
@@ -194,8 +199,9 @@ int main(int argc, char* argv[])
     if(out.is_open())
     {
         out.precision(std::numeric_limits<float>::max_digits10);
-        out << std::setw(3) << properties.t << ": ";
-        out << trainingEnergy << std::endl;
+        out << std::setw(4) << properties.t << "\t";
+        out << std::setw(12) << trainingEnergy << "\t";
+        out << std::setw(12) << stepSize << std::endl;
         out.close();
     }
     else
@@ -206,10 +212,6 @@ int main(int argc, char* argv[])
     sum += curWeights;
 
     std::cout << "Gradient: " << sum << std::endl;
-
-    float stepSize = properties.learningRate;
-    if (properties.useDiminishingStepSize)
-        stepSize /= 1 + t / properties.T;
     std::cout << "Step size: " << stepSize << std::endl;
 
     sum *= stepSize;
