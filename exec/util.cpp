@@ -158,8 +158,8 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
 
     auto cmap = helper::image::generateColorMapVOC(256);
 
-    std::vector<float> means;
-    std::vector<float> variances;
+    std::vector<double> means;
+    std::vector<double> variances;
 
     // Read in files from the specified folder
     for(auto const& file : list)
@@ -184,7 +184,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
         LabelImage gt = helper::image::decolorize(gtRGB, cmap);
 
         // Compute samples
-        std::vector<float> data;
+        std::vector<double> data;
         size_t N = 0;
         for (size_t i = 0; i < cielab.pixels(); ++i)
         {
@@ -196,7 +196,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
                 if (l != lr)
                 {
                     N++;
-                    float point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x() + 1, coords.y(), 0), 2) +
+                    double point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x() + 1, coords.y(), 0), 2) +
                                   std::pow(cielab.atSite(i, 1) - cielab.at(coords.x() + 1, coords.y(), 1), 2) +
                                   std::pow(cielab.atSite(i, 2) - cielab.at(coords.x() + 1, coords.y(), 2), 2);
                     data.push_back(point);
@@ -208,7 +208,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
                 if (l != ld)
                 {
                     N++;
-                    float point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x(), coords.y() + 1, 0), 2) +
+                    double point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x(), coords.y() + 1, 0), 2) +
                                   std::pow(cielab.atSite(i, 1) - cielab.at(coords.x(), coords.y() + 1, 1), 2) +
                                   std::pow(cielab.atSite(i, 2) - cielab.at(coords.x(), coords.y() + 1, 2), 2);
                     data.push_back(point);
@@ -217,13 +217,13 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
         }
 
         // Estimate MAP mean for this image
-        float mean = 0;
+        double mean = 0;
         for(auto const& d : data)
             mean += d;
         mean /= N;
 
         // Estimate MAP variance for this image
-        float variance = 0;
+        double variance = 0;
         for(auto const& d : data)
             variance += std::pow(d - mean, 2);
         variance /= N;
@@ -234,7 +234,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
     }
 
     // Compute mean variance over all images
-    float meanVariance = std::accumulate(variances.begin(), variances.end(), 0.f);
+    double meanVariance = std::accumulate(variances.begin(), variances.end(), 0.);
     meanVariance /= variances.size();
 
     std::cout << "Mean sample variance: " << meanVariance << std::endl;
