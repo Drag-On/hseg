@@ -14,6 +14,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, writeWeightFile, "", -ww)
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
                                PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
+                               PROP_DEFINE_A(std::string, maxLoss, "", -ml)
                   )
                   GROUP_DEFINE(Constants,
                                PROP_DEFINE(size_t, numClasses, 21u)
@@ -23,7 +24,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE(std::string, image, "")
                                PROP_DEFINE(std::string, groundTruth, "")
                   )
-                  GROUP_DEFINE(FileExtenstions,
+                  GROUP_DEFINE(FileExtensions,
                                PROP_DEFINE(std::string, image, ".jpg")
                                PROP_DEFINE(std::string, groundTruth, ".png")
                   )
@@ -145,11 +146,10 @@ bool fillGroundTruth(UtilProperties const& properties)
     return true;
 }
 
-bool estimatePairwiseSigmaSq(UtilProperties const& properties)
+std::vector<std::string> readLines(std::string filename)
 {
-    // Read in file names
     std::vector<std::string> list;
-    std::ifstream in(properties.job.estimatePairwiseSigmaSq, std::ios::in);
+    std::ifstream in(filename, std::ios::in);
     if (in.is_open())
     {
         std::string line;
@@ -157,6 +157,13 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
             list.push_back(line);
         in.close();
     }
+    return list;
+}
+
+bool estimatePairwiseSigmaSq(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list = readLines(properties.job.estimatePairwiseSigmaSq);
 
     auto cmap = helper::image::generateColorMapVOC(256);
 
@@ -168,13 +175,13 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
     {
         // Read in color image and ground truth image
         RGBImage color, gtRGB;
-        std::string clrFileName = properties.Paths.image + file + properties.FileExtenstions.image;
+        std::string clrFileName = properties.Paths.image + file + properties.FileExtensions.image;
         if(!color.read(clrFileName))
         {
             std::cerr << "Couldn't read color image \"" << clrFileName << "\"." << std::endl;
             return false;
         }
-        std::string gtFileName = properties.Paths.groundTruth + file + properties.FileExtenstions.groundTruth;
+        std::string gtFileName = properties.Paths.groundTruth + file + properties.FileExtensions.groundTruth;
         if(!gtRGB.read(gtFileName))
         {
             std::cerr << "Couldn't read ground truth image \"" << gtFileName << "\"." << std::endl;
@@ -254,6 +261,49 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
     return true;
 }
 
+bool computeMaxLoss(UtilProperties const& properties)
+{
+    // Read in files to consider
+    std::vector<std::string> list = readLines(properties.job.maxLoss);
+
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    // Iterate them
+    float maxLoss = 0.f;
+    for(auto const& s : list)
+    {
+        std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
+        std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
+        RGBImage image, gtRGB;
+        if(!image.read(imageFile))
+        {
+            std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
+            return false;
+        }
+        if(!gtRGB.read(gtFile))
+        {
+            std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
+
+        // Compute loss factor for this image
+        float lossFactor = 0;
+        for(size_t i = 0; i < gt.pixels(); ++i)
+            if(gt.atSite(i) < properties.Constants.numClasses)
+                lossFactor++;
+        lossFactor = 1e8f / lossFactor;
+
+        maxLoss += image.pixels() * lossFactor;
+    }
+
+    maxLoss /= list.size();
+
+    std::cout << "Maximum loss from set \"" << properties.job.maxLoss << "\" (" << list.size() << " images): "
+              << maxLoss << std::endl;
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -275,6 +325,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.estimatePairwiseSigmaSq.empty())
         estimatePairwiseSigmaSq(properties);
+
+    if(!properties.job.maxLoss.empty())
+        computeMaxLoss(properties);
 
     return 0;
 }
