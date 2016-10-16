@@ -13,10 +13,17 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, showWeightFile, "", -sw)
                                PROP_DEFINE_A(std::string, writeWeightFile, "", -ww)
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
+                               PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
                   )
                   GROUP_DEFINE(FillGroundTruth,
                                PROP_DEFINE(size_t, numClasses, 21u)
                                PROP_DEFINE(std::string, outDir, "")
+                  )
+                  GROUP_DEFINE(EstimatePairwiseSigmaSq,
+                               PROP_DEFINE(std::string, imageFolder, "")
+                               PROP_DEFINE(std::string, imageExtension, ".jpg")
+                               PROP_DEFINE(std::string, gtFolder, "")
+                               PROP_DEFINE(std::string, gtExtension, ".png")
                   )
 )
 
@@ -136,6 +143,105 @@ bool fillGroundTruth(UtilProperties const& properties)
     return true;
 }
 
+bool estimatePairwiseSigmaSq(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list;
+    std::ifstream in(properties.job.estimatePairwiseSigmaSq, std::ios::in);
+    if (in.is_open())
+    {
+        std::string line;
+        while (std::getline(in, line))
+            list.push_back(line);
+        in.close();
+    }
+
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    std::vector<float> means;
+    std::vector<float> variances;
+
+    // Read in files from the specified folder
+    for(auto const& file : list)
+    {
+        // Read in color image and ground truth image
+        RGBImage color, gtRGB;
+        std::string clrFileName = properties.EstimatePairwiseSigmaSq.imageFolder + file +
+                                  properties.EstimatePairwiseSigmaSq.imageExtension;
+        if(!color.read(clrFileName))
+        {
+            std::cerr << "Couldn't read color image \"" << clrFileName << "\"." << std::endl;
+            return false;
+        }
+        std::string gtFileName = properties.EstimatePairwiseSigmaSq.gtFolder + file +
+                                 properties.EstimatePairwiseSigmaSq.gtExtension;
+        if(!gtRGB.read(gtFileName))
+        {
+            std::cerr << "Couldn't read ground truth image \"" << gtFileName << "\"." << std::endl;
+            return false;
+        }
+        CieLabImage cielab = color.getCieLabImg();
+        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
+
+        // Compute samples
+        std::vector<float> data;
+        size_t N = 0;
+        for (size_t i = 0; i < cielab.pixels(); ++i)
+        {
+            auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
+            Label l = gt.atSite(i);
+            if (coords.x() < cielab.width() - 1)
+            {
+                Label lr = gt.at(coords.x() + 1, coords.y());
+                if (l != lr)
+                {
+                    N++;
+                    float point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x() + 1, coords.y(), 0), 2) +
+                                  std::pow(cielab.atSite(i, 1) - cielab.at(coords.x() + 1, coords.y(), 1), 2) +
+                                  std::pow(cielab.atSite(i, 2) - cielab.at(coords.x() + 1, coords.y(), 2), 2);
+                    data.push_back(point);
+                }
+            }
+            if (coords.y() < cielab.height() - 1)
+            {
+                Label ld = gt.at(coords.x(), coords.y() + 1);
+                if (l != ld)
+                {
+                    N++;
+                    float point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x(), coords.y() + 1, 0), 2) +
+                                  std::pow(cielab.atSite(i, 1) - cielab.at(coords.x(), coords.y() + 1, 1), 2) +
+                                  std::pow(cielab.atSite(i, 2) - cielab.at(coords.x(), coords.y() + 1, 2), 2);
+                    data.push_back(point);
+                }
+            }
+        }
+
+        // Estimate MAP mean for this image
+        float mean = 0;
+        for(auto const& d : data)
+            mean += d;
+        mean /= N;
+
+        // Estimate MAP variance for this image
+        float variance = 0;
+        for(auto const& d : data)
+            variance += std::pow(d - mean, 2);
+        variance /= N;
+
+        // Store results
+        means.push_back(mean);
+        variances.push_back(variance);
+    }
+
+    // Compute mean variance over all images
+    float meanVariance = std::accumulate(variances.begin(), variances.end(), 0.f);
+    meanVariance /= variances.size();
+
+    std::cout << "Mean sample variance: " << meanVariance << std::endl;
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -154,6 +260,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.fillGroundTruth.empty())
         fillGroundTruth(properties);
+
+    if(!properties.job.estimatePairwiseSigmaSq.empty())
+        estimatePairwiseSigmaSq(properties);
 
     return 0;
 }

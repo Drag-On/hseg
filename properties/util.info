@@ -4,3 +4,11 @@ FillGroundTruth
     numClasses 21
     outDir "out/fixedGt/"
 }
+
+EstimatePairwiseSigmaSq
+{
+    imageFolder "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
+    imageExtension ".jpg"
+    gtFolder "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
+    gtExtension ".png"
+}
