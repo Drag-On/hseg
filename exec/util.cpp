@@ -15,15 +15,17 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
                                PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
                   )
-                  GROUP_DEFINE(FillGroundTruth,
+                  GROUP_DEFINE(Constants,
                                PROP_DEFINE(size_t, numClasses, 21u)
-                               PROP_DEFINE(std::string, outDir, "")
                   )
-                  GROUP_DEFINE(EstimatePairwiseSigmaSq,
-                               PROP_DEFINE(std::string, imageFolder, "")
-                               PROP_DEFINE(std::string, imageExtension, ".jpg")
-                               PROP_DEFINE(std::string, gtFolder, "")
-                               PROP_DEFINE(std::string, gtExtension, ".png")
+                  GROUP_DEFINE(Paths,
+                               PROP_DEFINE(std::string, out, "")
+                               PROP_DEFINE(std::string, image, "")
+                               PROP_DEFINE(std::string, groundTruth, "")
+                  )
+                  GROUP_DEFINE(FileExtenstions,
+                               PROP_DEFINE(std::string, image, ".jpg")
+                               PROP_DEFINE(std::string, groundTruth, ".png")
                   )
 )
 
@@ -78,7 +80,7 @@ bool fillGroundTruth(UtilProperties const& properties)
     LabelImage fixedGt = gt;
 
     // Find invalid pixels
-    size_t const numClasses = properties.FillGroundTruth.numClasses;
+    size_t const numClasses = properties.Constants.numClasses;
     std::vector<size_t> invalid;
     for(size_t i = 0; i < gt.pixels(); ++i)
         if(gt.atSite(i) >= numClasses)
@@ -135,9 +137,9 @@ bool fillGroundTruth(UtilProperties const& properties)
     RGBImage result = helper::image::colorize(fixedGt, cmap);
     cv::Mat resultMat = static_cast<cv::Mat>(result);
     std::string filename = boost::filesystem::path(properties.job.fillGroundTruth).filename().string();
-    if(!cv::imwrite(properties.FillGroundTruth.outDir + filename, resultMat))
+    if(!cv::imwrite(properties.Paths.out + filename, resultMat))
     {
-        std::cerr << "Couldn't write result to \"" << properties.FillGroundTruth.outDir + filename << "\"." << std::endl;
+        std::cerr << "Couldn't write result to \"" << properties.Paths.out + filename << "\"." << std::endl;
         return false;
     }
     return true;
@@ -166,15 +168,13 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
     {
         // Read in color image and ground truth image
         RGBImage color, gtRGB;
-        std::string clrFileName = properties.EstimatePairwiseSigmaSq.imageFolder + file +
-                                  properties.EstimatePairwiseSigmaSq.imageExtension;
+        std::string clrFileName = properties.Paths.image + file + properties.FileExtenstions.image;
         if(!color.read(clrFileName))
         {
             std::cerr << "Couldn't read color image \"" << clrFileName << "\"." << std::endl;
             return false;
         }
-        std::string gtFileName = properties.EstimatePairwiseSigmaSq.gtFolder + file +
-                                 properties.EstimatePairwiseSigmaSq.gtExtension;
+        std::string gtFileName = properties.Paths.groundTruth + file + properties.FileExtenstions.groundTruth;
         if(!gtRGB.read(gtFileName))
         {
             std::cerr << "Couldn't read ground truth image \"" << gtFileName << "\"." << std::endl;

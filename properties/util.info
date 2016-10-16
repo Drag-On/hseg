@@ -1,14 +1,19 @@
 
-FillGroundTruth
+Constants
 {
     numClasses 21
-    outDir "out/fixedGt/"
 }
 
-EstimatePairwiseSigmaSq
+Paths
 {
-    imageFolder "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
-    imageExtension ".jpg"
-    gtFolder "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
-    gtExtension ".png"
+    out "out/fixedGt/"
+    image "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
+    ;gtFolder "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
+    groundTruth "/home/jan/Downloads/Pascal VOC/groundTruthFixed/"
+}
+
+FileExtensions
+{
+    image ".jpg"
+    groundTruth ".png"
 }
