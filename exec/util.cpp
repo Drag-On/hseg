@@ -218,7 +218,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
 
         assert(N > 0);
 
-        // Estimate MAP mean for this image
+        // Estimate ML mean for this image
         double mean = 0;
         for(auto const& d : data)
             mean += d;
@@ -226,7 +226,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
 
         assert(!std::isnan(mean));
 
-        // Estimate MAP variance for this image
+        // Estimate ML variance for this image
         double variance = 0;
         for(auto const& d : data)
             variance += std::pow(d - mean, 2);
