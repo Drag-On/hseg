@@ -233,11 +233,19 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
         variances.push_back(variance);
     }
 
+    // Compute mean mean over all images
+    double meanMean = std::accumulate(means.begin(), means.end(), 0.);
+    meanMean /= means.size();
+    std::cout << "Mean sample mean: " << meanMean << std::endl;
+
     // Compute mean variance over all images
     double meanVariance = std::accumulate(variances.begin(), variances.end(), 0.);
     meanVariance /= variances.size();
-
     std::cout << "Mean sample variance: " << meanVariance << std::endl;
+
+    // Compute actual sigma square value
+    double sigmaSq = 1 / (2 * meanVariance);
+    std::cout << "Pairwise sigma square should be " << sigmaSq << std::endl;
 
     return true;
 }
