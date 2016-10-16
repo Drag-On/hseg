@@ -1,0 +1,6 @@
+
+FillGroundTruth
+{
+    numClasses 21
+    outDir "out/fixedGt/"
+}
