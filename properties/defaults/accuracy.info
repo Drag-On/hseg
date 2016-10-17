@@ -1,0 +1,11 @@
+; Properties for hseg_cluster
+;
+
+; List of files to consider
+fileList "imageList.txt"
+
+; Directory containing the predictions
+predDir "/home/jan/Dokumente/Git/hseg/out/labeling/"
+
+; Directory containing the ground truth
+gtDir "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
