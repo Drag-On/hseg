@@ -16,7 +16,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(float, learningRate, 1e-7f, -eta)
                   PROP_DEFINE_A(float, T, 1.f, -T)
                   PROP_DEFINE_A(float, C, 1.f, -C)
-                  PROP_DEFINE_A(float, pairwiseSigmaSq, 0.05f, -s)
+                  PROP_DEFINE_A(float, pairwiseSigmaSq, 1.00166e-06, -s)
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)
                   PROP_DEFINE_A(std::string, trainingList, "", -l)
                   PROP_DEFINE_A(std::string, weightFile, "", -w)
