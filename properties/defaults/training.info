@@ -21,7 +21,7 @@ BoldDriverLearningRate
     margin 1e-10
 }
 C 1                    ; Constant factor 3e-4
-pairwiseSigmaSq 0.05    ; Value of sigma square
+pairwiseSigmaSq 1.00166e-06    ; Value of sigma square
 imageListFile "imageList.txt"        ; List of color images
 groundTruthListFile "imageList.txt"  ; List of ground truth images
 groundTruthSpListFile "imageList.txt"; List of superpixel segmentation of the ground truth images
