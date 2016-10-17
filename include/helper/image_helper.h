@@ -55,6 +55,14 @@ namespace helper
          *       these images, the color map should have 255 entries (the 255th is white) or have white manually added.
          */
         LabelImage decolorize(RGBImage const& rgb, ColorMap const& colorMap);
+
+        /**
+         * Draws outlines onto a color image according to a label image
+         * @param labelImg Label image
+         * @param colorImg Color image
+         * @return Color image with overlayed outlines
+         */
+        RGBImage outline(LabelImage const& labelImg, RGBImage const& colorImg, std::array<unsigned short, 3> const& color = {255, 255, 255});
     }
 }
 

@@ -85,5 +85,27 @@ namespace helper
 
             return labels;
         }
+
+        RGBImage outline(LabelImage const& labelImg, RGBImage const& colorImg, std::array<unsigned short, 3> const& color)
+        {
+            assert(labelImg.width() == colorImg.width() && labelImg.height() == colorImg.height());
+
+            RGBImage result = colorImg;
+            for(size_t x = 0; x < labelImg.width() - 1; ++x)
+            {
+                for(size_t y = 0; y < labelImg.height() - 1; ++y)
+                {
+                    // If label changes
+                    if (labelImg.at(x, y) != labelImg.at(x + 1, y) || labelImg.at(x, y) != labelImg.at(x, y + 1))
+                    {
+                        result.at(x, y, 0) = color[0];
+                        result.at(x, y, 1) = color[1];
+                        result.at(x, y, 2) = color[2];
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 }

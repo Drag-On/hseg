@@ -15,9 +15,11 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
                                PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
                                PROP_DEFINE_A(std::string, maxLoss, "", -ml)
+                               PROP_DEFINE_A(std::string, outline, "", -ol)
                   )
                   GROUP_DEFINE(Constants,
                                PROP_DEFINE(size_t, numClasses, 21u)
+                               PROP_DEFINE(size_t, numClusters, 300u)
                   )
                   GROUP_DEFINE(Paths,
                                PROP_DEFINE(std::string, out, "")
@@ -27,6 +29,9 @@ PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(FileExtensions,
                                PROP_DEFINE(std::string, image, ".jpg")
                                PROP_DEFINE(std::string, groundTruth, ".png")
+                  )
+                  GROUP_DEFINE(Colors,
+                               PROP_DEFINE(ARG(std::array<unsigned short, 3>), border, ARG(std::array<unsigned short, 3>{255, 255, 255}))
                   )
 )
 
@@ -304,6 +309,32 @@ bool computeMaxLoss(UtilProperties const& properties)
     return true;
 }
 
+bool outline(UtilProperties const& properties)
+{
+    // Load color and superpixel image
+    std::string filename = boost::filesystem::path(properties.job.outline).stem().string();
+    RGBImage color, spRGB;
+    if (!color.read(properties.Paths.image + filename + properties.FileExtensions.image))
+    {
+        std::cerr << "Couldn't read color image \""
+                  << properties.Paths.image + filename + properties.FileExtensions.image << "\"." << std::endl;
+        return false;
+    }
+    if (!spRGB.read(properties.job.outline))
+    {
+        std::cerr << "Couldn't read superpixel image \"" << properties.job.outline << "\"." << std::endl;
+        return false;
+    }
+    auto cmap = helper::image::generateColorMap(properties.Constants.numClusters);
+    LabelImage sp = helper::image::decolorize(spRGB, cmap);
+
+    // Compute outline
+    RGBImage outlined = helper::image::outline(sp, color, properties.Colors.border);
+
+    cv::Mat outlinedMat = static_cast<cv::Mat>(outlined);
+    return cv::imwrite(properties.Paths.out + filename + properties.FileExtensions.image, outlinedMat);
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -328,6 +359,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.maxLoss.empty())
         computeMaxLoss(properties);
+
+    if(!properties.job.outline.empty())
+        outline(properties);
 
     return 0;
 }

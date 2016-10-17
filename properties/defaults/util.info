@@ -2,13 +2,13 @@
 Constants
 {
     numClasses 21
+    numClusters 300
 }
 
 Paths
 {
     out "out/fixedGt/"
     image "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
-    ;gtFolder "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
     groundTruth "/home/jan/Downloads/Pascal VOC/groundTruthFixed/"
 }
 
