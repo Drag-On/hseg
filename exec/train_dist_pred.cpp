@@ -13,7 +13,7 @@
 
 PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)
-                  PROP_DEFINE_A(float, pairwiseSigmaSq, 0.05f, -s)
+                  PROP_DEFINE_A(float, pairwiseSigmaSq, 1.00166e-06, -s)
                   PROP_DEFINE_A(std::string, weightFile, "", -w)
                   PROP_DEFINE_A(std::string, imageFile, "", -i)
                   PROP_DEFINE_A(std::string, groundTruthFile, "", -g)
