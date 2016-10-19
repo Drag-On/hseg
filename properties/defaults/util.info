@@ -10,10 +10,12 @@ Paths
     out "out/fixedGt/"
     image "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
     groundTruth "/home/jan/Downloads/Pascal VOC/groundTruthFixed/"
+    groundTruthSp "/home/jan/Dokumente/Git/hseg/spGroundTruth/"
 }
 
 FileExtensions
 {
     image ".jpg"
     groundTruth ".png"
+    groundTruthSp ".png"
 }

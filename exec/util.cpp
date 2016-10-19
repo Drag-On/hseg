@@ -7,6 +7,7 @@
 #include <helper/image_helper.h>
 #include <helper/coordinate_helper.h>
 #include <boost/filesystem/path.hpp>
+#include <Inference/k-prototypes/Clusterer.h>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -14,6 +15,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, writeWeightFile, "", -ww)
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
                                PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
+                               PROP_DEFINE_A(std::string, estimateSpDistance, "", -ed)
                                PROP_DEFINE_A(std::string, maxLoss, "", -ml)
                                PROP_DEFINE_A(std::string, outline, "", -ol)
                   )
@@ -25,10 +27,12 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE(std::string, out, "")
                                PROP_DEFINE(std::string, image, "")
                                PROP_DEFINE(std::string, groundTruth, "")
+                               PROP_DEFINE(std::string, groundTruthSp, "")
                   )
                   GROUP_DEFINE(FileExtensions,
                                PROP_DEFINE(std::string, image, ".jpg")
                                PROP_DEFINE(std::string, groundTruth, ".png")
+                               PROP_DEFINE(std::string, groundTruthSp, ".png")
                   )
                   GROUP_DEFINE(Colors,
                                PROP_DEFINE(ARG(std::array<unsigned short, 3>), border, ARG(std::array<unsigned short, 3>{255, 255, 255}))
@@ -266,6 +270,86 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
     return true;
 }
 
+bool estimateSpDistance(UtilProperties const& properties)
+{
+    // Read in files to consider
+    std::vector<std::string> list = readLines(properties.job.estimateSpDistance);
+
+    auto cmap = helper::image::generateColorMapVOC(256);
+    auto cmap2 = helper::image::generateColorMap(properties.Constants.numClusters);
+
+    float distances[5][5] = {}; // Zero-initialize
+
+    // Iterate images and compute the distances
+    for(auto const& s : list)
+    {
+        std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
+        std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
+        std::string gtSpFile = properties.Paths.groundTruthSp + s + properties.FileExtensions.groundTruthSp;
+        RGBImage image, gtRGB, gtSpRGB;
+        if(!image.read(imageFile))
+        {
+            std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
+            return false;
+        }
+        if(!gtRGB.read(gtFile))
+        {
+            std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
+        if(!gtSpRGB.read(gtSpFile))
+        {
+            std::cerr << "Couldn't read ground truth superpixel image \"" << gtSpFile << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gtSp = helper::image::decolorize(gtSpRGB, cmap2);
+
+        CieLabImage cielab = image.getCieLabImg();
+        auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
+                                                   properties.Constants.numClasses);
+
+        // Compute distances
+        for(size_t i = 0; i < gtSp.pixels(); ++i)
+        {
+            Label l = gtSp.atSite(i);
+
+            auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
+
+            float L = cielab.atSite(i, 0) - clusters[l].mean.r();
+            float a = cielab.atSite(i, 1) - clusters[l].mean.g();
+            float b = cielab.atSite(i, 2) - clusters[l].mean.b();
+            float x = coords.x() - clusters[l].mean.x();
+            float y = coords.y() - clusters[l].mean.y();
+
+            float featureDiffs[] = { L, a, b, x, y };
+
+            for(int j = 0; j < 5; ++j)
+            {
+                for(int k = 0; k < 5; ++k)
+                    distances[j][k] += featureDiffs[j] * featureDiffs[k];
+            }
+        }
+    }
+
+    // Normalize
+    for(int j = 0; j < 5; ++j)
+    {
+        for(int k = 0; k < 5; ++k)
+            distances[j][k] /= list.size();
+    }
+
+    // Show results
+    for(int j = 0; j < 5; ++j)
+    {
+        std::cout << "[ ";
+        for(int k = 0; k < 4; ++k)
+            std::cout << std::setw(12) << distances[j][k] << ", ";
+        std::cout << std::setw(12) << distances[j][4] << " ]" << std::endl;
+    }
+    return true;
+}
+
 bool computeMaxLoss(UtilProperties const& properties)
 {
     // Read in files to consider
@@ -356,6 +440,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.estimatePairwiseSigmaSq.empty())
         estimatePairwiseSigmaSq(properties);
+
+    if(!properties.job.estimateSpDistance.empty())
+        estimateSpDistance(properties);
 
     if(!properties.job.maxLoss.empty())
         computeMaxLoss(properties);
