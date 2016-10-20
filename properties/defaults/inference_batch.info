@@ -9,6 +9,7 @@ imageExtension ".jpg"
 unaryDir "data/" ; Directory with unary scores
 unaryExtension "_prob.dat"
 outDir "out/" ; Directory to write results to
+numThreads 4
 
 ; Weights to use
 weights
@@ -16,12 +17,6 @@ weights
     file out/weights.dat
     unary 5
     pairwise 500
-    feature
-    {
-        a 0.08
-        b 0.92
-        c 0.92
-        d 0.0
-    }
     label 230.0
+    featureWeightFile "out/featureWeights.txt"
 }
