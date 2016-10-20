@@ -28,12 +28,6 @@ showResult false
 ; Weights to use
 weights
 {
-    feature
-    {
-        a 0.05
-        b 0.95
-        c 0.95
-        d 0.0
-    }
+    featureWeightFile "out/featureWeights.txt"
     label 10000.0
 }
