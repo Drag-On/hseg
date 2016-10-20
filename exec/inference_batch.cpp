@@ -13,7 +13,7 @@
 
 PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE(size_t, numClusters, 300)
-                  PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
+                  PROP_DEFINE(float, pairwiseSigmaSq, 1.00166e-06)
                   PROP_DEFINE(std::string, imageList, "")
                   PROP_DEFINE(std::string, imageDir, "")
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
