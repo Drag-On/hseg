@@ -9,6 +9,7 @@
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/operations.hpp>
 #include <Threading/ThreadPool.h>
+#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE(size_t, numClusters, 300)
@@ -24,13 +25,8 @@ PROPERTIES_DEFINE(InferenceBatch,
                                PROP_DEFINE(std::string, file, "")
                                PROP_DEFINE(float, unary, 5.f)
                                PROP_DEFINE(float, pairwise, 500)
-                               GROUP_DEFINE(feature,
-                                            PROP_DEFINE(float, a, 0.1f)
-                                            PROP_DEFINE(float, b, 0.9f)
-                                            PROP_DEFINE(float, c, 0.9f)
-                                            PROP_DEFINE(float, d, 0.0f)
-                               )
                                PROP_DEFINE(float, label, 30.f)
+                               PROP_DEFINE(std::string, featureWeightFile, "")
                   )
 )
 
@@ -56,8 +52,11 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
         return false;
     }
 
+    // Load feature weights
+    Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
+
     // Create energy function
-    EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq);
+    EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq, featureWeights);
 
     // Do the inference!
     InferenceIterator inference(energyFun, clusters, classes, cieLab);
@@ -104,9 +103,7 @@ int main()
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
 
-    WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature.a,
-                       properties.weights.feature.b, properties.weights.feature.c, properties.weights.feature.d,
-                       properties.weights.label);
+    WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.label);
     if(!weights.read(properties.weights.file))
         std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;
     std::cout << "Used weights:" << std::endl;

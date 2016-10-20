@@ -5,10 +5,11 @@
 #include <helper/coordinate_helper.h>
 #include "Energy/EnergyFunction.h"
 
-EnergyFunction::EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq)
+EnergyFunction::EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq, Matrix5f const& featureWeights)
         : m_unaryScores(unaries),
           m_weights(weights),
-          m_pairWiseSigmaSq(pairwiseSigmaSq)
+          m_pairWiseSigmaSq(pairwiseSigmaSq),
+          m_featureWeights(featureWeights)
 {
 }
 
@@ -33,30 +34,14 @@ float EnergyFunction::unaryCost(size_t i, Label l) const
 
 float EnergyFunction::featureDistance(Feature const& feature, Feature const& feature2) const
 {
-    auto const xDiff = feature.x() - feature2.x();
-    auto const yDiff = feature.y() - feature2.y();
-    auto const rDiff = feature.r() - feature2.r();
-    auto const gDiff = feature.g() - feature2.g();
-    auto const bDiff = feature.b() - feature2.b();
-    auto const& w = m_weights.feature();
-    auto const colorDist = w.a() * (rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
-    auto const spatialDist = w.b() * (xDiff * xDiff) + w.c() * (yDiff * yDiff) + 2 * w.d() * (xDiff * yDiff);
-    return colorDist + spatialDist;
-}
-
-void EnergyFunction::computeFeatureDistanceByWeight(Feature const& feature, Feature const& feature2,
-                                                    WeightsVec& energyW) const
-{
-    auto const xDiff = feature.x() - feature2.x();
-    auto const yDiff = feature.y() - feature2.y();
-    auto const rDiff = feature.r() - feature2.r();
-    auto const gDiff = feature.g() - feature2.g();
-    auto const bDiff = feature.b() - feature2.b();
-    Weight new_a = energyW.m_featureWeights.a() + rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-    Weight new_b = energyW.m_featureWeights.b() + xDiff * xDiff;
-    Weight new_c = energyW.m_featureWeights.c() + yDiff * yDiff;
-    Weight new_d = energyW.m_featureWeights.d() + 2 * (xDiff * yDiff);
-    energyW.m_featureWeights.set(new_a, new_b, new_c, new_d);
+    Vector5f f;
+    f(0) = feature.r() - feature2.r();
+    f(1) = feature.g() - feature2.g();
+    f(2) = feature.b() - feature2.b();
+    f(3) = feature.x() - feature2.x();
+    f(4) = feature.y() - feature2.y();
+    float dist = f.transpose() * m_featureWeights * f;
+    return dist;
 }
 
 UnaryFile const& EnergyFunction::unaryFile() const

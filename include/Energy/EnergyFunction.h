@@ -10,6 +10,10 @@
 #include <Inference/k-prototypes/Feature.h>
 #include <Inference/k-prototypes/Cluster.h>
 #include "WeightsVec.h"
+#include <Eigen/Dense>
+
+using Matrix5f = Eigen::Matrix<float, 5, 5>;
+using Vector5f = Eigen::Matrix<float, 5, 1>;
 
 /**
  * Provides functionality to compute (partial) energies of the target energy function.
@@ -23,8 +27,9 @@ public:
      * @param unaries Unary scores. The reference must stay valid as long as this object persists.
      * @param weights Weights to use. The reference must stay valid as long as this object persists.
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
+     * @param featureWeights Matrix of feature weights
      */
-    EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq = 0.05f);
+    EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq, Matrix5f const& featureWeights);
 
     /**
      * Computes the overall energy
@@ -128,14 +133,6 @@ public:
     float featureDistance(Feature const& feature, Feature const& feature2) const;
 
     /**
-     * Computes the feature distance between two features
-     * @param feature The first feature
-     * @param feature2 The second feature
-     * @param[out] energyW The feature distance will be stored here
-     */
-    void computeFeatureDistanceByWeight(Feature const& feature, Feature const& feature2, WeightsVec& energyW) const;
-
-    /**
      * Computes the class label distance between two class labels
      * @param l1 First class label
      * @param l2 Second class label
@@ -184,6 +181,7 @@ protected:
     UnaryFile const& m_unaryScores;
     WeightsVec const& m_weights;
     float m_pairWiseSigmaSq;
+    Matrix5f m_featureWeights;
 };
 
 template<typename T>
@@ -249,7 +247,6 @@ void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorIm
         // Only consider pixels with a valid label
         if (labeling.atSite(i) < m_unaryScores.classes())
         {
-            computeFeatureDistanceByWeight(Feature(img, i), clusters[sp.atSite(i)].mean, energyW);
             if (labeling.atSite(i) != clusters[sp.atSite(i)].label)
                 energyW.m_classWeight++;
         }

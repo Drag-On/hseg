@@ -2,10 +2,27 @@
 ;
 
 numClusters 300         ; Amount of clusters
-numIter 100             ; Amount of iterations
-learningRate 1e-14      ; Learning rate
-C 1.                    ; Constant factor
-pairwiseSigmaSq 0.05    ; Value of sigma square
+numIter 10000             ; Amount of iterations
+learningRate BoldDriver      ; Learning method
+FixedLearningRate
+{
+    rate 0.0001
+}
+DiminishingLearningRate
+{
+    base 0.0001
+    T 1
+}
+BoldDriverLearningRate
+{
+    base 0.001
+    increase 10.5
+    decrease 0.5
+    margin 1e-10
+}
+C 1                    ; Constant factor 3e-4
+pairwiseSigmaSq 1.00166e-06    ; Value of sigma square
+featureWeightFile "out/featureWeights.txt"
 imageListFile "imageList.txt"        ; List of color images
 groundTruthListFile "imageList.txt"  ; List of ground truth images
 groundTruthSpListFile "imageList.txt"; List of superpixel segmentation of the ground truth images
@@ -17,3 +34,5 @@ unaryBasePath "data/"        ; Directory that contains all the unary score files
 imageExtension .jpg
 gtExtension .png
 out "out/weights_test.dat"           ; Directory to write results to
+in "out/weights_test.dat"
+log "out/training.log"

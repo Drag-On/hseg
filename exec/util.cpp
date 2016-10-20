@@ -8,6 +8,7 @@
 #include <helper/coordinate_helper.h>
 #include <boost/filesystem/path.hpp>
 #include <Inference/k-prototypes/Clusterer.h>
+#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -63,17 +64,11 @@ bool writeWeight(std::string const& weightFile)
     std::cout << "Pairwise weight: ";
     float p = 0;
     std::cin >> p;
-    std::cout << "Color weight: ";
-    float c = 0;
-    std::cin >> c;
-    std::cout << "Spatial weight: ";
-    float s = 0;
-    std::cin >> s;
     std::cout << "Class weight: ";
     float l = 0;
     std::cin >> l;
     std::cout << "==========" << std::endl;
-    WeightsVec w(21ul, u, p, c, s, s, 0, l);
+    WeightsVec w(21ul, u, p, l);
     return w.write(weightFile);
 }
 
@@ -278,7 +273,7 @@ bool estimateSpDistance(UtilProperties const& properties)
     auto cmap = helper::image::generateColorMapVOC(256);
     auto cmap2 = helper::image::generateColorMap(properties.Constants.numClusters);
 
-    float distances[5][5] = {}; // Zero-initialize
+    Matrix5f distances = Matrix5f::Zero(); // Zero-initialize
 
     // Iterate images and compute the distances
     for(auto const& s : list)
@@ -327,26 +322,20 @@ bool estimateSpDistance(UtilProperties const& properties)
             for(int j = 0; j < 5; ++j)
             {
                 for(int k = 0; k < 5; ++k)
-                    distances[j][k] += featureDiffs[j] * featureDiffs[k];
+                    distances(j, k) += featureDiffs[j] * featureDiffs[k];
             }
         }
     }
 
     // Normalize
-    for(int j = 0; j < 5; ++j)
-    {
-        for(int k = 0; k < 5; ++k)
-            distances[j][k] /= list.size();
-    }
+    distances /= list.size();
 
     // Show results
-    for(int j = 0; j < 5; ++j)
-    {
-        std::cout << "[ ";
-        for(int k = 0; k < 4; ++k)
-            std::cout << std::setw(12) << distances[j][k] << ", ";
-        std::cout << std::setw(12) << distances[j][4] << " ]" << std::endl;
-    }
+    std::cout << distances << std::endl;
+
+    // Write to file
+    writeFeatureWeights(properties.Paths.out + "featureWeights.txt", distances);
+
     return true;
 }
 

@@ -10,6 +10,7 @@
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)
@@ -18,6 +19,7 @@ PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(std::string, imageFile, "", -i)
                   PROP_DEFINE_A(std::string, groundTruthFile, "", -g)
                   PROP_DEFINE_A(std::string, unaryFile, "", -u)
+                  PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
                   PROP_DEFINE_A(std::string, out, "out/", -o)
 )
 
@@ -47,7 +49,7 @@ int main(int argc, char* argv[])
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 0, 0, 0, 0, 0, 0, 0);
+    WeightsVec curWeights(numClasses, 0, 0, 0);
     if(!curWeights.read(properties.weightFile))
     {
         std::cout << "Couldn't read current weights from " << properties.weightFile << std::endl;
@@ -73,8 +75,10 @@ int main(int argc, char* argv[])
         return -3;
     }
 
+    Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, groundTruth);
+    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
     InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run();
 

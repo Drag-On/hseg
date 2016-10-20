@@ -12,25 +12,21 @@ WeightsVec::WeightsVec(Label numLabels, bool defaultInit)
     {
         m_unaryWeights.resize(numLabels, 5.f);
         m_pairwiseWeights.resize((numLabels * numLabels) / 2, 300.f);
-        m_featureWeights = {0.2f, 0.8f, 0.8f, 0.f};
         m_classWeight = 30.f;
     }
     else
     {
         m_unaryWeights.resize(numLabels, 0.f);
         m_pairwiseWeights.resize((numLabels * numLabels) / 2, 0.f);
-        m_featureWeights = {0.f, 0.f, 0.f, 0.f};
         m_classWeight = 0.f;
     }
 }
 
-WeightsVec::WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float featA, float featB, float featC,
-                 float featD, float labelWeight)
+WeightsVec::WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float labelWeight)
         : m_numLabels(numLabels)
 {
     m_unaryWeights.resize(numLabels, unaryWeight);
     m_pairwiseWeights.resize((numLabels * numLabels) / 2, pairwiseWeight);
-    m_featureWeights = {featA, featB, featC, featD};
     m_classWeight = labelWeight;
 }
 
@@ -73,10 +69,6 @@ WeightsVec& WeightsVec::operator+=(WeightsVec const& other)
         m_unaryWeights[i] += other.m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] += other.m_pairwiseWeights[i];
-    m_featureWeights.m_a += other.m_featureWeights.m_a;
-    m_featureWeights.m_b += other.m_featureWeights.m_b;
-    m_featureWeights.m_c += other.m_featureWeights.m_c;
-    m_featureWeights.m_d += other.m_featureWeights.m_d;
     m_classWeight += other.m_classWeight;
 
     return *this;
@@ -90,10 +82,6 @@ WeightsVec& WeightsVec::operator-=(WeightsVec const& other)
         m_unaryWeights[i] -= other.m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] -= other.m_pairwiseWeights[i];
-    m_featureWeights.m_a -= other.m_featureWeights.m_a;
-    m_featureWeights.m_b -= other.m_featureWeights.m_b;
-    m_featureWeights.m_c -= other.m_featureWeights.m_c;
-    m_featureWeights.m_d -= other.m_featureWeights.m_d;
     m_classWeight -= other.m_classWeight;
 
     return *this;
@@ -105,10 +93,6 @@ WeightsVec& WeightsVec::operator*=(float factor)
         m_unaryWeights[i] *= factor;
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] *= factor;
-    m_featureWeights.m_a *= factor;
-    m_featureWeights.m_b *= factor;
-    m_featureWeights.m_c *= factor;
-    m_featureWeights.m_d *= factor;
     m_classWeight *= factor;
 
     return *this;
@@ -122,10 +106,6 @@ WeightsVec& WeightsVec::operator*=(WeightsVec const& other)
         m_unaryWeights[i] *= other.m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] *= other.m_pairwiseWeights[i];
-    m_featureWeights.m_a *= other.m_featureWeights.m_a;
-    m_featureWeights.m_b *= other.m_featureWeights.m_b;
-    m_featureWeights.m_c *= other.m_featureWeights.m_c;
-    m_featureWeights.m_d *= other.m_featureWeights.m_d;
     m_classWeight *= other.m_classWeight;
 
     return *this;
@@ -155,10 +135,6 @@ Weight WeightsVec::sumPairwise() const
 Weight WeightsVec::sumSuperpixel() const
 {
     Weight result = 0;
-    result += m_featureWeights.m_a;
-    result += m_featureWeights.m_b;
-    result += m_featureWeights.m_c;
-    result += m_featureWeights.m_d;
     result += m_classWeight;
     return result;
 }
@@ -171,10 +147,6 @@ float WeightsVec::sqNorm() const
         sqNorm += m_unaryWeights[i] * m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         sqNorm += m_pairwiseWeights[i] * m_pairwiseWeights[i];
-    sqNorm += m_featureWeights.m_a * m_featureWeights.m_a;
-    sqNorm += m_featureWeights.m_b * m_featureWeights.m_b;
-    sqNorm += m_featureWeights.m_c * m_featureWeights.m_c;
-    sqNorm += m_featureWeights.m_d * m_featureWeights.m_d;
     sqNorm += m_classWeight * m_classWeight;
 
     return sqNorm;
@@ -192,8 +164,6 @@ std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights)
         stream << weights.m_pairwiseWeights[i] << ", ";
     if (!weights.m_pairwiseWeights.empty())
         stream << weights.m_pairwiseWeights.back() << std::endl;
-    stream << "feature: " << weights.m_featureWeights.m_a << ", " << weights.m_featureWeights.m_b << ", "
-           << weights.m_featureWeights.m_c << ", " << weights.m_featureWeights.m_d << std::endl;
     stream << "class: " << weights.m_classWeight;
     return stream;
 }
@@ -210,10 +180,6 @@ bool WeightsVec::write(std::string const& filename) const
         size_t noPairwise = m_pairwiseWeights.size();
         out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
         out.write(reinterpret_cast<const char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
-        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_a), sizeof(m_featureWeights.m_a));
-        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_b), sizeof(m_featureWeights.m_b));
-        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_c), sizeof(m_featureWeights.m_c));
-        out.write(reinterpret_cast<const char*>(&m_featureWeights.m_d), sizeof(m_featureWeights.m_d));
         out.write(reinterpret_cast<const char*>(&m_classWeight), sizeof(m_classWeight));
         out.close();
         return true;
@@ -241,10 +207,6 @@ bool WeightsVec::read(std::string const& filename)
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
         m_pairwiseWeights.resize(noPairwise);
         in.read(reinterpret_cast<char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
-        in.read(reinterpret_cast<char*>(&m_featureWeights.m_a), sizeof(m_featureWeights.m_a));
-        in.read(reinterpret_cast<char*>(&m_featureWeights.m_b), sizeof(m_featureWeights.m_b));
-        in.read(reinterpret_cast<char*>(&m_featureWeights.m_c), sizeof(m_featureWeights.m_c));
-        in.read(reinterpret_cast<char*>(&m_featureWeights.m_d), sizeof(m_featureWeights.m_d));
         in.read(reinterpret_cast<char*>(&m_classWeight), sizeof(m_classWeight));
         in.close();
         return true;
@@ -263,42 +225,6 @@ bool WeightsVec::hasPairwiseWeight() const
     return hasPairwise;
 }
 
-Weight WeightsVec::FeatureWeights::a() const
-{
-    return std::max(0.f, m_a);
-}
-
-Weight WeightsVec::FeatureWeights::b() const
-{
-    return std::max(0.f, m_b);
-}
-
-Weight WeightsVec::FeatureWeights::c() const
-{
-    return std::max(0.f, m_c);
-}
-
-Weight WeightsVec::FeatureWeights::d() const
-{
-    return std::max(0.f, m_d);
-}
-
-WeightsVec::FeatureWeights::FeatureWeights(Weight a, Weight b, Weight c, Weight d)
-        : m_a(a),
-          m_b(b),
-          m_c(c),
-          m_d(d)
-{
-}
-
-void WeightsVec::FeatureWeights::set(Weight a, Weight b, Weight c, Weight d)
-{
-    m_a = a;
-    m_b = b;
-    m_c = c;
-    m_d = d;
-}
-
 std::vector<Weight>& WeightsVec::unaryWeights()
 {
     return m_unaryWeights;
@@ -307,11 +233,6 @@ std::vector<Weight>& WeightsVec::unaryWeights()
 std::vector<Weight>& WeightsVec::pairwiseWeights()
 {
     return m_pairwiseWeights;
-}
-
-WeightsVec::FeatureWeights& WeightsVec::featureWeights()
-{
-    return m_featureWeights;
 }
 
 Weight& WeightsVec::classWeight()

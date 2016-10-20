@@ -8,6 +8,7 @@
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Timer.h>
 #include <boost/filesystem/path.hpp>
+#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(Clustering,
                   PROP_DEFINE(size_t, numClusters, 300)
@@ -24,12 +25,7 @@ PROPERTIES_DEFINE(Clustering,
                   PROP_DEFINE(std::string, out, "out.png")
                   PROP_DEFINE(bool, showResult, true)
                   GROUP_DEFINE(weights,
-                               GROUP_DEFINE(feature,
-                                            PROP_DEFINE(float, a, 0.1f)
-                                            PROP_DEFINE(float, b, 0.9f)
-                                            PROP_DEFINE(float, c, 0.9f)
-                                            PROP_DEFINE(float, d, 0.0f)
-                               )
+                               PROP_DEFINE(std::string, featureWeightFile, "")
                                PROP_DEFINE(float, label, 30.f)
                   )
 )
@@ -122,10 +118,13 @@ int main()
 
     size_t const numClasses = 21;
 
-    WeightsVec weights(numClasses, 1, 1, properties.weights.feature.a, properties.weights.feature.b,
-                    properties.weights.feature.c, properties.weights.feature.d, properties.weights.label);
+    WeightsVec weights(numClasses, 1, 1, properties.weights.label);
     UnaryFile fakeUnary;
-    EnergyFunction energyFun(fakeUnary, weights, 0.05f);
+    Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
+    std::cout << "Used feature weights: " << std::endl;
+    std::cout << featureWeights << std::endl;
+
+    EnergyFunction energyFun(fakeUnary, weights, 0.05f, featureWeights);
 
     helper::image::ColorMap cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap cmap2 = helper::image::generateColorMap(properties.numClusters);

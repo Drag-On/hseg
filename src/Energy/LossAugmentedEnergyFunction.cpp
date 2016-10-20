@@ -5,8 +5,9 @@
 #include "Energy/LossAugmentedEnergyFunction.h"
 
 LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights,
-                                                         float pairwiseSigmaSq, LabelImage const& groundTruth)
-        : EnergyFunction(unaries, weights, pairwiseSigmaSq),
+                                                         float pairwiseSigmaSq, Matrix5f const& featureWeights,
+                                                         LabelImage const& groundTruth)
+        : EnergyFunction(unaries, weights, pairwiseSigmaSq, featureWeights),
           m_groundTruth(groundTruth)
 {
     m_lossFactor = 0;

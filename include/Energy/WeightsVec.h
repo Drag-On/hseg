@@ -20,20 +20,6 @@ private:
     Label m_numLabels;
     std::vector<Weight> m_unaryWeights;
     std::vector<Weight> m_pairwiseWeights;
-    struct FeatureWeights
-    {
-    private:
-        Weight m_a, m_b, m_c, m_d;
-        friend class WeightsVec;
-    public:
-        FeatureWeights(Weight a = 0, Weight b = 0, Weight c = 0, Weight d = 0);
-        Weight a() const;
-        Weight b() const;
-        Weight c() const;
-        Weight d() const;
-        void set(Weight a, Weight b, Weight c, Weight d);
-        friend std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);
-    } m_featureWeights;
     Weight m_classWeight;
 
     friend class EnergyFunction;
@@ -54,13 +40,9 @@ public:
      * @param numLabels Amount of class labels
      * @param unaryWeight Weight of the unary term
      * @param pairwiseWeight Weight of the pairwise term
-     * @param featA Color weight
-     * @param featB X distance weight
-     * @param featC Y distance weight
-     * @param featD XY distance weight
      * @param labelWeight Label weight
      */
-    WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float featA, float featB, float featC, float featD, float labelWeight);
+    WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float labelWeight);
 
     /**
      * Weight of the unary term
@@ -85,17 +67,6 @@ public:
      * @return The approriate weight
      */
     Weight pairwise(Label l1, Label l2) const;
-
-    /**
-     * The feature weights.
-     * @details a is the factor for all 3 color channels, b and c are factors for x and y respectively, and d is the
-     *          off-diagonal for the spatial feature
-     * @return The feature weights
-     */
-    inline FeatureWeights const& feature() const
-    {
-        return m_featureWeights;
-    }
 
     /**
      * @return The class weight
@@ -175,8 +146,6 @@ public:
     std::vector<Weight>& unaryWeights();
 
     std::vector<Weight>& pairwiseWeights();
-
-    FeatureWeights& featureWeights();
 
     Weight& classWeight();
 };

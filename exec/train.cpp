@@ -9,6 +9,7 @@
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <Threading/ThreadPool.h>
+#include <Energy/feature_weights.h>
 
 
 PROPERTIES_DEFINE(Train,
@@ -30,6 +31,7 @@ PROPERTIES_DEFINE(Train,
                   )
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
+                  PROP_DEFINE(std::string, featureWeightFile, "")
                   PROP_DEFINE(std::string, imageListFile, "")
                   PROP_DEFINE(std::string, groundTruthListFile, "")
                   PROP_DEFINE(std::string, groundTruthSpListFile, "")
@@ -89,10 +91,10 @@ TrainingEnergy
 computeTrainingSampleEnergy(WeightsVec const& weights, UnaryFile const& unary, CieLabImage const& cieLabImg,
                             LabelImage const& maxLabeling, LabelImage const& maxSp, LabelImage const& gtImg,
                             LabelImage const& gtSpImg, float pairwiseSigmaSq, size_t numClusters, size_t numClasses,
-                            float C, size_t N)
+                            float C, size_t N, Matrix5f const& featureWeights)
 {
     TrainingEnergy e;
-    EnergyFunction trainingEnergy(unary, weights, pairwiseSigmaSq);
+    EnergyFunction trainingEnergy(unary, weights, pairwiseSigmaSq, featureWeights);
 
     float cOverN = C / N;
 
@@ -125,7 +127,8 @@ TrainingEnergy computeTrainingEnergy(std::vector<std::string> const& clrImgs, st
                                      std::vector<std::string> const& gtSpImgs, std::vector<std::string> const& unaries,
                                      WeightsVec const& weights, float pairwiseSigmaSq, size_t numClusters,
                                      size_t numClasses, float C, TrainProperties const& props,
-                                     helper::image::ColorMap const cmap, helper::image::ColorMap const& cmap2)
+                                     helper::image::ColorMap const cmap, helper::image::ColorMap const& cmap2,
+                                     Matrix5f const& featureWeights)
 {
     TrainingEnergy totalE;
     size_t N = clrImgs.size();
@@ -148,14 +151,14 @@ TrainingEnergy computeTrainingEnergy(std::vector<std::string> const& clrImgs, st
         UnaryFile unary(props.unaryBasePath + unaries[n] + "_prob.dat");
 
         // Predict with loss-augmented energy
-        LossAugmentedEnergyFunction energy(unary, weights, pairwiseSigmaSq, groundTruth);
+        LossAugmentedEnergyFunction energy(unary, weights, pairwiseSigmaSq, featureWeights, groundTruth);
         InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
         InferenceResult result = inference.run(2);
 
         // Compute training sample energy
         TrainingEnergy e = computeTrainingSampleEnergy(weights, unary, cieLabImage, result.labeling, result.superpixels,
                                                        groundTruth, groundTruthSp, pairwiseSigmaSq, numClusters,
-                                                       numClasses, C, N);
+                                                       numClasses, C, N, featureWeights);
         return e;
     };
 
@@ -189,7 +192,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
                            std::string const& gtSpImageFilename, std::string const& unaryFilename,
                            TrainProperties const& properties, helper::image::ColorMap const& cmap,
                            helper::image::ColorMap const& cmap2, size_t numClasses, size_t numClusters,
-                           WeightsVec const& curWeights, WeightsVec const& oneWeights)
+                           WeightsVec const& curWeights, WeightsVec const& oneWeights, Matrix5f const& featureWeights)
 {
     SampleResult sampleResult;
 
@@ -216,7 +219,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     }
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, groundTruth);
+    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
     InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run(2);
 
@@ -227,7 +230,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
     cv::waitKey();*/
 
-    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq);
+    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
     auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, numClusters, numClasses);
     sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
     auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
@@ -246,7 +249,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     sampleResult.trainingEnergy += loss;
 
     // Compute energy without weights on the ground truth
-    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
+    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq, featureWeights);
     auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the prediction
@@ -274,10 +277,10 @@ int main()
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 0, 0, 0, 0, 0, 0, 0);
+    WeightsVec curWeights(numClasses, 0, 0, 0);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
-    WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
+    WeightsVec oneWeights(numClasses, 1, 1, 1);
 
     std::cout << "====================" << std::endl;
     std::cout << "Initial weights:" << std::endl;
@@ -297,6 +300,9 @@ int main()
     size_t T = properties.numIter;
     size_t N = colorImageFilenames.size();
 
+    Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    std::cout << "Used feature weights: " << std::endl;
+    std::cout << featureWeights << std::endl;
 
     // DEBUG //
 
@@ -330,7 +336,7 @@ int main()
     // Iterate T times
     for(size_t t = 0; t < T; ++t)
     {
-        WeightsVec sum(numClasses, 0, 0, 0, 0, 0, 0, 0); // All zeros
+        WeightsVec sum(numClasses, 0, 0, 0); // All zeros
         float iterationEnergy = 0;
         futures.clear();
 
@@ -344,7 +350,7 @@ int main()
 
             auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, gtSpImageFilename,
                                       unaryFilename, properties, cmap, cmap2, numClasses, numClusters, curWeights,
-                                      oneWeights);
+                                      oneWeights, featureWeights);
             futures.push_back(std::move(fut));
         }
 

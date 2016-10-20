@@ -32,6 +32,9 @@ find_package(Boost 1.58 COMPONENTS filesystem system REQUIRED)
 ### OpenCV ###
 find_package(OpenCV REQUIRED)
 
+### Eigen ###
+find_package(Eigen3 REQUIRED)
+
 ### gco ###
 add_subdirectory(lib/gco-v3.0)
 
@@ -50,8 +53,8 @@ FUNCTION(PREPEND var prefix)
     SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND)
 
-set(SOURCE_FILES src/Energy/UnaryFile.cpp include/Energy/UnaryFile.h src/Inference/k-prototypes/Clusterer.cpp include/Inference/k-prototypes/Clusterer.h include/Image/Image.h include/Inference/k-prototypes/Cluster.h include/helper/coordinate_helper.h include/Inference/k-prototypes/Feature.h src/Inference/k-prototypes/Feature.cpp src/Inference/k-prototypes/Cluster.cpp include/helper/image_helper.h src/helper/image_helper.cpp include/helper/opencv_helper.h src/helper/opencv_helper.cpp src/Inference/GraphOptimizer/GraphOptimizer.cpp include/Inference/GraphOptimizer/GraphOptimizer.h src/Energy/EnergyFunction.cpp include/Energy/EnergyFunction.h include/Image/Coordinates.h src/Energy/WeightsVec.cpp include/Energy/WeightsVec.h include/helper/hash_helper.h src/Timer.cpp include/Timer.h src/Accuracy/ConfusionMatrix.cpp include/Accuracy/ConfusionMatrix.h src/Inference/InferenceIterator.cpp include/Inference/InferenceIterator.h include/Inference/InferenceResult.h include/Inference/InferenceResultDetails.h src/Energy/LossAugmentedEnergyFunction.cpp include/Energy/LossAugmentedEnergyFunction.h src/Inference/InferenceResult.cpp src/Threading/ThreadPool.cpp include/Threading/ThreadPool.h)
-set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include ${gco_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+set(SOURCE_FILES src/Energy/UnaryFile.cpp include/Energy/UnaryFile.h src/Inference/k-prototypes/Clusterer.cpp include/Inference/k-prototypes/Clusterer.h include/Image/Image.h include/Inference/k-prototypes/Cluster.h include/helper/coordinate_helper.h include/Inference/k-prototypes/Feature.h src/Inference/k-prototypes/Feature.cpp src/Inference/k-prototypes/Cluster.cpp include/helper/image_helper.h src/helper/image_helper.cpp include/helper/opencv_helper.h src/helper/opencv_helper.cpp src/Inference/GraphOptimizer/GraphOptimizer.cpp include/Inference/GraphOptimizer/GraphOptimizer.h src/Energy/EnergyFunction.cpp include/Energy/EnergyFunction.h include/Image/Coordinates.h src/Energy/WeightsVec.cpp include/Energy/WeightsVec.h include/helper/hash_helper.h src/Timer.cpp include/Timer.h src/Accuracy/ConfusionMatrix.cpp include/Accuracy/ConfusionMatrix.h src/Inference/InferenceIterator.cpp include/Inference/InferenceIterator.h include/Inference/InferenceResult.h include/Inference/InferenceResultDetails.h src/Energy/LossAugmentedEnergyFunction.cpp include/Energy/LossAugmentedEnergyFunction.h src/Inference/InferenceResult.cpp src/Threading/ThreadPool.cpp include/Threading/ThreadPool.h include/Energy/feature_weights.h src/Energy/feature_weights.cpp)
+set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include ${gco_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 set(LIBS gco properties ${OpenCV_LIBS} ${Boost_LIBRARIES})
 PREPEND(SOURCE_FILES_FULL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${SOURCE_FILES})
 

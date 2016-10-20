@@ -10,6 +10,7 @@
 #include <Energy/EnergyFunction.h>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Threading/ThreadPool.h>
+#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(size_t, t, 0, -t)
@@ -20,6 +21,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)
                   PROP_DEFINE_A(std::string, trainingList, "", -l)
                   PROP_DEFINE_A(std::string, weightFile, "", -w)
+                  PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
                   PROP_DEFINE_A(std::string, imgPath, "", -I)
                   PROP_DEFINE_A(std::string, gtPath, "", -G)
                   PROP_DEFINE_A(std::string, gtSpPath, "", -S)
@@ -53,7 +55,7 @@ struct SampleResult
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename,
                            helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, size_t numClasses,
-                           WeightsVec const& curWeights, WeightsVec const& oneWeights)
+                           WeightsVec const& curWeights, WeightsVec const& oneWeights, Matrix5f const& featureWeights)
 {
     SampleResult sampleResult;
     size_t numClusters = properties.numClusters;
@@ -86,7 +88,7 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
         return sampleResult;
     }
 
-    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq);
+    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
     auto clusters = Clusterer::computeClusters(predictionSp, cieLabImage, prediction, numClusters, numClasses);
     sampleResult.energy -= trainingEnergy.giveEnergy(prediction, cieLabImage, predictionSp, clusters);
     auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
@@ -105,7 +107,7 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     sampleResult.energy += loss;
 
     // Compute energy without weights on the ground truth
-    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq);
+    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq, featureWeights);
     auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute energy without weights on the prediction
@@ -135,8 +137,10 @@ int main(int argc, char* argv[])
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(numClusters);
 
-    WeightsVec oneWeights(numClasses, 1, 1, 1, 1, 1, 1, 1);
-    WeightsVec curWeights(numClasses, 0, 0, 0, 0, 0, 0, 0);
+    Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+
+    WeightsVec oneWeights(numClasses, 1, 1, 1);
+    WeightsVec curWeights(numClasses, 0, 0, 0);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
@@ -164,7 +168,7 @@ int main(int argc, char* argv[])
     // Iterate over all images
     for (size_t n = 0; n < N; ++n)
     {
-        auto&& fut = pool.enqueue(processSample, properties, list[n], cmap, cmap2, numClasses, curWeights, oneWeights);
+        auto&& fut = pool.enqueue(processSample, properties, list[n], cmap, cmap2, numClasses, curWeights, oneWeights, featureWeights);
         futures.push_back(std::move(fut));
     }
 
