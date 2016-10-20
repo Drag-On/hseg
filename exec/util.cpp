@@ -273,9 +273,57 @@ bool estimateSpDistance(UtilProperties const& properties)
     auto cmap = helper::image::generateColorMapVOC(256);
     auto cmap2 = helper::image::generateColorMap(properties.Constants.numClusters);
 
-    Matrix5f distances = Matrix5f::Zero(); // Zero-initialize
+    // Compute mean
+    Vector5f mean = Vector5f::Zero();
+    size_t N = 0;
+    for(auto const& s : list)
+    {
+        std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
+        std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
+        std::string gtSpFile = properties.Paths.groundTruthSp + s + properties.FileExtensions.groundTruthSp;
+        RGBImage image, gtRGB, gtSpRGB;
+        if (!image.read(imageFile))
+        {
+            std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
+            return false;
+        }
+        if (!gtRGB.read(gtFile))
+        {
+            std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
+        if (!gtSpRGB.read(gtSpFile))
+        {
+            std::cerr << "Couldn't read ground truth superpixel image \"" << gtSpFile << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gtSp = helper::image::decolorize(gtSpRGB, cmap2);
 
-    // Iterate images and compute the distances
+        CieLabImage cielab = image.getCieLabImg();
+        auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
+                                                   properties.Constants.numClasses);
+
+        for(size_t i = 0; i < gtSp.pixels(); ++i)
+        {
+            Label l = gtSp.atSite(i);
+            auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
+
+            Vector5f vec;
+            vec(0) = cielab.atSite(i, 0) - clusters[l].mean.r();
+            vec(1) = cielab.atSite(i, 1) - clusters[l].mean.g();
+            vec(2) = cielab.atSite(i, 2) - clusters[l].mean.b();
+            vec(3) = coords.x() - clusters[l].mean.x();
+            vec(4) = coords.y() - clusters[l].mean.y();
+
+            mean += vec;
+        }
+        N += gtSp.pixels();
+    }
+    mean /= N;
+
+    // Estimate sample covariance
+    Matrix5f cov = Matrix5f::Zero();
     for(auto const& s : list)
     {
         std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
@@ -304,37 +352,29 @@ bool estimateSpDistance(UtilProperties const& properties)
         auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
                                                    properties.Constants.numClasses);
 
-        // Compute distances
+        // Compute sum
         for(size_t i = 0; i < gtSp.pixels(); ++i)
         {
             Label l = gtSp.atSite(i);
-
             auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
 
-            float L = cielab.atSite(i, 0) - clusters[l].mean.r();
-            float a = cielab.atSite(i, 1) - clusters[l].mean.g();
-            float b = cielab.atSite(i, 2) - clusters[l].mean.b();
-            float x = coords.x() - clusters[l].mean.x();
-            float y = coords.y() - clusters[l].mean.y();
+            Vector5f vec;
+            vec(0) = cielab.atSite(i, 0) - clusters[l].mean.r();
+            vec(1) = cielab.atSite(i, 1) - clusters[l].mean.g();
+            vec(2) = cielab.atSite(i, 2) - clusters[l].mean.b();
+            vec(3) = coords.x() - clusters[l].mean.x();
+            vec(4) = coords.y() - clusters[l].mean.y();
 
-            float featureDiffs[] = { L, a, b, x, y };
-
-            for(int j = 0; j < 5; ++j)
-            {
-                for(int k = 0; k < 5; ++k)
-                    distances(j, k) += featureDiffs[j] * featureDiffs[k];
-            }
+            cov += (vec - mean) * (vec - mean).transpose();
         }
     }
-
-    // Normalize
-    distances /= list.size();
+    cov /= N - 1;
 
     // Show results
-    std::cout << distances << std::endl;
+    std::cout << cov << std::endl;
 
     // Write to file
-    writeFeatureWeights(properties.Paths.out + "featureWeights.txt", distances);
+    writeFeatureWeights(properties.Paths.out + "featureWeights.txt", cov);
 
     return true;
 }
