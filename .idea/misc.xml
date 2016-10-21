@@ -16,6 +16,8 @@
       <file path="$PROJECT_DIR$/data" />
       <file path="$PROJECT_DIR$/out" />
       <file path="$PROJECT_DIR$/properties" />
+      <file path="$PROJECT_DIR$/sanitizer" />
+      <file path="$PROJECT_DIR$/spGroundTruth" />
     </excludeRoots>
   </component>
 </project>
