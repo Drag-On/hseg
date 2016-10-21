@@ -99,6 +99,7 @@ int main()
             if (gt.atSite(i) != pred.atSite(i) && gt.atSite(i) < numClasses)
                 loss += lossFactor;
     }
+    loss /= fileNames.size();
 
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
