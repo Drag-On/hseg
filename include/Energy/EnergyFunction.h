@@ -188,7 +188,9 @@ template<typename T>
 float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                                  std::vector<Cluster> const& clusters) const
 {
-    return giveEnergyByWeight(labeling, img, sp, clusters).sum();
+    WeightsVec energy = m_weights;
+    energy *= giveEnergyByWeight(labeling, img, sp, clusters);
+    return energy.sum();
 }
 
 template<typename T>
