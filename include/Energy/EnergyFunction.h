@@ -248,7 +248,7 @@ void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorIm
         if (labeling.atSite(i) < m_unaryScores.classes())
         {
             if (labeling.atSite(i) != clusters[sp.atSite(i)].label)
-                energyW.m_classWeight += classDistance(labeling.atSite(i), clusters[sp.atSite(i)].label);
+                energyW.m_classWeight++;
         }
     }
 }
