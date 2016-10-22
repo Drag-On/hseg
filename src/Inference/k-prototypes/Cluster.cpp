@@ -3,20 +3,17 @@
 //
 
 #include "Inference/k-prototypes/Cluster.h"
+#include <Energy/EnergyFunction.h>
 
-Cluster::Cluster(size_t numClasses)
+Cluster::Cluster(EnergyFunction const* energy)
+        : pEnergy(energy)
 {
-    labelFrequencies.resize(numClasses, 0);
+    labelFrequencies.resize(energy->numClasses(), 0);
 }
 
 void Cluster::updateMean()
 {
     mean = accumFeature / size;
-}
-
-void Cluster::updateVariance()
-{
-    variance = accumSqFeature / size - mean.getSquaredElements();
 }
 
 void Cluster::updateLabel()

@@ -237,7 +237,7 @@ float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, si
 }
 
 template<typename T>
-void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& /* img */, LabelImage const& sp,
                                              std::vector<Cluster> const& clusters, WeightsVec& energyW) const
 {
     for (size_t i = 0; i < labeling.pixels(); ++i)
