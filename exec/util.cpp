@@ -273,6 +273,11 @@ bool estimateSpDistance(UtilProperties const& properties)
     auto cmap = helper::image::generateColorMapVOC(256);
     auto cmap2 = helper::image::generateColorMap(properties.Constants.numClusters);
 
+    UnaryFile fakeUnary;
+    WeightsVec fakeWeights(properties.Constants.numClasses);
+    Matrix5f fakeFeatureWeights;
+    EnergyFunction energy(fakeUnary, fakeWeights, 0, fakeFeatureWeights);
+
     // Compute mean
     Vector5f mean = Vector5f::Zero();
     size_t N = 0;
@@ -302,7 +307,7 @@ bool estimateSpDistance(UtilProperties const& properties)
 
         CieLabImage cielab = image.getCieLabImg();
         auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
-                                                   properties.Constants.numClasses);
+                                                   properties.Constants.numClasses, energy);
 
         for(size_t i = 0; i < gtSp.pixels(); ++i)
         {
@@ -350,7 +355,7 @@ bool estimateSpDistance(UtilProperties const& properties)
 
         CieLabImage cielab = image.getCieLabImg();
         auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
-                                                   properties.Constants.numClasses);
+                                                   properties.Constants.numClasses, energy);
 
         // Compute sum
         for(size_t i = 0; i < gtSp.pixels(); ++i)

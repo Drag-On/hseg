@@ -99,12 +99,12 @@ computeTrainingSampleEnergy(WeightsVec const& weights, UnaryFile const& unary, C
     float cOverN = C / N;
 
     // Energy on prediction
-    auto clusters = Clusterer::computeClusters(maxSp, cieLabImg, maxLabeling, numClusters, numClasses);
+    auto clusters = Clusterer::computeClusters(maxSp, cieLabImg, maxLabeling, numClusters, numClasses, trainingEnergy);
     e.pred = cOverN * trainingEnergy.giveEnergy(maxLabeling, cieLabImg, maxSp, clusters);
     e.total -= e.pred;
 
     // Energy on ground truth
-    auto gtClusters = Clusterer::computeClusters(gtSpImg, cieLabImg, gtImg, numClusters, numClasses);
+    auto gtClusters = Clusterer::computeClusters(gtSpImg, cieLabImg, gtImg, numClusters, numClasses, trainingEnergy);
     e.gt = cOverN * trainingEnergy.giveEnergy(gtImg, cieLabImg, gtSpImg, gtClusters);
     e.total += e.gt;
 
@@ -231,9 +231,11 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::waitKey();*/
 
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, numClusters, numClasses);
+    auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, numClusters,
+                                               numClasses, trainingEnergy);
     sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
-    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses);
+    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses,
+                                                 trainingEnergy);
     sampleResult.trainingEnergy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute loss
