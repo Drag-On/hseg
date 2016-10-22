@@ -19,7 +19,7 @@ void EnergyFunction::computeUnaryEnergyByWeight(LabelImage const& labeling, Weig
     {
         Label l = labeling.atSite(i);
         if (l < m_unaryScores.classes())
-            energyW.m_unaryWeights[l] += -m_unaryScores.atSite(i, l);
+            energyW.m_unaryWeights[l] += -m_unaryScores.atSite(i, l) * unaryCost(i, l);
     }
 }
 
