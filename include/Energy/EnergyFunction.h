@@ -207,7 +207,7 @@ void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, C
                 {
                     auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
                                                       helper::coord::coordinateToSite(x + 1, y, labeling.width()));
-                    energyW.pairwise(l, lR) += energy * pairwiseClassWeight(l, lR);
+                    energyW.pairwise(l, lR) += energy;
                 }
             }
 
@@ -218,7 +218,7 @@ void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, C
                 {
                     auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
                                                       helper::coord::coordinateToSite(x, y + 1, labeling.width()));
-                    energyW.pairwise(l, lD) += energy * pairwiseClassWeight(l, lD);
+                    energyW.pairwise(l, lD) += energy;
                 }
             }
         }
