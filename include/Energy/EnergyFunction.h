@@ -44,7 +44,8 @@ public:
                      std::vector<Cluster> const& clusters) const;
 
     /**
-     * Computes the overall energy by weights
+     * Computes the overall energy by weights. I.e. to compute the actual energy, the result needs to be muliplied by
+     * the weights vector.
      *  @param labeling Class labeling
      * @param img Color image
      * @param sp Superpixel labeling
