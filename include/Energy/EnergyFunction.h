@@ -143,7 +143,7 @@ public:
         if (l1 == l2 || l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
             return 0;
         else
-            return m_weights.classWeight();
+            return m_weights.classWeight(l1, l2);
     }
 
     /**
@@ -237,7 +237,7 @@ float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, si
 }
 
 template<typename T>
-void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& /* img */, LabelImage const& sp,
                                              std::vector<Cluster> const& clusters, WeightsVec& energyW) const
 {
     for (size_t i = 0; i < labeling.pixels(); ++i)
@@ -248,7 +248,8 @@ void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorIm
         if (labeling.atSite(i) < m_unaryScores.classes())
         {
             if (labeling.atSite(i) != clusters[sp.atSite(i)].label)
-                energyW.m_classWeight += classDistance(labeling.atSite(i), clusters[sp.atSite(i)].label);
+                energyW.classWeight(labeling.atSite(i), clusters[sp.atSite(i)].label) += classDistance(
+                        labeling.atSite(i), clusters[sp.atSite(i)].label);
         }
     }
 }

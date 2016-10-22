@@ -46,7 +46,9 @@ public:
     LabelImage const& clustership() const;
 
     template<typename T>
-    static std::vector<Cluster> computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling, size_t numClusters, size_t numClasses);
+    static std::vector<Cluster>
+    computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling, size_t numClusters,
+                    size_t numClasses, EnergyFunction const& energy);
 
 private:
     EnergyFunction const& m_energy;
@@ -72,11 +74,11 @@ private:
 };
 
 template<typename T>
-size_t Clusterer::run(size_t numClusters, size_t numLabels, ColorImage<T> const& color, LabelImage const& labels)
+size_t Clusterer::run(size_t numClusters, size_t /* numLabels */, ColorImage<T> const& color, LabelImage const& labels)
 {
     assert(color.pixels() == labels.pixels());
 
-    m_clusters.resize(numClusters, Cluster(numLabels));
+    m_clusters.resize(numClusters, Cluster(&m_energy));
     m_clustership = LabelImage(color.width(), color.height());
 
     initPrototypes(color, labels);
@@ -154,8 +156,6 @@ void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const&
             m_clusters[minCluster].labelFrequencies[curLabel]++;
             m_clusters[minCluster].updateLabel();
         }
-        /* m_clusters[minCluster].accumSqFeature += curFeature.getSquaredElements();
-        m_clusters[minCluster].updateVariance(); */ // TODO: Compute variances?
     }
 }
 
@@ -190,11 +190,6 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
                 m_clusters[minCluster].updateLabel();
                 m_clusters[oldCluster].updateLabel();
             }
-            /*auto sqFeature = curFeature.getSquaredElements();
-            m_clusters[minCluster].accumSqFeature += sqFeature;
-            m_clusters[oldCluster].accumSqFeature -= sqFeature;
-            m_clusters[minCluster].updateVariance();
-            m_clusters[oldCluster].updateVariance();*/ // TODO: Compute variances?
         }
     }
 
@@ -207,9 +202,9 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
 template<typename T>
 std::vector<Cluster>
 Clusterer::computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling,
-                           size_t numClusters, size_t numClasses)
+                           size_t numClusters, size_t numClasses, EnergyFunction const& energy)
 {
-    std::vector<Cluster> clusters(numClusters, Cluster(numClasses));
+    std::vector<Cluster> clusters(numClusters, Cluster(&energy));
     for (size_t i = 0; i < sp.pixels(); ++i)
     {
         assert(sp.atSite(i) < numClusters);

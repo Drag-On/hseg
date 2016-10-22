@@ -20,12 +20,14 @@ private:
     Label m_numLabels;
     std::vector<Weight> m_unaryWeights;
     std::vector<Weight> m_pairwiseWeights;
-    Weight m_classWeight;
+    std::vector<Weight> m_classWeights;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);
 
     Weight& pairwise(Label l1, Label l2);
+
+    Weight& classWeight(Label l1, Label l2);
 
 public:
     /**
@@ -71,10 +73,7 @@ public:
     /**
      * @return The class weight
      */
-    inline Weight classWeight() const
-    {
-        return std::max(0.f, m_classWeight);
-    }
+    Weight classWeight(Label l1, Label l2) const;
 
     /**
      * @return Sum of all coefficients
@@ -147,7 +146,7 @@ public:
 
     std::vector<Weight>& pairwiseWeights();
 
-    Weight& classWeight();
+    std::vector<Weight>& classWeights();
 };
 
 std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);

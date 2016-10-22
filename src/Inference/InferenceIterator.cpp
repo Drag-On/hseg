@@ -59,7 +59,8 @@ InferenceResultDetails InferenceIterator::runDetailed(size_t numIter)
         // Update class labeling using the latest superpixels
         optimizer.run(m_color, spLabeling, m_numClusters);
         classLabeling = optimizer.labeling();
-        auto clusters = Clusterer::computeClusters(spLabeling, m_color, classLabeling, m_numClusters, m_numClasses);
+        auto clusters = Clusterer::computeClusters(spLabeling, m_color, classLabeling, m_numClusters, m_numClasses,
+                                                   m_energy);
 
         float energy = m_energy.giveEnergy(classLabeling, m_color, spLabeling, clusters);
         result.energy.push_back(energy);
@@ -74,7 +75,7 @@ InferenceResultDetails InferenceIterator::runDetailed(size_t numIter)
 float InferenceIterator::computeInitialEnergy(LabelImage const& labeling) const
 {
     LabelImage fakeSpLabeling(m_color.width(), m_color.height());
-    Cluster c(m_numClasses);
+    Cluster c(&m_energy);
     for (size_t i = 0; i < m_color.pixels(); ++i)
     {
         c.accumFeature += Feature(m_color, i);
