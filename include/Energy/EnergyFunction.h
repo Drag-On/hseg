@@ -188,7 +188,9 @@ template<typename T>
 float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                                  std::vector<Cluster> const& clusters) const
 {
-    return giveEnergyByWeight(labeling, img, sp, clusters).sum();
+    WeightsVec energy = m_weights;
+    energy *= giveEnergyByWeight(labeling, img, sp, clusters);
+    return energy.sum();
 }
 
 template<typename T>
@@ -207,7 +209,7 @@ void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, C
                 {
                     auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
                                                       helper::coord::coordinateToSite(x + 1, y, labeling.width()));
-                    energyW.pairwise(l, lR) += energy * pairwiseClassWeight(l, lR);
+                    energyW.pairwise(l, lR) += energy;
                 }
             }
 
@@ -218,7 +220,7 @@ void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, C
                 {
                     auto energy = pairwisePixelWeight(img, helper::coord::coordinateToSite(x, y, labeling.width()),
                                                       helper::coord::coordinateToSite(x, y + 1, labeling.width()));
-                    energyW.pairwise(l, lD) += energy * pairwiseClassWeight(l, lD);
+                    energyW.pairwise(l, lD) += energy;
                 }
             }
         }
@@ -248,8 +250,7 @@ void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorIm
         if (labeling.atSite(i) < m_unaryScores.classes())
         {
             if (labeling.atSite(i) != clusters[sp.atSite(i)].label)
-                energyW.classWeight(labeling.atSite(i), clusters[sp.atSite(i)].label) += classDistance(
-                        labeling.atSite(i), clusters[sp.atSite(i)].label);
+                energyW.classWeight(labeling.atSite(i), clusters[sp.atSite(i)].label)++;
         }
     }
 }
