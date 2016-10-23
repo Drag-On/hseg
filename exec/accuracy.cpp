@@ -100,17 +100,17 @@ int main()
                 rawPixelCount++;
             }
         lossFactor = 1e8f / lossFactor;
-        for(size_t i = 0; i < gt.pixels(); ++i)
+        for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) != pred.atSite(i) && gt.atSite(i) < numClasses)
-            {
                 loss += lossFactor;
+            else
                 rawPxCorrect++;
-            }
     }
 
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
-    std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " %" << std::endl;
+    std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
+              << rawPixelCount << ")" << std::endl;
     std::ofstream out(properties.outDir + "accuracy.txt");
     if(out.is_open())
     {
