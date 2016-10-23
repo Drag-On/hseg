@@ -116,13 +116,11 @@ int main()
         rawPxCorrect += imgRawPxCorrect;
     }
 
-    meanCorrectPercentage /= fileNames.size();
-
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
               << rawPixelCount << ")" << std::endl;
-    std::cout << "Mean px percentage: " << 100.f * meanCorrectPercentage << " %" << std::endl;
+    std::cout << "Mean px percentage: " << (100.f * meanCorrectPercentage) / fileNames.size() << " %" << std::endl;
     std::ofstream out(properties.outDir + "accuracy.txt");
     if(out.is_open())
     {
