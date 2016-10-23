@@ -58,7 +58,7 @@ int main()
     float loss = 0;
     size_t rawPxCorrect = 0;
     size_t rawPixelCount = 0;
-    size_t meanCorrectPercentage = 0;
+    float meanCorrectPercentage = 0;
 
     for(auto const& f : fileNames)
     {
@@ -110,7 +110,7 @@ int main()
             else
                 imgRawPxCorrect++;
 
-        meanCorrectPercentage += imgRawPxCorrect / imgRawPxCount;
+        meanCorrectPercentage += static_cast<float>(imgRawPxCorrect) / imgRawPxCount;
 
         rawPixelCount += imgRawPxCount;
         rawPxCorrect += imgRawPxCorrect;
