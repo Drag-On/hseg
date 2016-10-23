@@ -56,6 +56,8 @@ int main()
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
     ConfusionMatrix accuracy(numClasses);
     float loss = 0;
+    size_t rawPxCorrect = 0;
+    size_t rawPixelCount = 0;
 
     for(auto const& f : fileNames)
     {
@@ -93,15 +95,22 @@ int main()
         float lossFactor = 0;
         for(size_t i = 0; i < gt.pixels(); ++i)
             if(gt.atSite(i) < numClasses)
+            {
                 lossFactor++;
+                rawPixelCount++;
+            }
         lossFactor = 1e8f / lossFactor;
         for(size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) != pred.atSite(i) && gt.atSite(i) < numClasses)
+            {
                 loss += lossFactor;
+                rawPxCorrect++;
+            }
     }
 
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
+    std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " %" << std::endl;
     std::ofstream out(properties.outDir + "accuracy.txt");
     if(out.is_open())
     {
