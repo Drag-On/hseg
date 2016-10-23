@@ -107,7 +107,7 @@ int main()
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) != pred.atSite(i) && gt.atSite(i) < numClasses)
                 loss += lossFactor;
-            else
+            else if (gt.atSite(i) < numClasses)
                 imgRawPxCorrect++;
 
         meanCorrectPercentage += static_cast<float>(imgRawPxCorrect) / imgRawPxCount;
