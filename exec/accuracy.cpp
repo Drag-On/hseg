@@ -58,6 +58,7 @@ int main()
     float loss = 0;
     size_t rawPxCorrect = 0;
     size_t rawPixelCount = 0;
+    size_t meanCorrectPercentage = 0;
 
     for(auto const& f : fileNames)
     {
@@ -91,26 +92,37 @@ int main()
 
         accuracy.join(pred, gt);
 
+        size_t imgRawPxCorrect = 0;
+        size_t imgRawPxCount = 0;
+
         // Compute loss
         float lossFactor = 0;
         for(size_t i = 0; i < gt.pixels(); ++i)
             if(gt.atSite(i) < numClasses)
             {
                 lossFactor++;
-                rawPixelCount++;
+                imgRawPxCount++;
             }
         lossFactor = 1e8f / lossFactor;
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) != pred.atSite(i) && gt.atSite(i) < numClasses)
                 loss += lossFactor;
             else
-                rawPxCorrect++;
+                imgRawPxCorrect++;
+
+        meanCorrectPercentage += imgRawPxCorrect / imgRawPxCount;
+
+        rawPixelCount += imgRawPxCount;
+        rawPxCorrect += imgRawPxCorrect;
     }
+
+    meanCorrectPercentage /= fileNames.size();
 
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
               << rawPixelCount << ")" << std::endl;
+    std::cout << "Mean px percentage: " << 100.f * meanCorrectPercentage << " %" << std::endl;
     std::ofstream out(properties.outDir + "accuracy.txt");
     if(out.is_open())
     {
