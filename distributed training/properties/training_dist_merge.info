@@ -1,0 +1,17 @@
+
+learningRate 1e-3
+T 100
+C 1.0
+pairwiseSigmaSq 1.00166e-06
+trainingList "/remwork/atcremers65/moellerj/VOC2012/ImageSets/Segmentation/train.txt"
+weightFile "/remwork/atcremers65/moellerj/training/weights.dat"
+featureWeightFile "/remwork/atcremers65/moellerj/training/featureWeights.txt"
+imgPath "/remwork/atcremers65/moellerj/VOC2012/JPEGImages/"
+gtPath "/remwork/atcremers65/moellerj/groundTruthFixed/"
+gtSpPath "/remwork/atcremers65/moellerj/spGroundTruth/"
+unaryPath "/remwork/atcremers65/moellerj/unaries/"
+in "/remwork/atcremers65/moellerj/training/results/"
+out "/remwork/atcremers65/moellerj/training/weights.dat"
+numThreads 8
+useDiminishingStepSize true
+
