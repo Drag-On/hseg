@@ -35,6 +35,12 @@ enum ErrorCode
     ERR_IMAGE_MISMATCH,
 };
 
+struct ImageAccuracyData
+{
+    std::string name;
+    float rawAccuracy = 0.f;
+};
+
 int main()
 {
     // Read properties
@@ -59,6 +65,8 @@ int main()
     size_t rawPxCorrect = 0;
     size_t rawPixelCount = 0;
     float meanCorrectPercentage = 0;
+
+    std::vector<ImageAccuracyData> imageAccData;
 
     for(auto const& f : fileNames)
     {
@@ -110,7 +118,12 @@ int main()
             else if (gt.atSite(i) < numClasses)
                 imgRawPxCorrect++;
 
-        meanCorrectPercentage += static_cast<float>(imgRawPxCorrect) / imgRawPxCount;
+        float rawPercentage = static_cast<float>(imgRawPxCorrect) / imgRawPxCount;
+        meanCorrectPercentage += rawPercentage;
+        ImageAccuracyData imgDat;
+        imgDat.name = f;
+        imgDat.rawAccuracy = rawPercentage;
+        imageAccData.push_back(imgDat);
 
         rawPixelCount += imgRawPxCount;
         rawPxCorrect += imgRawPxCorrect;
@@ -126,7 +139,15 @@ int main()
     {
         out << properties << std::endl << std::endl;
         out << accuracy << std::endl;
-        out << "Loss: " << loss << std::endl;
+        out << "Loss: " << loss << std::endl << std::endl;
+
+        std::sort(imageAccData.begin(), imageAccData.end(),
+                  [](ImageAccuracyData const& a, ImageAccuracyData const& b) { return a.rawAccuracy > b.rawAccuracy; });
+        out << "Top List:" << std::endl;
+        out << "---------" << std::endl;
+        for(auto const& i : imageAccData)
+            out << i.name << "\t" << i.rawAccuracy << std::endl;
+
         out.close();
     }
     else
