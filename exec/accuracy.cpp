@@ -5,6 +5,7 @@
 #include <BaseProperties.h>
 #include <helper/image_helper.h>
 #include <Accuracy/ConfusionMatrix.h>
+#include <boost/filesystem/path.hpp>
 
 PROPERTIES_DEFINE(Accuracy,
                   PROP_DEFINE(std::string, fileList, "")
@@ -51,6 +52,7 @@ int main()
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
+    std::string fileListName = boost::filesystem::path(properties.fileList).stem().string();
     auto fileNames = readFileNames(properties.fileList);
     if(fileNames.empty())
     {
@@ -134,7 +136,7 @@ int main()
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
               << rawPixelCount << ")" << std::endl;
     std::cout << "Mean px percentage: " << (100.f * meanCorrectPercentage) / fileNames.size() << " %" << std::endl;
-    std::ofstream out(properties.outDir + "accuracy.txt");
+    std::ofstream out(properties.outDir + fileListName + "_accuracy.txt");
     if(out.is_open())
     {
         out << properties << std::endl << std::endl;
@@ -154,7 +156,7 @@ int main()
         std::cerr << "Couldn't write accuracy to \"" + properties.outDir << "\"" << std::endl;
 
     cv::Mat confusionMat = static_cast<cv::Mat>(accuracy);
-    if(!cv::imwrite(properties.outDir + "confusion.png", confusionMat))
+    if(!cv::imwrite(properties.outDir + fileListName + "_confusion.png", confusionMat))
         std::cerr << "Couldn't write confusion matrix to \"" + properties.outDir << "\"" << std::endl;
 
     return ERR_OK;
