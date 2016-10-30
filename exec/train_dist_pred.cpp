@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 0, 0, 0);
+    WeightsVec curWeights(numClasses, 0, 0, 0, 0);
     if(!curWeights.read(properties.weightFile))
     {
         std::cout << "Couldn't read current weights from " << properties.weightFile << std::endl;

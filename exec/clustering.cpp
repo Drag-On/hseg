@@ -26,6 +26,7 @@ PROPERTIES_DEFINE(Clustering,
                   PROP_DEFINE(bool, showResult, true)
                   GROUP_DEFINE(weights,
                                PROP_DEFINE(std::string, featureWeightFile, "")
+                               PROP_DEFINE(float, feature, 1.f)
                                PROP_DEFINE(float, label, 30.f)
                   )
 )
@@ -118,7 +119,7 @@ int main()
 
     size_t const numClasses = 21;
 
-    WeightsVec weights(numClasses, 1, 1, properties.weights.label);
+    WeightsVec weights(numClasses, 1, 1, properties.weights.feature, properties.weights.label);
     UnaryFile fakeUnary;
     Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
     std::cout << "Used feature weights: " << std::endl;

@@ -25,6 +25,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                                PROP_DEFINE(std::string, file, "")
                                PROP_DEFINE(float, unary, 5.f)
                                PROP_DEFINE(float, pairwise, 500)
+                               PROP_DEFINE(float, feature, 1)
                                PROP_DEFINE(float, label, 30.f)
                                PROP_DEFINE(std::string, featureWeightFile, "")
                   )
@@ -103,7 +104,8 @@ int main()
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
 
-    WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.label);
+    WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature,
+                       properties.weights.label);
     if(!weights.read(properties.weights.file))
         std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;
     std::cout << "Used weights:" << std::endl;

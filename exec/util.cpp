@@ -64,11 +64,14 @@ bool writeWeight(std::string const& weightFile)
     std::cout << "Pairwise weight: ";
     float p = 0;
     std::cin >> p;
+    std::cout << "Feature weight: ";
+    float f = 0;
+    std::cin >> f;
     std::cout << "Class weight: ";
     float l = 0;
     std::cin >> l;
     std::cout << "==========" << std::endl;
-    WeightsVec w(21ul, u, p, l);
+    WeightsVec w(21ul, u, p, f, l);
     return w.write(weightFile);
 }
 

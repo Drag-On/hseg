@@ -20,6 +20,7 @@ private:
     Label m_numLabels;
     std::vector<Weight> m_unaryWeights;
     std::vector<Weight> m_pairwiseWeights;
+    Weight m_featureWeight;
     std::vector<Weight> m_classWeights;
 
     friend class EnergyFunction;
@@ -42,9 +43,10 @@ public:
      * @param numLabels Amount of class labels
      * @param unaryWeight Weight of the unary term
      * @param pairwiseWeight Weight of the pairwise term
+     * @param featureWeight Weight of the feature term
      * @param labelWeight Label weight
      */
-    WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float labelWeight);
+    WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float featureWeight, float labelWeight);
 
     /**
      * Weight of the unary term
@@ -69,6 +71,15 @@ public:
      * @return The approriate weight
      */
     Weight pairwise(Label l1, Label l2) const;
+
+    /**
+     * Weight of the feature term
+     * @return Feature weight
+     */
+    inline Weight feature() const
+    {
+        return std::max(0.f, m_featureWeight);
+    }
 
     /**
      * @return The class weight

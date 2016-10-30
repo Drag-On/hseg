@@ -41,7 +41,7 @@ float EnergyFunction::featureDistance(Feature const& feature, Feature const& fea
     f(3) = feature.x() - feature2.x();
     f(4) = feature.y() - feature2.y();
     float dist = f.transpose() * m_featureWeights * f;
-    return dist;
+    return m_weights.feature() * dist;
 }
 
 UnaryFile const& EnergyFunction::unaryFile() const
