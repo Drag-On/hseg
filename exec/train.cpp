@@ -151,7 +151,7 @@ TrainingEnergy computeTrainingEnergy(std::vector<std::string> const& clrImgs, st
         UnaryFile unary(props.unaryBasePath + unaries[n] + "_prob.dat");
 
         // Predict with loss-augmented energy
-        LossAugmentedEnergyFunction energy(unary, weights, pairwiseSigmaSq, featureWeights, groundTruth);
+        LossAugmentedEnergyFunction energy(unary, weights, pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
         InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
         InferenceResult result = inference.run(2);
 
@@ -219,7 +219,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     }
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
+    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
     InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run(2);
 

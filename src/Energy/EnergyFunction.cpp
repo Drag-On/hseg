@@ -44,6 +44,11 @@ float EnergyFunction::featureDistance(Feature const& feature, Feature const& fea
     return m_weights.feature() * dist;
 }
 
+float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t /* clusterId */) const
+{
+    return featureDistance(fPx, cl.mean) + classDistance(lPx, cl.label);
+}
+
 UnaryFile const& EnergyFunction::unaryFile() const
 {
     return m_unaryScores;

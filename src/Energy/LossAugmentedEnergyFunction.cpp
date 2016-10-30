@@ -6,9 +6,10 @@
 
 LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights,
                                                          float pairwiseSigmaSq, Matrix5f const& featureWeights,
-                                                         LabelImage const& groundTruth)
+                                                         LabelImage const& groundTruth, LabelImage const& spGroundTruth)
         : EnergyFunction(unaries, weights, pairwiseSigmaSq, featureWeights),
-          m_groundTruth(groundTruth)
+          m_groundTruth(groundTruth),
+          m_spGroundTruth(spGroundTruth)
 {
     m_lossFactor = 0;
     for(size_t i = 0; i < m_groundTruth.pixels(); ++i)
@@ -24,5 +25,13 @@ float LossAugmentedEnergyFunction::unaryCost(size_t i, Label l) const
         loss = m_lossFactor;
 
     return EnergyFunction::unaryCost(i, l) - loss;
+}
+
+float LossAugmentedEnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t clusterId) const
+{
+    float dist = EnergyFunction::pixelToClusterDistance(fPx, lPx, cl, clusterId);
+    if(clusterId != m_spGroundTruth.at(fPx.x(), fPx.y()))
+        dist -= m_lossFactor;
+    return dist;
 }
 

@@ -154,10 +154,7 @@ public:
      * @param cl Cluster
      * @return The pixel-to-cluster distance
      */
-    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl) const
-    {
-        return featureDistance(fPx, cl.mean) + classDistance(lPx, cl.label);
-    }
+    virtual float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t clusterId) const;
 
     /**
      * Simple potts model.
