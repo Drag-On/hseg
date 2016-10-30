@@ -191,18 +191,7 @@ float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const
 {
     WeightsVec energy = m_weights;
     energy *= giveEnergyByWeight(labeling, img, sp, clusters);
-
-    // The feature distance is missing from the above since there is no weight for it
-    // Thus, add it here
-    float featureEnergy = 0;
-    for(size_t i = 0; i < labeling.pixels(); ++i)
-    {
-        Feature f(img, i);
-        Label l = sp.atSite(i);
-        featureEnergy += featureDistance(f, clusters[l].mean);
-    }
-
-    return energy.sum() + featureEnergy;
+    return energy.sum();
 }
 
 template<typename T>
