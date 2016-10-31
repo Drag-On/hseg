@@ -2,11 +2,11 @@
 basePath="/remwork/atcremers65/moellerj"
 imgPath="$basePath/VOC2012/JPEGImages"
 gtPath="$basePath/groundTruthFixed"
-gtSpPath="$basePath/groundTruthSp$"
+gtSpPath="$basePath/spGroundTruth"
 unaryPath="$basePath/unaries"
 outPath="$basePath/training/results"
 weightsPath="$basePath/training"
-featureWeights="$basePath/featureWeights.txt"
+featureWeights="$basePath/training/featureWeights.txt"
 
 
 # Re-create all jobs
