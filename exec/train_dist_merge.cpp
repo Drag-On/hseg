@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
 
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1);
-    WeightsVec curWeights(numClasses, 0, 0, 0, 0);
+    WeightsVec curWeights(numClasses, 1, 1, 1, 1);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
