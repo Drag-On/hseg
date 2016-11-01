@@ -84,6 +84,8 @@ int main()
 
     // Read in feature weights
     Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
+    std::cout << "Used feature weights:" << std::endl;
+    std::cout << featureWeights << std::endl;
 
     // Create energy function
     EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq, featureWeights);
