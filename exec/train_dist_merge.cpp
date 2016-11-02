@@ -140,6 +140,7 @@ int main(int argc, char* argv[])
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(numClusters);
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    featureWeights = featureWeights.inverse();
 
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1);
     WeightsVec curWeights(numClasses, 1, 1, 1, 1);

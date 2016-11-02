@@ -16,6 +16,7 @@
       <file path="$PROJECT_DIR$/cmake-build-debug" />
       <file path="$PROJECT_DIR$/cmake-build-debug/CMakeFiles" />
       <file path="$PROJECT_DIR$/cmake-build-release/CMakeFiles" />
+      <file path="$PROJECT_DIR$/cmake-build-relwithdebinfo/CMakeFiles" />
       <file path="$PROJECT_DIR$/data" />
       <file path="$PROJECT_DIR$/out" />
       <file path="$PROJECT_DIR$/properties" />

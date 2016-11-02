@@ -32,7 +32,8 @@ PROPERTIES_DEFINE(InferenceBatch,
 )
 
 bool process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
-             WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties)
+             WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
+             Matrix5f const& featureWeights)
 {
     // Load images
     RGBImage rgb;
@@ -52,9 +53,6 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
         std::cerr << "Unary file is invalid." << std::endl;
         return false;
     }
-
-    // Load feature weights
-    Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
 
     // Create energy function
     EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq, featureWeights);
@@ -111,6 +109,12 @@ int main()
     std::cout << "Used weights:" << std::endl;
     std::cout << weights << std::endl;
 
+    // Load feature weights
+    Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
+    featureWeights = featureWeights.inverse();
+    std::cout << "Used feature weights:" << std::endl;
+    std::cout << featureWeights << std::endl;
+
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, properties.numClusters));
 
     // Read in file names to process
@@ -137,7 +141,7 @@ int main()
     {
         std::string const& imageFilename = properties.imageDir + f + properties.imageExtension;
         std::string const& unaryFilename = properties.unaryDir + f + properties.unaryExtension;
-        auto&& fut = pool.enqueue(process, imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties);
+        auto&& fut = pool.enqueue(process, imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties, featureWeights);
         futures.push_back(std::move(fut));
     }
 

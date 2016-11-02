@@ -303,6 +303,7 @@ int main()
     size_t N = colorImageFilenames.size();
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    featureWeights = featureWeights.inverse();
     std::cout << "Used feature weights: " << std::endl;
     std::cout << featureWeights << std::endl;
 

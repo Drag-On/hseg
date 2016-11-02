@@ -91,6 +91,7 @@ int main(int argc, char* argv[])
     }
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    featureWeights = featureWeights.inverse();
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
