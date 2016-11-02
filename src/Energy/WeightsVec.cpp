@@ -153,11 +153,6 @@ WeightsVec& WeightsVec::operator*=(WeightsVec const& other)
     return *this;
 }
 
-Weight WeightsVec::sum() const
-{
-    return sumUnary() + sumPairwise() + sumSuperpixel();
-}
-
 Weight WeightsVec::sumUnary() const
 {
     Weight result = 0;

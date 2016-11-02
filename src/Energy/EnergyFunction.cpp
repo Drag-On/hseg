@@ -32,29 +32,7 @@ float EnergyFunction::unaryCost(size_t i, Label l) const
     return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
 }
 
-float EnergyFunction::featureDistance(Feature const& feature, Feature const& feature2) const
-{
-    Vector5f f;
-    f(0) = feature.r() - feature2.r();
-    f(1) = feature.g() - feature2.g();
-    f(2) = feature.b() - feature2.b();
-    f(3) = feature.x() - feature2.x();
-    f(4) = feature.y() - feature2.y();
-    float dist = f.transpose() * m_featureWeights * f;
-    return m_weights.feature() * dist;
-}
-
 float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t /* clusterId */) const
 {
     return featureDistance(fPx, cl.mean) + classDistance(lPx, cl.label);
-}
-
-UnaryFile const& EnergyFunction::unaryFile() const
-{
-    return m_unaryScores;
-}
-
-WeightsVec const& EnergyFunction::weights() const
-{
-    return m_weights;
 }

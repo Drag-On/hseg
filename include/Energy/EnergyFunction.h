@@ -131,7 +131,14 @@ public:
      * @param feature2 The second feature
      * @return The feature distance
      */
-    float featureDistance(Feature const& feature, Feature const& feature2) const;
+    inline float featureDistance(Feature const& feature, Feature const& feature2) const
+    {
+        Vector5f f;
+        f << feature.r() - feature2.r(), feature.g() - feature2.g(), feature.b() - feature2.b(), feature.x() - feature2.x(),
+                feature.y() - feature2.y();
+        float dist = f.transpose() * m_featureWeights * f;
+        return m_weights.feature() * dist;
+    }
 
     /**
      * Computes the class label distance between two class labels
@@ -168,12 +175,18 @@ public:
     /**
      * @return The unary file
      */
-    UnaryFile const& unaryFile() const;
+    inline UnaryFile const& unaryFile() const
+    {
+        return m_unaryScores;
+    }
 
     /**
      * @return The weights
      */
-    WeightsVec const& weights() const;
+    inline WeightsVec const& weights() const
+    {
+        return m_weights;
+    }
 
 protected:
     UnaryFile const& m_unaryScores;

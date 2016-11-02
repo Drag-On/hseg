@@ -89,7 +89,10 @@ public:
     /**
      * @return Sum of all coefficients
      */
-    Weight sum() const;
+    inline Weight sum() const
+    {
+        return sumUnary() + sumPairwise() + sumSuperpixel();
+    }
 
     /**
      * @return Sum of all unary coefficients
