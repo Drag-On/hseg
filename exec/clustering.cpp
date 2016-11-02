@@ -64,7 +64,7 @@ int process(std::string const& imgFile, std::string const& labelFile, Clustering
 
     // Do the clustering
     Timer t(true);
-    Clusterer clusterer(energy);
+    Clusterer<EnergyFunction> clusterer(energy);
     size_t iter = clusterer.run(properties.numClusters, numClasses, cieLab, labeling);
     t.pause();
 

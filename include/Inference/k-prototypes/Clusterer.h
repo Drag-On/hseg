@@ -15,6 +15,7 @@
 /**
  * Clusters an image based on color, position, and a given labeling
  */
+template<typename EnergyFun>
 class Clusterer
 {
 public:
@@ -23,7 +24,7 @@ public:
      * @param energy Energy function to optimize with respect to the superpixel segmentation. The reference needs to
      *               stay valid as long as the clusterer exists
      */
-    Clusterer(EnergyFunction const& energy);
+    Clusterer(EnergyFun energy);
 
     /**
      * Runs the clustering process
@@ -43,15 +44,18 @@ public:
     /**
      * @return Clustering result
      */
-    LabelImage const& clustership() const;
+    inline LabelImage const& clustership() const
+    {
+        return m_clustership;
+    }
 
     template<typename T>
     static std::vector<Cluster>
     computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling, size_t numClusters,
-                    size_t numClasses, EnergyFunction const& energy);
+                    size_t numClasses, EnergyFun const& energy);
 
 private:
-    EnergyFunction const& m_energy;
+    EnergyFun m_energy;
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
     float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
@@ -70,11 +74,30 @@ private:
     /**
      * @return Current clusters
      */
-    std::vector<Cluster> const& clusters() const;
+    inline std::vector<Cluster> const& clusters() const
+    {
+        return m_clusters;
+    }
 };
 
+template<typename EnergyFun>
+Clusterer<EnergyFun>::Clusterer(EnergyFun energy)
+        : m_energy(energy)
+{
+}
+
+template<typename EnergyFun>
+size_t Clusterer<EnergyFun>::findClosestCluster(Feature const& feature, Label classLabel) const
+{
+    std::vector<float> distances(m_clusters.size(), 0.f);
+    size_t i = 0;
+    std::generate(distances.begin(), distances.end(), [&]{return m_energy.pixelToClusterDistance(feature, classLabel, m_clusters, i++);});
+    return std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
+}
+
+template<typename EnergyFun>
 template<typename T>
-size_t Clusterer::run(size_t numClusters, size_t /* numLabels */, ColorImage<T> const& color, LabelImage const& labels)
+size_t Clusterer<EnergyFun>::run(size_t numClusters, size_t /* numLabels */, ColorImage<T> const& color, LabelImage const& labels)
 {
     assert(color.pixels() == labels.pixels());
 
@@ -108,8 +131,9 @@ size_t Clusterer::run(size_t numClusters, size_t /* numLabels */, ColorImage<T> 
     return iter;
 }
 
+template<typename EnergyFun>
 template<typename T>
-void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& labels)
+void Clusterer<EnergyFun>::initPrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     // Randomly select k objects as initial prototypes
     std::default_random_engine generator(0/*std::chrono::system_clock::now().time_since_epoch().count()*/);
@@ -134,8 +158,9 @@ void Clusterer::initPrototypes(ColorImage<T> const& color, LabelImage const& lab
     }
 }
 
+template<typename EnergyFun>
 template<typename T>
-void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
+void Clusterer<EnergyFun>::allocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     for (size_t i = 0; i < color.pixels(); ++i)
     {
@@ -159,8 +184,9 @@ void Clusterer::allocatePrototypes(ColorImage<T> const& color, LabelImage const&
     }
 }
 
+template<typename EnergyFun>
 template<typename T>
-size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
+size_t Clusterer<EnergyFun>::reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
 {
     size_t moves = 0;
     for (size_t i = 0; i < color.pixels(); ++i)
@@ -199,10 +225,11 @@ size_t Clusterer::reallocatePrototypes(ColorImage<T> const& color, LabelImage co
     return moves;
 }
 
+template<typename EnergyFun>
 template<typename T>
 std::vector<Cluster>
-Clusterer::computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling,
-                           size_t numClusters, size_t numClasses, EnergyFunction const& energy)
+Clusterer<EnergyFun>::computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling,
+                           size_t numClusters, size_t numClasses, EnergyFun const& energy)
 {
     std::vector<Cluster> clusters(numClusters, Cluster(&energy));
     for (size_t i = 0; i < sp.pixels(); ++i)

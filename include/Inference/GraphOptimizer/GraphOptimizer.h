@@ -15,6 +15,7 @@
 /**
  * Opimizes the energy function for the class labeling
  */
+template<typename EnergyFun>
 class GraphOptimizer
 {
 public:
@@ -22,7 +23,7 @@ public:
      * Constructor
      * @param energy Energy function to optimize for l. The reference needs to stay valid as long as the optimizer exists
      */
-    GraphOptimizer(EnergyFunction const& energy) noexcept;
+    GraphOptimizer(EnergyFun energy) noexcept;
 
     /**
      * Runs the optimization
@@ -41,7 +42,7 @@ public:
     LabelImage const& labeling() const;
 
 private:
-    EnergyFunction const& m_energy;
+    EnergyFun m_energy;
     LabelImage m_labeling;
 
     template<typename T>
@@ -53,18 +54,32 @@ private:
         using LabelID = GCoptimization::LabelID;
         using PixelPairType = std::pair<SiteID, SiteID>;
 
-        EnergyFunction const& m_energy;
+        EnergyFun const* m_pEnergy;
         ColorImage<T> const& m_color;
         boost::unordered_map<PixelPairType, EnergyTermType/*, helper::hash::hash<PixelPairType>*/> m_pixelEnergies;
 
-        PairwiseCost(EnergyFunction const& energy, ColorImage<T> const& color);
+        PairwiseCost(EnergyFun const& energy, ColorImage<T> const& color);
 
         EnergyTermType compute(SiteID s1, SiteID s2, LabelID l1, LabelID l2) override;
     };
 };
 
+template<typename EnergyFun>
+GraphOptimizer<EnergyFun>::GraphOptimizer(EnergyFun energy) noexcept
+        : m_energy(energy)
+{
+}
+
+template<typename EnergyFun>
+inline LabelImage const& GraphOptimizer<EnergyFun>::labeling() const
+{
+    return m_labeling;
+}
+
+
+template<typename EnergyFun>
 template<typename T>
-void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP)
+void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP)
 {
     size_t numPx = img.pixels();
     size_t numNodes = numPx + numSP;
@@ -128,9 +143,10 @@ void GraphOptimizer::run(ColorImage<T> const& img, LabelImage const& sp, size_t 
         m_labeling.atSite(i) = graph.whatLabel(i);
 }
 
+template<typename EnergyFun>
 template<typename T>
-GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, ColorImage<T> const& color)
-        : m_energy(energy),
+GraphOptimizer<EnergyFun>::PairwiseCost<T>::PairwiseCost(EnergyFun const& energy, ColorImage<T> const& color)
+        : m_pEnergy(&energy),
           m_color(color)
 {
     // Pre-compute the pixel energies
@@ -145,7 +161,7 @@ GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, Colo
                 std::pair<SiteID, SiteID> right{s, r};
                 if(r < s)
                     right = {r, s};
-                m_pixelEnergies[right] = std::round(m_energy.pairwisePixelWeight(color, s, r));
+                m_pixelEnergies[right] = std::round(m_pEnergy->pairwisePixelWeight(color, s, r));
             }
             if(y + 1 < color.height())
             {
@@ -153,20 +169,21 @@ GraphOptimizer::PairwiseCost<T>::PairwiseCost(EnergyFunction const& energy, Colo
                 std::pair<SiteID, SiteID> down{s, d};
                 if(d < s)
                     down = {d, s};
-                m_pixelEnergies[down] = std::round(m_energy.pairwisePixelWeight(color, s, d));
+                m_pixelEnergies[down] = std::round(m_pEnergy->pairwisePixelWeight(color, s, d));
             }
         }
     }
 }
 
+template<typename EnergyFun>
 template<typename T>
-typename GraphOptimizer::PairwiseCost<T>::EnergyTermType
-GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID s1,
-                                         GraphOptimizer::PairwiseCost<T>::SiteID s2,
-                                         GraphOptimizer::PairwiseCost<T>::LabelID l1,
-                                         GraphOptimizer::PairwiseCost<T>::LabelID l2)
+typename GraphOptimizer<EnergyFun>::template PairwiseCost<T>::EnergyTermType
+GraphOptimizer<EnergyFun>::PairwiseCost<T>::compute(GraphOptimizer<EnergyFun>::PairwiseCost<T>::SiteID s1,
+                                                    GraphOptimizer<EnergyFun>::PairwiseCost<T>::SiteID s2,
+                                                    GraphOptimizer<EnergyFun>::PairwiseCost<T>::LabelID l1,
+                                                    GraphOptimizer<EnergyFun>::PairwiseCost<T>::LabelID l2)
 {
-    using EnergyTermType = GraphOptimizer::PairwiseCost<T>::EnergyTermType;
+    using EnergyTermType = GraphOptimizer<EnergyFun>::PairwiseCost<T>::EnergyTermType;
     // If the labels are identical it's always zero
     if (l1 == l2)
         return 0;
@@ -181,11 +198,11 @@ GraphOptimizer::PairwiseCost<T>::compute(GraphOptimizer::PairwiseCost<T>::SiteID
         std::pair<SiteID, SiteID> pair{s1, s2};
         assert(m_pixelEnergies.count(pair) != 0);
         EnergyTermType pxEnergy = m_pixelEnergies[pair];
-        float classWeight = m_energy.pairwiseClassWeight(l1, l2);
+        float classWeight = m_pEnergy->pairwiseClassWeight(l1, l2);
         return pxEnergy * std::round(classWeight);
     }
     else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
-        return std::round(m_energy.classDistance(l1, l2));
+        return std::round(m_pEnergy->classDistance(l1, l2));
 }
 
 #endif //HSEG_GRAPHOPTIMIZER_H

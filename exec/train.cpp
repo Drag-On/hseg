@@ -99,12 +99,12 @@ computeTrainingSampleEnergy(WeightsVec const& weights, UnaryFile const& unary, C
     float cOverN = C / N;
 
     // Energy on prediction
-    auto clusters = Clusterer::computeClusters(maxSp, cieLabImg, maxLabeling, numClusters, numClasses, trainingEnergy);
+    auto clusters = Clusterer<EnergyFunction>::computeClusters(maxSp, cieLabImg, maxLabeling, numClusters, numClasses, trainingEnergy);
     e.pred = cOverN * trainingEnergy.giveEnergy(maxLabeling, cieLabImg, maxSp, clusters);
     e.total -= e.pred;
 
     // Energy on ground truth
-    auto gtClusters = Clusterer::computeClusters(gtSpImg, cieLabImg, gtImg, numClusters, numClasses, trainingEnergy);
+    auto gtClusters = Clusterer<EnergyFunction>::computeClusters(gtSpImg, cieLabImg, gtImg, numClusters, numClasses, trainingEnergy);
     e.gt = cOverN * trainingEnergy.giveEnergy(gtImg, cieLabImg, gtSpImg, gtClusters);
     e.total += e.gt;
 
@@ -152,7 +152,7 @@ TrainingEnergy computeTrainingEnergy(std::vector<std::string> const& clrImgs, st
 
         // Predict with loss-augmented energy
         LossAugmentedEnergyFunction energy(unary, weights, pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
-        InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
+        InferenceIterator<LossAugmentedEnergyFunction> inference(energy, numClusters, numClasses, cieLabImage);
         InferenceResult result = inference.run(2);
 
         // Compute training sample energy
@@ -220,7 +220,7 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
-    InferenceIterator inference(energy, properties.numClusters, numClasses, cieLabImage);
+    InferenceIterator<LossAugmentedEnergyFunction> inference(energy, properties.numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run(2);
 
     /*cv::imshow("sp", static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2)));
@@ -231,10 +231,10 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::waitKey();*/
 
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    auto clusters = Clusterer::computeClusters(result.superpixels, cieLabImage, result.labeling, numClusters,
+    auto clusters = Clusterer<EnergyFunction>::computeClusters(result.superpixels, cieLabImage, result.labeling, numClusters,
                                                numClasses, trainingEnergy);
     sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
-    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses,
+    auto gtClusters = Clusterer<EnergyFunction>::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses,
                                                  trainingEnergy);
     sampleResult.trainingEnergy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 

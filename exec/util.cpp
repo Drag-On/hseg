@@ -309,8 +309,8 @@ bool estimateSpDistance(UtilProperties const& properties)
         LabelImage gtSp = helper::image::decolorize(gtSpRGB, cmap2);
 
         CieLabImage cielab = image.getCieLabImg();
-        auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
-                                                   properties.Constants.numClasses, energy);
+        auto clusters = Clusterer<EnergyFunction>::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
+                                                                   properties.Constants.numClasses, energy);
 
         for(size_t i = 0; i < gtSp.pixels(); ++i)
         {
@@ -357,8 +357,8 @@ bool estimateSpDistance(UtilProperties const& properties)
         LabelImage gtSp = helper::image::decolorize(gtSpRGB, cmap2);
 
         CieLabImage cielab = image.getCieLabImg();
-        auto clusters = Clusterer::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
-                                                   properties.Constants.numClasses, energy);
+        auto clusters = Clusterer<EnergyFunction>::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
+                                                                   properties.Constants.numClasses, energy);
 
         // Compute sum
         for(size_t i = 0; i < gtSp.pixels(); ++i)

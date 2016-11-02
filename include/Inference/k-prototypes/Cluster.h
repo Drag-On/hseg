@@ -6,6 +6,7 @@
 #define HSEG_CLUSTER_H
 
 #include <Image/Image.h>
+#include <functional>
 #include "Feature.h"
 
 class EnergyFunction;
@@ -15,7 +16,8 @@ class EnergyFunction;
  */
 struct Cluster
 {
-    explicit Cluster(EnergyFunction const* energy);
+    template<typename EnergyFun>
+    explicit Cluster(EnergyFun const* energy);
 
     Feature mean; //< Mean feature
     Feature accumFeature; //< Accumulated feature. Divide by size to get the current mean!
@@ -23,7 +25,8 @@ struct Cluster
     Label label = 0; //< Dominant class label
     std::vector<Label> labelFrequencies; //< Label frequencies inside the cluster
     size_t size = 0; //< Amount of attached pixels
-    EnergyFunction const* pEnergy;
+    size_t numClasses = 0;
+    std::function<float(Label,Label)> classDistance;
 
     /**
      * Recomputes the mean feature based on accumulated features and cluster size
@@ -35,5 +38,13 @@ struct Cluster
      */
     void updateLabel();
 };
+
+template<typename EnergyFun>
+Cluster::Cluster(EnergyFun const* energy)
+{
+    numClasses = energy->numClasses();
+    labelFrequencies.resize(energy->numClasses(), 0);
+    classDistance = [energy](Label l1, Label l2) -> float {return energy->classDistance(l1, l2);};
+}
 
 #endif //HSEG_CLUSTER_H

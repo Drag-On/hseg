@@ -24,9 +24,22 @@ public:
     LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq,
                                 Matrix5f const& featureWeights, LabelImage const& groundTruth, LabelImage const& spGroundTruth);
 
-    virtual float unaryCost(size_t i, Label l) const override;
+    inline float unaryCost(size_t i, Label l) const
+    {
+        float loss = 0;
+        if (m_groundTruth.atSite(i) != l && m_groundTruth.atSite(i) < m_unaryScores.classes())
+            loss = m_lossFactor;
 
-    float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const override;
+        return EnergyFunction::unaryCost(i, l) - loss;
+    }
+
+    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const
+    {
+        float dist = EnergyFunction::pixelToClusterDistance(fPx, lPx, cl, clusterId);
+        if(clusterId != m_spGroundTruth.at(fPx.x(), fPx.y()))
+            dist -= m_lossFactor;
+        return dist;
+    }
 
 private:
     LabelImage const& m_groundTruth;

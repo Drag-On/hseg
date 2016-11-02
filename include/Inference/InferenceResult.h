@@ -17,10 +17,6 @@ struct InferenceResult
 public:
     LabelImage labeling; //< Class labeling
     LabelImage superpixels; //< Superpixel segmentation
-    Clusterer clusterer; //< Clusterer object
-    GraphOptimizer optimizer; //< Optimizer object
-
-    InferenceResult(EnergyFunction const& energy);
 };
 
 

@@ -58,7 +58,7 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
     EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq, featureWeights);
 
     // Do the inference!
-    InferenceIterator inference(energyFun, clusters, classes, cieLab);
+    InferenceIterator<EnergyFunction> inference(energyFun, clusters, classes, cieLab);
     auto result = inference.run(2);
 
     // Write results to disk

@@ -22,17 +22,3 @@ void EnergyFunction::computeUnaryEnergyByWeight(LabelImage const& labeling, Weig
             energyW.m_unaryWeights[l] += -m_unaryScores.atSite(i, l);
     }
 }
-
-float EnergyFunction::unaryCost(size_t i, Label l) const
-{
-    if(l >= m_unaryScores.classes())
-        return 0;
-
-    auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
-    return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
-}
-
-float EnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const
-{
-    return featureDistance(fPx, cl[clusterId].mean) + classDistance(lPx, cl[clusterId].label);
-}

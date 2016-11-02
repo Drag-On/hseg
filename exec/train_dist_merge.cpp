@@ -89,10 +89,10 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     }
 
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    auto clusters = Clusterer::computeClusters(predictionSp, cieLabImage, prediction, numClusters, numClasses,
+    auto clusters = Clusterer<EnergyFunction>::computeClusters(predictionSp, cieLabImage, prediction, numClusters, numClasses,
                                                trainingEnergy);
     sampleResult.energy -= trainingEnergy.giveEnergy(prediction, cieLabImage, predictionSp, clusters);
-    auto gtClusters = Clusterer::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses,
+    auto gtClusters = Clusterer<EnergyFunction>::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses,
                                                  trainingEnergy);
     sampleResult.energy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 

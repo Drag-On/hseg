@@ -99,7 +99,14 @@ public:
      * @param l Class label to compute score for
      * @return The cost of assigning class label \p l to pixel \p i
      */
-    virtual float unaryCost(size_t i, Label l) const;
+    inline float unaryCost(size_t i, Label l) const
+    {
+        if(l >= m_unaryScores.classes())
+            return 0;
+
+        auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
+        return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
+    }
 
     /**
      * Computes the partial cost of a pairwise connection as given by the color of the pixels
@@ -162,7 +169,10 @@ public:
      * @param clusterId Cluster index
      * @return The pixel-to-cluster distance
      */
-    virtual float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const;
+    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const
+    {
+        return featureDistance(fPx, cl[clusterId].mean) + classDistance(lPx, cl[clusterId].label);
+    }
 
     /**
      * Simple potts model.

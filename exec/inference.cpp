@@ -93,7 +93,7 @@ int main()
 
     // Do the inference!
     Timer t(true);
-    InferenceIterator inference(energyFun, properties.numClusters, numClasses, cieLab);
+    InferenceIterator<EnergyFunction> inference(energyFun, properties.numClusters, numClasses, cieLab);
     auto result = inference.runDetailed();
     t.pause();
 

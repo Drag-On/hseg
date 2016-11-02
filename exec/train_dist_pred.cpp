@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
-    InferenceIterator inference(energy, numClusters, numClasses, cieLabImage);
+    InferenceIterator<LossAugmentedEnergyFunction> inference(energy, numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run();
 
     // Store prediction
