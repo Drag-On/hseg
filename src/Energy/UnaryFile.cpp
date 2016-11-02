@@ -35,39 +35,6 @@ UnaryFile::UnaryFile(std::string const& filename)
     }
 }
 
-bool UnaryFile::isValid() const
-{
-    return m_valid;
-}
-
-size_t UnaryFile::width() const
-{
-    return m_width;
-}
-
-size_t UnaryFile::height() const
-{
-    return m_height;
-}
-
-size_t UnaryFile::classes() const
-{
-    return m_classes;
-}
-
-float UnaryFile::at(size_t x, size_t y, size_t c) const
-{
-    assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
-    return m_data[x + (y * m_width) + (c * m_width * m_height)];
-}
-
-float UnaryFile::atSite(size_t s, size_t c) const
-{
-    assert(s < m_width * m_height);
-    assert(s + (c * m_width * m_height) < m_data.size());
-    return m_data[s + (c * m_width * m_height)];
-}
-
 Label UnaryFile::maxLabelAt(size_t x, size_t y) const
 {
     Label maxLabel = 0;

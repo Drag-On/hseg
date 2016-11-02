@@ -27,7 +27,7 @@ float LossAugmentedEnergyFunction::unaryCost(size_t i, Label l) const
     return EnergyFunction::unaryCost(i, l) - loss;
 }
 
-float LossAugmentedEnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t clusterId) const
+float LossAugmentedEnergyFunction::pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const
 {
     float dist = EnergyFunction::pixelToClusterDistance(fPx, lPx, cl, clusterId);
     if(clusterId != m_spGroundTruth.at(fPx.x(), fPx.y()))

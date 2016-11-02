@@ -29,22 +29,34 @@ public:
     /**
      * @return True in case the object is valid (i.e. the scores have been properly loaded), false otherwise
      */
-    bool isValid() const;
+    inline bool isValid() const
+    {
+        return m_valid;
+    }
 
     /**
      * @return Width of the image
      */
-    size_t width() const;
+    inline size_t width() const
+    {
+        return m_width;
+    }
 
     /**
      * @return Height of the image
      */
-    size_t height() const;
+    inline size_t height() const
+    {
+        return m_height;
+    }
 
     /**
      * @return Amount of classes
      */
-    size_t classes() const;
+    inline size_t classes() const
+    {
+        return m_classes;
+    }
 
     /**
      * Retrieve the score of a certain pixel-label combination
@@ -53,7 +65,11 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    float at(size_t x, size_t y, size_t c) const;
+    inline float at(size_t x, size_t y, size_t c) const
+    {
+        assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
+        return m_data[x + (y * m_width) + (c * m_width * m_height)];
+    }
 
     /**
      * Retrieve the score of a certain pixel-label combination
@@ -61,7 +77,12 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    float atSite(size_t s, size_t c) const;
+    inline float atSite(size_t s, size_t c) const
+    {
+        assert(s < m_width * m_height);
+        assert(s + (c * m_width * m_height) < m_data.size());
+        return m_data[s + (c * m_width * m_height)];
+    }
 
     /**
      * Computes the class label with the maximum score at a certain pixel

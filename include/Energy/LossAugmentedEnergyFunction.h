@@ -26,7 +26,7 @@ public:
 
     virtual float unaryCost(size_t i, Label l) const override;
 
-    float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t clusterId) const override;
+    float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const override;
 
 private:
     LabelImage const& m_groundTruth;

@@ -16,18 +16,10 @@ LabelImage const& Clusterer::clustership() const
 
 size_t Clusterer::findClosestCluster(Feature const& feature, Label classLabel) const
 {
-    float minDistance = m_energy.pixelToClusterDistance(feature, classLabel, m_clusters[0], 0);
-    size_t minCluster = 0;
-    for (size_t j = 1; j < m_clusters.size(); ++j)
-    {
-        float const distance = m_energy.pixelToClusterDistance(feature, classLabel, m_clusters[j], j);
-        if (distance < minDistance)
-        {
-            minDistance = distance;
-            minCluster = j;
-        }
-    }
-    return minCluster;
+    std::vector<float> distances(m_clusters.size(), 0.f);
+    size_t i = 0;
+    std::generate(distances.begin(), distances.end(), [&]{return m_energy.pixelToClusterDistance(feature, classLabel, m_clusters, i++);});
+    return std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
 }
 
 std::vector<Cluster> const& Clusterer::clusters() const

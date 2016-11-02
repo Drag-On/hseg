@@ -158,10 +158,11 @@ public:
      * Computes the pixel-to-cluster distance
      * @param fPx Feature of the pixel
      * @param lPx Class label of the pixel
-     * @param cl Cluster
+     * @param cl Clusters
+     * @param clusterId Cluster index
      * @return The pixel-to-cluster distance
      */
-    virtual float pixelToClusterDistance(Feature const& fPx, Label lPx, Cluster const& cl, size_t clusterId) const;
+    virtual float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const;
 
     /**
      * Simple potts model.

@@ -18,29 +18,20 @@ void Cluster::updateMean()
 
 void Cluster::updateLabel()
 {
-    auto computeDist = [this](Label take_l)
+    std::vector<float> cost(pEnergy->numClasses(), 0.f);
+    size_t i = 0;
+    auto computeDist = [&]()
     {
         float dist = 0;
         for(Label l = 0; l < pEnergy->numClasses(); ++l)
         {
-            if(l != take_l)
-                dist += labelFrequencies[l] * pEnergy->classDistance(l, take_l);
+            if(l != i)
+                dist += labelFrequencies[l] * pEnergy->classDistance(l, i);
         }
+        ++i;
         return dist;
     };
-
-    Label bestLabel = 0;
-    float bestDist = computeDist(0);
-    for(Label l = 1; l < pEnergy->numClasses(); ++l)
-    {
-        float dist = computeDist(l);
-        if(dist < bestDist)
-        {
-            bestDist = dist;
-            bestLabel = l;
-        }
-    }
-
-    label = bestLabel;
+    std::generate(cost.begin(), cost.end(), computeDist);
+    label = std::distance(cost.begin(), std::min_element(cost.begin(), cost.end()));
 }
 

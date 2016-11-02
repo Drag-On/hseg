@@ -303,31 +303,31 @@ Image<T, C>::operator cv::Mat() const
 }
 
 template<typename T, size_t C>
-size_t Image<T, C>::width() const
+inline size_t Image<T, C>::width() const
 {
     return m_width;
 }
 
 template<typename T, size_t C>
-size_t Image<T, C>::height() const
+inline size_t Image<T, C>::height() const
 {
     return m_height;
 }
 
 template<typename T, size_t C>
-size_t Image<T, C>::channels() const
+inline size_t Image<T, C>::channels() const
 {
     return C;
 }
 
 template<typename T, size_t C>
-size_t Image<T, C>::pixels() const
+inline size_t Image<T, C>::pixels() const
 {
     return m_width * m_height;
 }
 
 template<typename T, size_t C>
-T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
+inline T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 {
     assert(c < C);
     assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
@@ -335,7 +335,7 @@ T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 }
 
 template<typename T, size_t C>
-T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
+inline T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
 {
     assert(c < C);
     assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
@@ -343,7 +343,7 @@ T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
 }
 
 template<typename T, size_t C>
-T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
+inline T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
 {
     assert(c < C);
     assert(site + (c * m_width * m_height) < m_data.size());
@@ -351,7 +351,7 @@ T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
 }
 
 template<typename T, size_t C>
-T& Image<T, C>::atSite(size_t site, ImgCoord c)
+inline T& Image<T, C>::atSite(size_t site, ImgCoord c)
 {
     assert(c < C);
     assert(site + (c * m_width * m_height) < m_data.size());
