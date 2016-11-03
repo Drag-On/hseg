@@ -279,7 +279,7 @@ int main()
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 0, 0, 0, 0);
+    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
     WeightsVec oneWeights(numClasses, 1, 1, 1, 1);
