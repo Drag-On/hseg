@@ -149,30 +149,6 @@ GraphOptimizer<EnergyFun>::PairwiseCost<T>::PairwiseCost(EnergyFun const& energy
         : m_pEnergy(&energy),
           m_color(color)
 {
-    // Pre-compute the pixel energies
-    for (size_t x = 0; x < color.width(); ++x)
-    {
-        for (size_t y = 0; y < color.height(); ++y)
-        {
-            Site s = helper::coord::coordinateToSite(x, y, color.width());
-            if(x + 1 < color.width())
-            {
-                Site r = helper::coord::coordinateToSite(x + 1, y, color.width());
-                std::pair<SiteID, SiteID> right{s, r};
-                if(r < s)
-                    right = {r, s};
-                m_pixelEnergies[right] = std::round(m_pEnergy->pairwisePixelWeight(color, s, r));
-            }
-            if(y + 1 < color.height())
-            {
-                Site d = helper::coord::coordinateToSite(x, y + 1, color.width());
-                std::pair<SiteID, SiteID> down{s, d};
-                if(d < s)
-                    down = {d, s};
-                m_pixelEnergies[down] = std::round(m_pEnergy->pairwisePixelWeight(color, s, d));
-            }
-        }
-    }
 }
 
 template<typename EnergyFun>
@@ -197,9 +173,9 @@ GraphOptimizer<EnergyFun>::PairwiseCost<T>::compute(GraphOptimizer<EnergyFun>::P
     {
         std::pair<SiteID, SiteID> pair{s1, s2};
         assert(m_pixelEnergies.count(pair) != 0);
-        EnergyTermType pxEnergy = m_pixelEnergies[pair];
+        EnergyTermType pxEnergy = m_pEnergy->pairwisePixelWeight(m_color, s1, s2);
         float classWeight = m_pEnergy->pairwiseClassWeight(l1, l2);
-        return pxEnergy * std::round(classWeight);
+        return std::round(pxEnergy * classWeight);
     }
     else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
         return std::round(m_pEnergy->classDistance(l1, l2));
