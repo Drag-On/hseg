@@ -65,7 +65,8 @@ InferenceResult InferenceIterator<EnergyFun>::run(size_t numIter)
     Clusterer<EnergyFun> clusterer(m_energy);
     GraphOptimizer<EnergyFun> optimizer(m_energy);
 
-    result.labeling = m_energy.unaryFile().maxLabeling();
+    //result.labeling = m_energy.unaryFile().maxLabeling();
+    result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
     for (size_t iter = 0; iter < numIter; ++iter)
     {
         // Update superpixels using the latest class labeling
