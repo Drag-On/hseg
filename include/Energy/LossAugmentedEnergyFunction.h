@@ -33,14 +33,6 @@ public:
         return EnergyFunction::unaryCost(i, l) - loss;
     }
 
-    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const
-    {
-        float dist = EnergyFunction::pixelToClusterDistance(fPx, lPx, cl, clusterId);
-        if(clusterId != m_spGroundTruth.at(fPx.x(), fPx.y()))
-            dist -= m_lossFactor;
-        return dist;
-    }
-
 private:
     LabelImage const& m_groundTruth;
     LabelImage const& m_spGroundTruth;
