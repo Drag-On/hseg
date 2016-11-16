@@ -463,47 +463,55 @@ bool rescale(UtilProperties const& properties)
     // Read in file names
     std::vector<std::string> list = readLines(properties.job.rescale);
 
-    // Rescale all color images
     for(std::string const& file : list)
     {
-        std::string filename = properties.Paths.image + file + properties.FileExtensions.image;
+        std::string filenameColor = file + properties.FileExtensions.image;
+        std::string filenameGt = file + properties.FileExtensions.groundTruth;
+        std::string filenameUnary = file + properties.FileExtensions.unary;
+        std::string pathColor = properties.Paths.image + filenameColor;
+        std::string pathGt = properties.Paths.groundTruth + filenameColor;
+        std::string pathUnary = properties.Paths.unary + filenameColor;
+        std::string outPathColor = properties.Paths.out + "color/";
+        std::string outPathGt = properties.Paths.out + "gt/";
+        std::string outPathUnary = properties.Paths.out + "unaries/";
+
+        // Color image
+        std::cout << outPathColor << filenameColor;
         RGBImage img;
-        if(!img.read(filename))
+        if(!img.read(pathColor))
         {
-            std::cerr << "Couldn't read image \"" << filename << "\"." << std::endl;
+            std::cerr << "Couldn't read image \"" << pathColor << "\"." << std::endl;
             return false;
         }
         img.rescale(properties.Constants.rescaleFactor, true);
-        img.write(properties.Paths.out + "color/");
-    }
+        img.write(outPathColor + filenameColor);
+        std::cout << "\tOK" << std::endl;
 
-    // Rescale all ground truth images
-    for(std::string const& file : list)
-    {
-        std::string filename = properties.Paths.groundTruth + file + properties.FileExtensions.groundTruth;
-        RGBImage img;
-        if(!img.read(filename))
+        // Ground truth image
+        std::cout << outPathGt << filenameColor;
+        RGBImage gt;
+        if(!gt.read(pathGt))
         {
-            std::cerr << "Couldn't read ground truth image \"" << filename << "\"." << std::endl;
+            std::cerr << "Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
             return false;
         }
-        img.rescale(properties.Constants.rescaleFactor, false);
-        img.write(properties.Paths.out + "gt/");
-    }
+        gt.rescale(properties.Constants.rescaleFactor, false);
+        gt.write(outPathGt + filenameGt);
+        std::cout << "\tOK" << std::endl;
 
-    // Rescale all unaries
-    for(std::string const& file : list)
-    {
-        std::string filename = properties.Paths.unary + file + properties.FileExtensions.unary;
+        // Unary
+        std::cout << outPathUnary << filenameColor;
         UnaryFile unary;
-        if(!unary.read(filename))
+        if(!unary.read(pathUnary))
         {
-            std::cerr << "Couldn't read unary \"" << filename << "\"." << std::endl;
+            std::cerr << "Couldn't read unary \"" << pathUnary << "\"." << std::endl;
             return false;
         }
         unary.rescale(properties.Constants.rescaleFactor);
-        unary.write(properties.Paths.out + "unary/");
+        unary.write(outPathUnary + filenameUnary);
+        std::cout << "\tOK" << std::endl;
     }
+
     return true;
 }
 
