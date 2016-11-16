@@ -100,6 +100,12 @@ public:
     bool write(std::string const& filename);
 
     /**
+     * Rescales the unary
+     * @param factor Factor to scale by
+     */
+    void rescale(float factor);
+
+    /**
      * Computes the class label with the maximum score at a certain pixel
      * @param x X coordinate
      * @param y Y coordinate
@@ -119,6 +125,12 @@ private:
     size_t m_height = 0;
     size_t m_classes = 21; // Is currently not written to the files
     std::vector<float> m_data;
+
+    inline float& at(size_t x, size_t y, size_t c)
+    {
+        assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
+        return m_data[x + (y * m_width) + (c * m_width * m_height)];
+    }
 };
 
 

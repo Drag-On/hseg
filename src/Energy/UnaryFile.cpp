@@ -82,3 +82,41 @@ bool UnaryFile::write(std::string const& filename)
     }
     return false;
 }
+
+void UnaryFile::rescale(float factor)
+{
+    std::vector<cv::Mat> layers;
+    layers.reserve(m_classes);
+
+    for(size_t c = 0; c < m_classes; ++c)
+    {
+        cv::Mat img(m_height, m_width, CV_32FC1);
+        for (size_t y = 0; y < m_height; ++y)
+        {
+            for (size_t x = 0; x < m_width; ++x)
+            {
+                img.at<float>(y, x) = at(x, y, c);
+            }
+        }
+
+        cv::Mat resized;
+        cv::resize(img, resized, cv::Size(), factor, factor, cv::INTER_LINEAR);
+        layers.push_back(resized);
+    }
+
+    for (size_t c = 0; c < layers.size(); ++c)
+    {
+        m_width = static_cast<size_t>(layers[c].cols);
+        m_height = static_cast<size_t>(layers[c].rows);
+        m_data.resize(m_width * m_height * m_classes, 0);
+
+        for (size_t y = 0; y < m_height; ++y)
+        {
+            for (size_t x = 0; x < m_width; ++x)
+            {
+                auto score = layers[c].at<float>(y, x);
+                at(x, y, c) = score;
+            }
+        }
+    }
+}
