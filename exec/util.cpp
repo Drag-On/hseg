@@ -19,21 +19,25 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, estimateSpDistance, "", -ed)
                                PROP_DEFINE_A(std::string, maxLoss, "", -ml)
                                PROP_DEFINE_A(std::string, outline, "", -ol)
+                               PROP_DEFINE_A(std::string, rescale, "", -rs)
                   )
                   GROUP_DEFINE(Constants,
                                PROP_DEFINE(size_t, numClasses, 21u)
                                PROP_DEFINE(size_t, numClusters, 300u)
+                               PROP_DEFINE(float, rescaleFactor, 0.5f)
                   )
                   GROUP_DEFINE(Paths,
                                PROP_DEFINE(std::string, out, "")
                                PROP_DEFINE(std::string, image, "")
                                PROP_DEFINE(std::string, groundTruth, "")
                                PROP_DEFINE(std::string, groundTruthSp, "")
+                               PROP_DEFINE(std::string, unary, "")
                   )
                   GROUP_DEFINE(FileExtensions,
                                PROP_DEFINE(std::string, image, ".jpg")
                                PROP_DEFINE(std::string, groundTruth, ".png")
                                PROP_DEFINE(std::string, groundTruthSp, ".png")
+                               PROP_DEFINE(std::string, unary, "_prob.dat")
                   )
                   GROUP_DEFINE(Colors,
                                PROP_DEFINE(ARG(std::array<unsigned short, 3>), border, ARG(std::array<unsigned short, 3>{255, 255, 255}))
@@ -454,6 +458,55 @@ bool outline(UtilProperties const& properties)
     return cv::imwrite(properties.Paths.out + filename + properties.FileExtensions.image, outlinedMat);
 }
 
+bool rescale(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list = readLines(properties.job.rescale);
+
+    // Rescale all color images
+    for(std::string const& file : list)
+    {
+        std::string filename = properties.Paths.image + file + properties.FileExtensions.image;
+        RGBImage img;
+        if(!img.read(filename))
+        {
+            std::cerr << "Couldn't read image \"" << filename << "\"." << std::endl;
+            return false;
+        }
+        img.rescale(properties.Constants.rescaleFactor, true);
+        img.write(properties.Paths.out + "color/");
+    }
+
+    // Rescale all ground truth images
+    for(std::string const& file : list)
+    {
+        std::string filename = properties.Paths.groundTruth + file + properties.FileExtensions.groundTruth;
+        RGBImage img;
+        if(!img.read(filename))
+        {
+            std::cerr << "Couldn't read ground truth image \"" << filename << "\"." << std::endl;
+            return false;
+        }
+        img.rescale(properties.Constants.rescaleFactor, false);
+        img.write(properties.Paths.out + "gt/");
+    }
+
+    // Rescale all unaries
+    for(std::string const& file : list)
+    {
+        std::string filename = properties.Paths.unary + file + properties.FileExtensions.unary;
+        UnaryFile unary;
+        if(!unary.read(filename))
+        {
+            std::cerr << "Couldn't read unary \"" << filename << "\"." << std::endl;
+            return false;
+        }
+        unary.rescale(properties.Constants.rescaleFactor);
+        unary.write(properties.Paths.out + "unary/");
+    }
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -484,6 +537,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.outline.empty())
         outline(properties);
+
+    if(!properties.job.rescale.empty())
+        rescale(properties);
 
     return 0;
 }
