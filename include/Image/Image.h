@@ -105,6 +105,13 @@ public:
     bool read(std::string const& filename);
 
     /**
+     * Write an image to file
+     * @param filename File to write to
+     * @return True in case of success, otherwise false
+     */
+    bool write(std::string const& filename);
+
+    /**
      * Converts the image to CieLab in the floating point range. Note that this is better for the CieLab color space:
      * While it can be represented in bytes, this messes up its euclidean distance. In floating point notation the
      * distances are fine.
@@ -288,6 +295,13 @@ bool Image<T, C>::read(std::string const& filename)
     }
 
     return true;
+}
+
+template<typename T, size_t C>
+bool Image<T, C>::write(std::string const& filename)
+{
+    cv::Mat img = static_cast<cv::Mat>(*this);
+    return cv::imwrite(filename, img);
 }
 
 template<typename T, size_t C>
