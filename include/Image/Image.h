@@ -175,6 +175,13 @@ public:
     T& atSite(size_t site, ImgCoord c = 0);
 
     /**
+     * Rescales the image
+     * @param factor Factor
+     * @param interpolate Enables or disables interpolation
+     */
+    void rescale(float factor, bool interpolate = false);
+
+    /**
      * @return Minimum and maximum value
      */
     std::pair<T, T> minMax() const;
@@ -407,6 +414,28 @@ size_t Image<T, C>::diff(Image<T, C> const& other) const
             if (atSite(i, c) != other.atSite(i, c))
                 result++;
     return result;
+}
+
+template<typename T, size_t C>
+void Image<T, C>::rescale(float factor, bool interpolate)
+{
+    cv::Mat img = static_cast<cv::Mat>(*this);
+    cv::Mat resized;
+    cv::resize(img, resized, cv::Size(), factor, factor, interpolate ? cv::INTER_LINEAR : cv::INTER_NEAREST);
+
+    m_width = static_cast<size_t>(resized.cols);
+    m_height = static_cast<size_t>(resized.rows);
+    m_data.resize(m_width * m_height * C, 0);
+
+    for (size_t y = 0; y < m_height; ++y)
+    {
+        for (size_t x = 0; x < m_width; ++x)
+        {
+            auto color = resized.at<cv::Vec<uchar, C>>(y, x);
+            for (size_t c = 0; c < C; ++c)
+                at(x, y, c) = color[c];
+        }
+    }
 }
 
 #endif //HSEG_IMAGE_H
