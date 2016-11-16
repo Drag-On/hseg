@@ -85,6 +85,21 @@ public:
     }
 
     /**
+     * Reads in unary data from file
+     * @param filename File to read from
+     * @return True in case of success, otherwise false
+     */
+    bool read(std::string const& filename);
+
+    /**
+     * Writes the unary data to file
+     * @param filename File to write to
+     * @return True in case of success, otherwise false
+     * @note Always fails if this unary is marked as invalid
+     */
+    bool write(std::string const& filename);
+
+    /**
      * Computes the class label with the maximum score at a certain pixel
      * @param x X coordinate
      * @param y Y coordinate

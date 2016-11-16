@@ -9,30 +9,7 @@
 
 UnaryFile::UnaryFile(std::string const& filename)
 {
-    std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
-    if (file.is_open())
-    {
-        long int fileSize = file.tellg();
-        char fileHeader[12];
-        file.seekg(0, std::ios::beg);
-        file.read(fileHeader, 12);
-
-        if (std::strncmp(fileHeader, "PROB", 4) != 0)
-        {
-            m_valid = false;
-            file.close();
-            return;
-        }
-        m_height = static_cast<size_t>(boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 4)));
-        m_width = static_cast<size_t>(boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 8)));
-
-        m_data.resize((static_cast<size_t>(fileSize) - 12) / sizeof(float));
-        file.seekg(12, std::ios::beg);
-        file.read(reinterpret_cast<char*>(m_data.data()), fileSize - 12);
-        file.close();
-
-        m_valid = true;
-    }
+    read(filename);
 }
 
 Label UnaryFile::maxLabelAt(size_t x, size_t y) const
@@ -57,4 +34,51 @@ LabelImage UnaryFile::maxLabeling() const
         for (size_t y = 0; y < m_height; ++y)
             labeling.at(x, y) = maxLabelAt(x, y);
     return labeling;
+}
+
+bool UnaryFile::read(std::string const& filename)
+{
+    std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
+    if (file.is_open())
+    {
+        long int fileSize = file.tellg();
+        char fileHeader[12];
+        file.seekg(0, std::ios::beg);
+        file.read(fileHeader, 12);
+
+        if (std::strncmp(fileHeader, "PROB", 4) != 0)
+        {
+            m_valid = false;
+            file.close();
+            return false;
+        }
+        m_height = static_cast<size_t>(boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 4)));
+        m_width = static_cast<size_t>(boost::endian::little_to_native(*reinterpret_cast<int*>(fileHeader + 8)));
+
+        m_data.resize((static_cast<size_t>(fileSize) - 12) / sizeof(float));
+        file.seekg(12, std::ios::beg);
+        file.read(reinterpret_cast<char*>(m_data.data()), fileSize - 12);
+        file.close();
+
+        m_valid = true;
+    }
+    return m_valid;
+}
+
+bool UnaryFile::write(std::string const& filename)
+{
+    if(!m_valid)
+        return false;
+
+    std::ofstream file(filename, std::ios::out | std::ios::binary | std::ios::ate);
+    if(file.is_open())
+    {
+        file.write("PROB", 4);
+        file.write(reinterpret_cast<char const*>(&m_height), sizeof(m_height));
+        file.write(reinterpret_cast<char const*>(&m_width), sizeof(m_width));
+        file.write(reinterpret_cast<char const*>(m_data.data()), sizeof(m_data[0]) * m_data.size());
+        file.close();
+        return true;
+    }
+    return false;
 }
