@@ -74,8 +74,9 @@ bool UnaryFile::write(std::string const& filename)
     if(file.is_open())
     {
         file.write("PROB", 4);
-        file.write(reinterpret_cast<char const*>(&m_height), sizeof(m_height));
-        file.write(reinterpret_cast<char const*>(&m_width), sizeof(m_width));
+        int width = boost::endian::native_to_little(m_width), height = boost::endian::native_to_little(m_height);
+        file.write(reinterpret_cast<char const*>(&height), sizeof(height));
+        file.write(reinterpret_cast<char const*>(&width), sizeof(width));
         file.write(reinterpret_cast<char const*>(m_data.data()), sizeof(m_data[0]) * m_data.size());
         file.close();
         return true;
