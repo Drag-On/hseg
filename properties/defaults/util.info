@@ -3,6 +3,7 @@ Constants
 {
     numClasses 21
     numClusters 300
+    rescaleFactor 0.5
 }
 
 Paths
@@ -11,6 +12,7 @@ Paths
     image "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
     groundTruth "/home/jan/Downloads/Pascal VOC/groundTruthFixed/"
     groundTruthSp "/home/jan/Dokumente/Git/hseg/spGroundTruth/"
+    unary "/home/jan/Dokumente/Git/hseg/unaries/"
 }
 
 FileExtensions
@@ -18,4 +20,5 @@ FileExtensions
     image ".jpg"
     groundTruth ".png"
     groundTruthSp ".png"
+    unary "_prob.dat"
 }
