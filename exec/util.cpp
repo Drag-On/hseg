@@ -469,8 +469,8 @@ bool rescale(UtilProperties const& properties)
         std::string filenameGt = file + properties.FileExtensions.groundTruth;
         std::string filenameUnary = file + properties.FileExtensions.unary;
         std::string pathColor = properties.Paths.image + filenameColor;
-        std::string pathGt = properties.Paths.groundTruth + filenameColor;
-        std::string pathUnary = properties.Paths.unary + filenameColor;
+        std::string pathGt = properties.Paths.groundTruth + filenameGt;
+        std::string pathUnary = properties.Paths.unary + filenameUnary;
         std::string outPathColor = properties.Paths.out + "color/";
         std::string outPathGt = properties.Paths.out + "gt/";
         std::string outPathUnary = properties.Paths.out + "unaries/";
@@ -488,7 +488,7 @@ bool rescale(UtilProperties const& properties)
         std::cout << "\tOK" << std::endl;
 
         // Ground truth image
-        std::cout << outPathGt << filenameColor;
+        std::cout << outPathGt << filenameGt;
         RGBImage gt;
         if(!gt.read(pathGt))
         {
@@ -500,7 +500,7 @@ bool rescale(UtilProperties const& properties)
         std::cout << "\tOK" << std::endl;
 
         // Unary
-        std::cout << outPathUnary << filenameColor;
+        std::cout << outPathUnary << filenameUnary;
         UnaryFile unary;
         if(!unary.read(pathUnary))
         {
