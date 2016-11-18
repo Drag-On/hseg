@@ -34,11 +34,9 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, featureWeightFile, "")
                   PROP_DEFINE(std::string, imageListFile, "")
                   PROP_DEFINE(std::string, groundTruthListFile, "")
-                  PROP_DEFINE(std::string, groundTruthSpListFile, "")
                   PROP_DEFINE(std::string, unaryListFile, "")
                   PROP_DEFINE(std::string, imageBasePath, "")
                   PROP_DEFINE(std::string, groundTruthBasePath, "")
-                  PROP_DEFINE(std::string, groundTruthSpBasePath, "")
                   PROP_DEFINE(std::string, unaryBasePath, "")
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
@@ -200,7 +198,6 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
     rgbImage.read(properties.imageBasePath + colorImgFilename + properties.imageExtension);
     groundTruthRGB.read(properties.groundTruthBasePath + gtImageFilename + properties.gtExtension);
-    //groundTruthSpRGB.read(properties.groundTruthSpBasePath + gtSpImageFilename + properties.gtExtension);
     if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
     {
         std::cerr << "Image " << colorImgFilename << " and its ground truth don't match." << std::endl;
@@ -208,7 +205,6 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     }
     CieLabImage cieLabImage = rgbImage.getCieLabImg();
     LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-    //LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
 
     UnaryFile unary(properties.unaryBasePath + unaryFilename + "_prob.dat");
     if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
@@ -238,12 +234,14 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     auto clusters = Clusterer<EnergyFunction>::computeClusters(result.superpixels, cieLabImage, result.labeling,
                                                                numClusters,
                                                                numClasses, trainingEnergy);
-    sampleResult.trainingEnergy -= trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels,
-                                                             clusters);
+    auto predEnergyCur = trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels,
+                                                clusters);
+    sampleResult.trainingEnergy -= predEnergyCur;
     auto gtClusters = Clusterer<EnergyFunction>::computeClusters(bestSp, cieLabImage, groundTruth, numClusters,
                                                                  numClasses,
                                                                  trainingEnergy);
-    sampleResult.trainingEnergy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, bestSp, gtClusters);
+    auto gtEnergyCur = trainingEnergy.giveEnergy(groundTruth, cieLabImage, bestSp, gtClusters);
+    sampleResult.trainingEnergy += gtEnergyCur;
 
     // Compute loss
     float lossFactor = 0;
@@ -256,6 +254,12 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
         if (groundTruth.atSite(i) != result.labeling.atSite(i) && groundTruth.atSite(i) < unary.classes())
             loss += lossFactor;
     sampleResult.trainingEnergy += loss;
+
+    if(sampleResult.trainingEnergy <= 0)
+    {
+        std::cerr << "Training energy was negative: " << sampleResult.trainingEnergy << " (Loss: " << loss
+                  << ", prediction: " << predEnergyCur << ", ground truth: " << gtEnergyCur << ")" << std::endl;
+    }
 
     // Compute energy without weights on the ground truth
     EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq, featureWeights);
@@ -285,7 +289,6 @@ int main()
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
-    helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     WeightsVec curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
@@ -298,10 +301,8 @@ int main()
     // Load filenames of all images
     std::vector<std::string> colorImageFilenames = readFileNames(properties.imageListFile);
     std::vector<std::string> gtImageFilenames = readFileNames(properties.groundTruthListFile);
-    std::vector<std::string> gtSpImageFilenames = readFileNames(properties.groundTruthSpListFile);
     std::vector<std::string> unaryFilenames = readFileNames(properties.unaryListFile);
-    if (colorImageFilenames.size() != gtImageFilenames.size() || gtImageFilenames.size() != unaryFilenames.size() ||
-        gtImageFilenames.size() != gtSpImageFilenames.size())
+    if (colorImageFilenames.size() != gtImageFilenames.size() || gtImageFilenames.size() != unaryFilenames.size())
     {
         std::cerr << "File lists don't match up!" << std::endl;
         return 1;
