@@ -463,6 +463,7 @@ bool rescale(UtilProperties const& properties)
 {
     // Read in file names
     std::vector<std::string> list = readLines(properties.job.rescale);
+    auto cmap = helper::image::generateColorMapVOC(255);
 
     for(std::string const& file : list)
     {
@@ -481,7 +482,7 @@ bool rescale(UtilProperties const& properties)
         RGBImage img;
         if(!img.read(pathColor))
         {
-            std::cerr << "Couldn't read image \"" << pathColor << "\"." << std::endl;
+            std::cerr << " Couldn't read image \"" << pathColor << "\"." << std::endl;
             return false;
         }
         img.rescale(properties.Constants.rescaleFactor, true);
@@ -493,7 +494,7 @@ bool rescale(UtilProperties const& properties)
         RGBImage gt;
         if(!gt.read(pathGt))
         {
-            std::cerr << "Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
+            std::cerr << " Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
             return false;
         }
         gt.rescale(properties.Constants.rescaleFactor, false);
@@ -505,11 +506,14 @@ bool rescale(UtilProperties const& properties)
         UnaryFile unary;
         if(!unary.read(pathUnary))
         {
-            std::cerr << "Couldn't read unary \"" << pathUnary << "\"." << std::endl;
+            std::cerr << " Couldn't read unary \"" << pathUnary << "\"." << std::endl;
             return false;
         }
         unary.rescale(properties.Constants.rescaleFactor);
         unary.write(outPathUnary + filenameUnary);
+        auto maxLabeling = unary.maxLabeling();
+        auto maxLabelingImg = helper::image::colorize(maxLabeling, cmap);
+        maxLabelingImg.write(outPathUnary + filenameGt);
         std::cout << "\tOK" << std::endl;
     }
 
