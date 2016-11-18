@@ -261,7 +261,7 @@ float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, si
 }
 
 template<typename T>
-void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& /* img */, LabelImage const& sp,
+void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                                              std::vector<Cluster> const& clusters, WeightsVec& energyW) const
 {
     for (size_t i = 0; i < labeling.pixels(); ++i)
@@ -271,8 +271,10 @@ void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorIm
         // Only consider pixels with a valid label
         if (labeling.atSite(i) < m_unaryScores.classes())
         {
-            if (labeling.atSite(i) != clusters[sp.atSite(i)].label)
+            auto const& cluster = clusters[sp.atSite(i)];
+            if (labeling.atSite(i) != cluster.label)
                 energyW.classWeight(labeling.atSite(i), clusters[sp.atSite(i)].label)++;
+            energyW.m_featureWeight += featureDistance(Feature(img, i), cluster.mean);
         }
     }
 }
