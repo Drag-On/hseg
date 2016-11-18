@@ -15,6 +15,7 @@
 PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(size_t, numClusters, 300)
                   PROP_DEFINE(size_t, numIter, 100)
+                  PROP_DEFINE_A(size_t, startIter, 0, -t)
                   PROP_DEFINE(std::string, learningRate, "Fixed")
                   GROUP_DEFINE(FixedLearningRate,
                       PROP_DEFINE(float, rate, 0.0001f)
@@ -225,7 +226,7 @@ int main()
     }
 
     // Iterate T times
-    for(size_t t = 0; t < T; ++t)
+    for(size_t t = properties.startIter; t < T; ++t)
     {
         WeightsVec sum(numClasses, 0, 0, 0, 0); // All zeros
         float iterationEnergy = 0;

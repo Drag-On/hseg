@@ -3,6 +3,7 @@
 
 numClusters 300         ; Amount of clusters
 numIter 10000             ; Amount of iterations
+startIter 0
 learningRate BoldDriver      ; Learning method
 FixedLearningRate
 {
