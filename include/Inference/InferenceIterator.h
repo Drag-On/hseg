@@ -27,23 +27,24 @@ public:
 
     /**
      * Does the actual inference
-     * @param numIter Amount of iterations to do
+     * @param numIter Amount of iterations to do. If 0, run until convergence.
      * @return Resulting labeling and segmentation
      */
-    InferenceResult run(size_t numIter = 4);
+    InferenceResult run(size_t numIter = 0);
 
     /**
      * Does inference and saves detailed results
-     * @param numIter Amount of iterations to do
+     * @param numIter Amount of iterations to do. If 0, run until convergence.
      * @return Detailed results
      */
-    InferenceResultDetails runDetailed(size_t numIter = 4);
+    InferenceResultDetails runDetailed(size_t numIter = 0);
 
 private:
     EnergyFun m_energy;
     size_t m_numClusters;
     size_t m_numClasses;
     CieLabImage const& m_color;
+    float const m_eps = 2e3f;
 
     float computeInitialEnergy(LabelImage const& labeling) const;
 };
@@ -65,10 +66,14 @@ InferenceResult InferenceIterator<EnergyFun>::run(size_t numIter)
     Clusterer<EnergyFun> clusterer(m_energy);
     GraphOptimizer<EnergyFun> optimizer(m_energy);
 
+    float energy = std::numeric_limits<float>::max();
+    float lastEnergy = energy;
     result.labeling = m_energy.unaryFile().maxLabeling();
     //result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
-    for (size_t iter = 0; iter < numIter; ++iter)
+    for (size_t iter = 0; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
     {
+        lastEnergy = energy;
+
         // Update superpixels using the latest class labeling
         clusterer.run(m_numClusters, m_numClasses, m_color, result.labeling);
         result.superpixels = clusterer.clustership();
@@ -76,6 +81,13 @@ InferenceResult InferenceIterator<EnergyFun>::run(size_t numIter)
         // Update class labeling using the latest superpixels
         optimizer.run(m_color, result.superpixels, m_numClusters);
         result.labeling = optimizer.labeling();
+
+        if(numIter == 0)
+        {
+            auto clusters = Clusterer<EnergyFun>::computeClusters(result.superpixels, m_color, result.labeling,
+                                                                  m_numClusters, m_numClasses, m_energy);
+            energy = m_energy.giveEnergy(result.labeling, m_color, result.superpixels, clusters);
+        }
     }
 
     return result;
@@ -91,13 +103,17 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(size_t numIter)
 
     LabelImage maxLabeling = m_energy.unaryFile().maxLabeling();
     float initialEnergy = computeInitialEnergy(maxLabeling);
+    float lastEnergy = initialEnergy;
+    float energy = initialEnergy;
     result.energy.push_back(initialEnergy);
 
     LabelImage spLabeling;
     LabelImage classLabeling = maxLabeling;
-
-    for (size_t iter = 0; iter < numIter; ++iter)
+    size_t iter = 0;
+    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
     {
+        lastEnergy = energy;
+
         // Update superpixels using the latest class labeling
         clusterer.run(m_numClusters, m_numClasses, m_color, classLabeling);
         spLabeling = clusterer.clustership();
@@ -108,12 +124,12 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(size_t numIter)
         auto clusters = Clusterer<EnergyFun>::computeClusters(spLabeling, m_color, classLabeling, m_numClusters,
                                                               m_numClasses, m_energy);
 
-        float energy = m_energy.giveEnergy(classLabeling, m_color, spLabeling, clusters);
+        energy = m_energy.giveEnergy(classLabeling, m_color, spLabeling, clusters);
         result.energy.push_back(energy);
         result.labelings.push_back(classLabeling);
         result.superpixels.push_back(spLabeling);
     }
-    result.numIter = numIter;
+    result.numIter = iter;
 
     return result;
 }
