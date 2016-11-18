@@ -14,7 +14,7 @@
 PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE(size_t, numClusters, 300)
                   PROP_DEFINE(float, pairwiseSigmaSq, 1.00166e-06)
-                  PROP_DEFINE(std::string, imageList, "")
+                  PROP_DEFINE_A(std::string, imageList, "", -s)
                   PROP_DEFINE(std::string, imageDir, "")
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, unaryDir, "")
@@ -22,7 +22,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE(std::string, outDir, "")
                   PROP_DEFINE(unsigned short, numThreads, 4)
                   GROUP_DEFINE(weights,
-                               PROP_DEFINE(std::string, file, "")
+                               PROP_DEFINE_A(std::string, file, "", -w)
                                PROP_DEFINE(float, unary, 5.f)
                                PROP_DEFINE(float, pairwise, 500)
                                PROP_DEFINE(float, feature, 1)
