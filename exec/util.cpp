@@ -426,6 +426,7 @@ bool computeMaxLoss(UtilProperties const& properties)
 
         maxLoss += image.pixels() * lossFactor;
     }
+    maxLoss /= list.size();
 
     std::cout << "Maximum loss from set \"" << properties.job.maxLoss << "\" (" << list.size() << " images): "
               << maxLoss << std::endl;

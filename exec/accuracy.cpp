@@ -131,6 +131,8 @@ int main()
         rawPxCorrect += imgRawPxCorrect;
     }
 
+    loss /= fileNames.size();
+
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
