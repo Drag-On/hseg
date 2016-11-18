@@ -59,7 +59,7 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
 
     // Do the inference!
     InferenceIterator<EnergyFunction> inference(energyFun, clusters, classes, cieLab);
-    auto result = inference.run(2);
+    auto result = inference.run();
 
     // Write results to disk
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
