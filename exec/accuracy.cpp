@@ -110,8 +110,12 @@ int main()
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses);
         loss += LossAugmentedEnergyFunction::computeLoss(pred, gt, lossFactor, numClasses);
         for (size_t i = 0; i < gt.pixels(); ++i)
-            if (gt.atSite(i) == pred.atSite(i) && gt.atSite(i) < numClasses)
-                imgRawPxCorrect++;
+            if (gt.atSite(i) < numClasses)
+            {
+                imgRawPxCount++;
+                if(gt.atSite(i) == pred.atSite(i))
+                    imgRawPxCorrect++;
+            }
 
         float rawPercentage = static_cast<float>(imgRawPxCorrect) / imgRawPxCount;
         meanCorrectPercentage += rawPercentage;
