@@ -42,7 +42,8 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(std::string, imageExtension, ".jpg")
                   PROP_DEFINE(std::string, gtExtension, ".png")
                   PROP_DEFINE(std::string, in, "")
-                  PROP_DEFINE(std::string, out, "out/weights.dat")
+                  PROP_DEFINE(std::string, outDir, "out/")
+                  PROP_DEFINE(std::string, outFile, "weights.dat")
                   PROP_DEFINE(std::string, log, "train.log")
                   PROP_DEFINE(size_t, numThreads, 4)
 )
@@ -294,8 +295,9 @@ int main()
         sum *= learningRate;
         curWeights -= sum;
 
-        if (!curWeights.write(properties.out))
-            std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+        if (!curWeights.write(properties.outDir + properties.outFile))
+            std::cerr << "Couldn't write weights to file " << properties.outDir + properties.outFile << std::endl;
+        curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat");
 
         std::cout << "====================" << std::endl;
         std::cout << "Current weights:" << std::endl;
