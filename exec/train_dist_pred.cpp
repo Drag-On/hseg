@@ -18,7 +18,6 @@ PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(std::string, weightFile, "", -w)
                   PROP_DEFINE_A(std::string, imageFile, "", -i)
                   PROP_DEFINE_A(std::string, groundTruthFile, "", -g)
-                  PROP_DEFINE_A(std::string, groundTruthSpFile, "", -gsp)
                   PROP_DEFINE_A(std::string, unaryFile, "", -u)
                   PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
                   PROP_DEFINE_A(std::string, out, "out/", -o)
@@ -58,7 +57,7 @@ int main(int argc, char* argv[])
     }
 
     // Load images etc...
-    RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
+    RGBImage rgbImage, groundTruthRGB;
     if(!rgbImage.read(properties.imageFile))
     {
         std::cerr << "Couldn't read image \"" << properties.imageFile << "\"" << std::endl;
@@ -69,11 +68,6 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't read ground truth \"" << properties.groundTruthFile << "\"" << std::endl;
         return -1;
     }
-    if(!groundTruthSpRGB.read(properties.groundTruthSpFile))
-    {
-        std::cerr << "Couldn't read superpixel ground truth \"" << properties.groundTruthSpFile << "\"" << std::endl;
-        return -1;
-    }
     if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
     {
         std::cerr << "Image " << properties.imageFile << " and its ground truth don't match." << std::endl;
@@ -81,7 +75,6 @@ int main(int argc, char* argv[])
     }
     CieLabImage cieLabImage = rgbImage.getCieLabImg();
     LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-    LabelImage groundTruthSp = helper::image::decolorize(groundTruthSpRGB, cmap2);
 
     UnaryFile unary(properties.unaryFile);
     if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
@@ -94,7 +87,7 @@ int main(int argc, char* argv[])
     featureWeights = featureWeights.inverse();
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth, groundTruthSp);
+    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
     InferenceIterator<LossAugmentedEnergyFunction> inference(energy, numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run();
 

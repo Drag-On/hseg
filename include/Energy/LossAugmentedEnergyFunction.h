@@ -19,10 +19,9 @@ public:
      * @param weights Weights to use. The reference must stay valid as long as this object persists.
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      * @param groundTruth Ground truth image. The reference must stay valid as long as this object persists.
-     * @param spGroundTruth Ground truth image of the superpixel segmentation.
      */
     LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq,
-                                Matrix5f const& featureWeights, LabelImage const& groundTruth, LabelImage const& spGroundTruth);
+                                Matrix5f const& featureWeights, LabelImage const& groundTruth);
 
     inline float unaryCost(size_t i, Label l) const
     {
@@ -33,9 +32,32 @@ public:
         return EnergyFunction::unaryCost(i, l) - loss;
     }
 
+    /**
+     * @return Loss of a single misclassified pixel on this image
+     */
+    float lossFactor();
+
+    /**
+     * Computes the loss of a labeling
+     * @param labeling Labeling to compute loss for
+     * @param groundTruth Ground truth image
+     * @param lossFactor Loss factor as computed by computeLossFactor()
+     * @param numClasses Amount of classes
+     * @return The loss
+     */
+    static float
+    computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, float lossFactor, size_t numClasses);
+
+    /**
+     * Computes the loss factor on an image
+     * @param groundTruth Ground truth image
+     * @param numClasses Amount of classes
+     * @return The loss factor on this image
+     */
+    static float computeLossFactor(LabelImage const& groundTruth, size_t numClasses);
+
 private:
     LabelImage const& m_groundTruth;
-    LabelImage const& m_spGroundTruth;
     float m_lossFactor;
 };
 

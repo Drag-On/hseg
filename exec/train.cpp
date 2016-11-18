@@ -101,9 +101,9 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     LabelImage const& bestSp = clusterer.clustership();
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth, bestSp);
+    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
     InferenceIterator<LossAugmentedEnergyFunction> inference(energy, properties.numClusters, numClasses, cieLabImage);
-    InferenceResult result = inference.run(2);
+    InferenceResult result = inference.run();
 
     /*cv::imshow("sp", static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2)));
     cv::imshow("prediction", static_cast<cv::Mat>(helper::image::colorize(result.labeling, cmap)));
@@ -125,15 +125,8 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     sampleResult.trainingEnergy += gtEnergyCur;
 
     // Compute loss
-    float lossFactor = 0;
-    for(size_t i = 0; i < groundTruth.pixels(); ++i)
-        if(groundTruth.atSite(i) < unary.classes())
-            lossFactor++;
-    lossFactor = 1e8f / lossFactor;
-    float loss = 0;
-    for(size_t i = 0; i < groundTruth.pixels(); ++i)
-        if (groundTruth.atSite(i) != result.labeling.atSite(i) && groundTruth.atSite(i) < unary.classes())
-            loss += lossFactor;
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(groundTruth, numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, groundTruth, lossFactor, numClasses);
     sampleResult.trainingEnergy += loss;
 
     if(sampleResult.trainingEnergy <= 0)

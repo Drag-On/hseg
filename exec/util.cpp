@@ -9,6 +9,7 @@
 #include <boost/filesystem/path.hpp>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Energy/feature_weights.h>
+#include <Energy/LossAugmentedEnergyFunction.h>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -418,11 +419,7 @@ bool computeMaxLoss(UtilProperties const& properties)
         LabelImage gt = helper::image::decolorize(gtRGB, cmap);
 
         // Compute loss factor for this image
-        float lossFactor = 0;
-        for(size_t i = 0; i < gt.pixels(); ++i)
-            if(gt.atSite(i) < properties.Constants.numClasses)
-                lossFactor++;
-        lossFactor = 1e8f / lossFactor;
+        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.Constants.numClasses);
 
         maxLoss += image.pixels() * lossFactor;
     }

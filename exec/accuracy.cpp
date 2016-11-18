@@ -6,6 +6,7 @@
 #include <helper/image_helper.h>
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/path.hpp>
+#include <Energy/LossAugmentedEnergyFunction.h>
 
 PROPERTIES_DEFINE(Accuracy,
                   PROP_DEFINE(std::string, fileList, "")
@@ -106,18 +107,10 @@ int main()
         size_t imgRawPxCount = 0;
 
         // Compute loss
-        float lossFactor = 0;
-        for(size_t i = 0; i < gt.pixels(); ++i)
-            if(gt.atSite(i) < numClasses)
-            {
-                lossFactor++;
-                imgRawPxCount++;
-            }
-        lossFactor = 1e8f / lossFactor;
+        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses);
+        loss += LossAugmentedEnergyFunction::computeLoss(pred, gt, lossFactor, numClasses);
         for (size_t i = 0; i < gt.pixels(); ++i)
-            if (gt.atSite(i) != pred.atSite(i) && gt.atSite(i) < numClasses)
-                loss += lossFactor;
-            else if (gt.atSite(i) < numClasses)
+            if (gt.atSite(i) == pred.atSite(i) && gt.atSite(i) < numClasses)
                 imgRawPxCorrect++;
 
         float rawPercentage = static_cast<float>(imgRawPxCorrect) / imgRawPxCount;
