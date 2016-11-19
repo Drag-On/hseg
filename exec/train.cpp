@@ -114,14 +114,11 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::waitKey();*/
 
     auto clusters = Clusterer<EnergyFunction>::computeClusters(result.superpixels, cieLabImage, result.labeling,
-                                                               numClusters,
-                                                               numClasses, trainingEnergy);
-    auto predEnergyCur = trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels,
-                                                clusters);
+                                                               numClusters, numClasses, trainingEnergy);
+    auto predEnergyCur = trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
     sampleResult.trainingEnergy -= predEnergyCur;
     auto gtClusters = Clusterer<EnergyFunction>::computeClusters(bestSp, cieLabImage, groundTruth, numClusters,
-                                                                 numClasses,
-                                                                 trainingEnergy);
+                                                                 numClasses, trainingEnergy);
     auto gtEnergyCur = trainingEnergy.giveEnergy(groundTruth, cieLabImage, bestSp, gtClusters);
     sampleResult.trainingEnergy += gtEnergyCur;
 
@@ -137,12 +134,9 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     }
 
     // Compute energy without weights on the ground truth
-    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq, featureWeights);
-    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, bestSp, gtClusters);
-
+    auto gtEnergy = trainingEnergy.giveEnergyByWeight(groundTruth, cieLabImage, bestSp, gtClusters);
     // Compute energy without weights on the prediction
-    auto predEnergy = normalEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels,
-                                                      clusters);
+    auto predEnergy = trainingEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels, clusters);
     // Compute energy difference
     gtEnergy -= predEnergy;
 
