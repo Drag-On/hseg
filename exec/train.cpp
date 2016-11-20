@@ -72,7 +72,7 @@ struct SampleResult
 SampleResult processSample(std::string const& colorImgFilename, std::string const& gtImageFilename,
                            std::string const& unaryFilename, TrainProperties const& properties,
                            helper::image::ColorMap const& cmap, size_t numClasses, size_t numClusters,
-                           WeightsVec const& curWeights, WeightsVec const& oneWeights, Matrix5f const& featureWeights)
+                           WeightsVec const& curWeights, Matrix5f const& featureWeights)
 {
     SampleResult sampleResult;
 
@@ -158,10 +158,9 @@ int main()
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
-    WeightsVec curWeights(numClasses, 1, 0, 1, 0);
+    WeightsVec curWeights(numClasses, 100, 100, 100, 100);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
-    WeightsVec oneWeights(numClasses, 1, 1, 1, 1);
 
     std::cout << "====================" << std::endl;
     std::cout << "Initial weights:" << std::endl;
@@ -227,9 +226,8 @@ int main()
             auto gtImageFilename = gtImageFilenames[n];
             auto unaryFilename = unaryFilenames[n];
 
-            auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename,
-                                      unaryFilename, properties, cmap, numClasses, numClusters, curWeights,
-                                      oneWeights, featureWeights);
+            auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, unaryFilename, properties, cmap,
+                                      numClasses, numClusters, curWeights, featureWeights);
             futures.push_back(std::move(fut));
         }
 

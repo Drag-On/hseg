@@ -11,6 +11,7 @@
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Threading/ThreadPool.h>
 #include <Energy/feature_weights.h>
+#include <Energy/LossAugmentedEnergyFunction.h>
 
 PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(size_t, t, 0, -t)
@@ -24,7 +25,6 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
                   PROP_DEFINE_A(std::string, imgPath, "", -I)
                   PROP_DEFINE_A(std::string, gtPath, "", -G)
-                  PROP_DEFINE_A(std::string, gtSpPath, "", -S)
                   PROP_DEFINE_A(std::string, unaryPath, "", -U)
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
@@ -55,7 +55,7 @@ struct SampleResult
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename,
                            helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, size_t numClasses,
-                           WeightsVec const& curWeights, WeightsVec const& oneWeights, Matrix5f const& featureWeights)
+                           WeightsVec const& curWeights, Matrix5f const& featureWeights)
 {
     SampleResult sampleResult;
     size_t numClusters = properties.numClusters;
@@ -64,9 +64,9 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB, predictionRGB, predictionSpRGB;
     rgbImage.read(properties.imgPath + filename + ".jpg");
     groundTruthRGB.read(properties.gtPath + filename + ".png");
-    groundTruthSpRGB.read(properties.gtSpPath + filename + ".png");
     predictionRGB.read(properties.in + "labeling/" + filename + ".png");
     predictionSpRGB.read(properties.in + "sp/" + filename + ".png");
+    groundTruthSpRGB.read(properties.in + "sp_gt/" + filename + ".png");
     if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height() ||
         rgbImage.width() != groundTruthSpRGB.width() || rgbImage.height() != groundTruthSpRGB.height() ||
         rgbImage.width() != predictionRGB.width() || rgbImage.height() != predictionRGB.height() ||
@@ -89,31 +89,22 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     }
 
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    auto clusters = Clusterer<EnergyFunction>::computeClusters(predictionSp, cieLabImage, prediction, numClusters, numClasses,
-                                               trainingEnergy);
+    auto clusters = Clusterer<EnergyFunction>::computeClusters(predictionSp, cieLabImage, prediction, numClusters,
+                                                               numClasses, trainingEnergy);
     sampleResult.energy -= trainingEnergy.giveEnergy(prediction, cieLabImage, predictionSp, clusters);
-    auto gtClusters = Clusterer<EnergyFunction>::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters, numClasses,
-                                                 trainingEnergy);
+    auto gtClusters = Clusterer<EnergyFunction>::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters,
+                                                                 numClasses, trainingEnergy);
     sampleResult.energy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute loss
-    float lossFactor = 0;
-    for(size_t i = 0; i < groundTruth.pixels(); ++i)
-        if(groundTruth.atSite(i) < unary.classes())
-            lossFactor++;
-    lossFactor = 1e8f / lossFactor;
-    float loss = 0;
-    for(size_t i = 0; i < groundTruth.pixels(); ++i)
-        if (groundTruth.atSite(i) != prediction.atSite(i) && groundTruth.atSite(i) < unary.classes())
-            loss += lossFactor;
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(groundTruth, numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, groundTruth, lossFactor, numClasses);
     sampleResult.energy += loss;
 
     // Compute energy without weights on the ground truth
-    EnergyFunction normalEnergy(unary, oneWeights, properties.pairwiseSigmaSq, featureWeights);
-    auto gtEnergy = normalEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
-
+    auto gtEnergy = trainingEnergy.giveEnergyByWeight(groundTruth, cieLabImage, groundTruthSp, gtClusters);
     // Compute energy without weights on the prediction
-    auto predEnergy = normalEnergy.giveEnergyByWeight(prediction, cieLabImage, predictionSp, clusters);
+    auto predEnergy = trainingEnergy.giveEnergyByWeight(prediction, cieLabImage, predictionSp, clusters);
     // Compute energy difference
     gtEnergy -= predEnergy;
 
@@ -142,8 +133,7 @@ int main(int argc, char* argv[])
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
 
-    WeightsVec oneWeights(numClasses, 1, 1, 1, 1);
-    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
+    WeightsVec curWeights(numClasses, 100, 100, 100, 100);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
@@ -171,7 +161,7 @@ int main(int argc, char* argv[])
     // Iterate over all images
     for (size_t n = 0; n < N; ++n)
     {
-        auto&& fut = pool.enqueue(processSample, properties, list[n], cmap, cmap2, numClasses, curWeights, oneWeights, featureWeights);
+        auto&& fut = pool.enqueue(processSample, properties, list[n], cmap, cmap2, numClasses, curWeights, featureWeights);
         futures.push_back(std::move(fut));
     }
 

@@ -39,7 +39,8 @@ int main(int argc, char* argv[])
     std::string imgName = imgNamePath.filename().stem().string();
     std::string labelPath = properties.out + "labeling/" + imgName + ".png";
     std::string spPath = properties.out + "sp/" + imgName + ".png";
-    if(boost::filesystem::exists(labelPath) && boost::filesystem::exists(spPath))
+    std::string bestSpPath = properties.out + "sp_gt/" + imgName + ".png";
+    if(boost::filesystem::exists(labelPath) && boost::filesystem::exists(spPath) && boost::filesystem::exists(bestSpPath))
     {
         std::cout << "Result for " << properties.imageFile << " already exists in " << labelPath << " and " << spPath << ". Skipping." << std::endl;
         return 0;
@@ -86,14 +87,21 @@ int main(int argc, char* argv[])
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
 
+    // Predict superpixels that best explain the ground truth
+    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
+    Clusterer<EnergyFunction> clusterer(trainingEnergy);
+    clusterer.run(numClusters, numClasses, cieLabImage, groundTruth);
+    LabelImage const& bestSp = clusterer.clustership();
+
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
     InferenceIterator<LossAugmentedEnergyFunction> inference(energy, numClusters, numClasses, cieLabImage);
     InferenceResult result = inference.run();
 
-    // Store prediction
+    // Store predictions
     cv::Mat labeling = static_cast<cv::Mat>(helper::image::colorize(result.labeling, cmap));
     cv::Mat sp = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2));
+    cv::Mat bestSpMat = static_cast<cv::Mat>(helper::image::colorize(bestSp, cmap2));
 
     if(labeling.empty() || sp.empty())
     {
@@ -110,6 +118,11 @@ int main(int argc, char* argv[])
     {
         std::cerr << "Couldn't write predicted superpixels to \"" << spPath << "\"" << std::endl;
         return -6;
+    }
+    if(!cv::imwrite(bestSpPath, bestSpMat))
+    {
+        std::cerr << "Couldn't write predicted ground truth superpixels to \"" << bestSpPath << "\"" << std::endl;
+        return -7;
     }
 
     return 0;
