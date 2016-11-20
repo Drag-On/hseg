@@ -44,7 +44,7 @@ private:
     size_t m_numClusters;
     size_t m_numClasses;
     CieLabImage const& m_color;
-    float const m_eps = 2e3f;
+    float const m_eps = 1e3f;
 
     float computeInitialEnergy(LabelImage const& labeling) const;
 };
