@@ -21,14 +21,18 @@ PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(std::string, unaryFile, "", -u)
                   PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
                   PROP_DEFINE_A(std::string, out, "out/", -o)
+                  PROP_DEFINE_A(std::string, propertiesFile, "properties/training_dist_pred.info", -p)
 )
 
 int main(int argc, char* argv[])
 {
     // Read properties
     TrainDistPredProperties properties;
-    properties.read("properties/training_dist_pred.info");
     properties.fromCmd(argc, argv);
+    properties.read(properties.propertiesFile);
+    properties.fromCmd(argc, argv); // This is so the property file location can be read via command line, however,
+                                    // the command line arguments should overwrite anything written in the file,
+                                    // therefore read it in again.
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
