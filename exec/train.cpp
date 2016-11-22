@@ -145,11 +145,12 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     return sampleResult;
 }
 
-int main()
+int main(int argc, char** argv)
 {
     // Read properties
     TrainProperties properties;
     properties.read("properties/training.info");
+    properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
