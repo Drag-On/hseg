@@ -33,9 +33,8 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE(float, C, 1.f)
                   PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
                   PROP_DEFINE(std::string, featureWeightFile, "")
+                  PROP_DEFINE(size_t, imagesPerIter, 0)
                   PROP_DEFINE(std::string, imageListFile, "")
-                  PROP_DEFINE(std::string, groundTruthListFile, "")
-                  PROP_DEFINE(std::string, unaryListFile, "")
                   PROP_DEFINE(std::string, imageBasePath, "")
                   PROP_DEFINE(std::string, groundTruthBasePath, "")
                   PROP_DEFINE(std::string, unaryBasePath, "")
@@ -167,17 +166,20 @@ int main(int argc, char** argv)
     std::cout << "Initial weights:" << std::endl;
     std::cout << curWeights << std::endl;
 
+    std::random_device rd;
+    std::default_random_engine random(rd());
+
     // Load filenames of all images
-    std::vector<std::string> colorImageFilenames = readFileNames(properties.imageListFile);
-    std::vector<std::string> gtImageFilenames = readFileNames(properties.groundTruthListFile);
-    std::vector<std::string> unaryFilenames = readFileNames(properties.unaryListFile);
-    if (colorImageFilenames.size() != gtImageFilenames.size() || gtImageFilenames.size() != unaryFilenames.size())
+    std::vector<std::string> filenames = readFileNames(properties.imageListFile);
+    if (filenames.empty())
     {
-        std::cerr << "File lists don't match up!" << std::endl;
+        std::cerr << "File lists is empty!" << std::endl;
         return 1;
     }
+    if (properties.imagesPerIter == 0)
+        properties.imagesPerIter = filenames.size();
     size_t T = properties.numIter;
-    size_t N = colorImageFilenames.size();
+    size_t N = std::min(filenames.size(), properties.imagesPerIter);
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
@@ -220,12 +222,14 @@ int main(int argc, char** argv)
         float iterationEnergy = 0;
         futures.clear();
 
+        // Shuffle the filenames (so it doesn't always take the same elements)
+        std::shuffle(filenames.begin(), filenames.end(), random);
+
         // Iterate over all images
         for (size_t n = 0; n < N; ++n)
         {
-            auto colorImgFilename = colorImageFilenames[n];
-            auto gtImageFilename = gtImageFilenames[n];
-            auto unaryFilename = unaryFilenames[n];
+            std::string colorImgFilename, gtImageFilename, unaryFilename;
+            colorImgFilename = gtImageFilename = unaryFilename = filenames[n];
 
             auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, unaryFilename, properties, cmap,
                                       numClasses, numClusters, curWeights, featureWeights);
