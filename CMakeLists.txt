@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 project(hseg)
 
 ### Full optimization ###
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -msse3 -march=native -mfpmath=sse")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -msse3 -march=native -mfpmath=sse -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mfpmath=sse")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -march=native -mfpmath=sse -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
 # Note: -fno-omit-frame-pointer is needed by Zoom profiler. It should not have any impact on performance, however I only
 #       include it in Debug and RelWithDebInfo mode (the latter of which should be used for profiling).
