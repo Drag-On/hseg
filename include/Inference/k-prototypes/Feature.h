@@ -7,17 +7,20 @@
 
 #include <Image/Image.h>
 #include <helper/coordinate_helper.h>
+#include <Eigen/Dense>
 
 /**
  * Represents a feature taken from a pixel. This is continuous and therefore has a mean.
  */
 class Feature
 {
+private:
+    Eigen::Matrix<float, 5, 1> m_features;
 public:
     /**
      * Default constructor
      */
-    Feature() = default;
+    Feature();
 
     /**
      * Construct a feature from an image at a certain site
@@ -28,11 +31,7 @@ public:
     Feature(Image<T, 3> const& color, size_t site)
     {
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
-        m_x = coords.x();
-        m_y = coords.y();
-        m_r = color.atSite(site, 0);
-        m_g = color.atSite(site, 1);
-        m_b = color.atSite(site, 2);
+        m_features << color.atSite(site, 0), color.atSite(site, 1), color.atSite(site, 2), coords.x(), coords.y();
     }
 
     /**
@@ -40,65 +39,105 @@ public:
      * @param other Feature to add
      * @return Reference to this
      */
-    Feature& operator+=(Feature const& other);
+    inline Feature& operator+=(Feature const& other)
+    {
+        m_features += other.m_features;
+        return *this;
+    }
 
     /**
      * Adds features component-wise
      * @param other Feature to add
      * @return The new feature
      */
-    Feature operator+(Feature const& other) const;
+    inline Feature operator+(Feature const& other) const
+    {
+        Feature f = *this;
+        f += other;
+        return f;
+    }
 
     /**
      * Subtracts features component-wise
      * @param other Feature to subtract
      * @return Reference to this
      */
-    Feature& operator-=(Feature const& other);
+    inline Feature& operator-=(Feature const& other)
+    {
+        m_features -= other.m_features;
+        return *this;
+    }
 
     /**
      * Subtracts features component-wise
      * @param other Feature to subtract
      * @return The new feature
      */
-    Feature operator-(Feature const& other);
+    inline Feature operator-(Feature const& other) const
+    {
+        Feature f = *this;
+        f -= other;
+        return f;
+    }
 
     /**
      * Unary minus, inverts all components
      * @return Negative feature
      */
-    Feature operator-() const;
+    inline Feature operator-() const
+    {
+        Feature f = *this;
+        f -= Feature();
+        return f;
+    }
 
     /**
      * Divides all components by the same number
      * @param count Denominator
      * @return Reference to this
      */
-    Feature& operator/=(size_t count);
+    inline Feature& operator/=(size_t count)
+    {
+        m_features /= static_cast<float>(count);
+        return *this;
+    }
 
     /**
      * Divides all components by the same number
      * @param count Denominator
      * @return The new feature
      */
-    Feature operator/(size_t count) const;
+    inline Feature operator/(size_t count) const
+    {
+        Feature f = *this;
+        f /= count;
+        return f;
+    }
 
     /**
      * Squares all elements of this feature
      */
-    void squareElements();
+    inline void squareElements()
+    {
+        m_features = m_features.cwiseProduct(m_features);
+    }
 
     /**
      * @return Feature with all elements squared
      */
-    Feature getSquaredElements() const;
+    inline Feature getSquaredElements() const
+    {
+        Feature f = *this;
+        f.squareElements();
+        return f;
+    }
 
     /**
      * @return X coordinate
      */
     inline float x() const
     {
-        return m_x;
+        return m_features(3);
     }
 
     /**
@@ -106,7 +145,7 @@ public:
      */
     inline float y() const
     {
-        return m_y;
+        return m_features(4);
     }
 
     /**
@@ -114,7 +153,7 @@ public:
      */
     inline float r() const
     {
-        return m_r;
+        return m_features(0);
     }
 
     /**
@@ -122,7 +161,7 @@ public:
      */
     inline float g() const
     {
-        return m_g;
+        return m_features(1);
     }
 
     /**
@@ -130,12 +169,13 @@ public:
      */
     inline float b() const
     {
-        return m_b;
+        return m_features(2);
     }
 
-private:
-    float m_x = 0.f, m_y = 0.f;
-    float m_r = 0.f, m_g = 0.f, m_b = 0.f;
+    inline Eigen::Matrix<float, 5, 1> const& vec() const
+    {
+        return m_features;
+    }
 };
 
 #endif //HSEG_FEATURE_H

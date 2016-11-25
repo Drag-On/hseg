@@ -140,9 +140,7 @@ public:
      */
     inline float featureDistance(Feature const& feature, Feature const& feature2) const
     {
-        Vector5f f;
-        f << feature.r() - feature2.r(), feature.g() - feature2.g(), feature.b() - feature2.b(), feature.x() - feature2.x(),
-                feature.y() - feature2.y();
+        Vector5f f = feature.vec() - feature2.vec();
         float dist = f.transpose() * m_featureWeights * f;
         return m_weights.feature() * dist;
     }
