@@ -4,8 +4,14 @@
 ; List of files to consider
 fileList "imageList.txt"
 
-; Directory containing the predictions
+; Directory containing the predicted labelings
 predDir "/home/jan/Dokumente/Git/hseg/out/labeling/"
+
+; Directory containing the predicted superpixels
+spDir "/home/jan/Dokumente/Git/hseg/out/sp/"
 
 ; Directory containing the ground truth
 gtDir "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
+
+; Amount of superpixels
+numSp 200

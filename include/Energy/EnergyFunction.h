@@ -160,6 +160,27 @@ public:
     }
 
     /**
+     * Additional cost to choose a label as the cluster representative. Only used for loss-augmented prediction.
+     * @param idx Index of the pixel
+     * @param l Label to assign
+     * @return The additional cost of assigning \p l to a cluster
+     */
+    inline float additionalClassLabelCost(size_t /* idx */, Label /* l */) const
+    {
+        return 0;
+    }
+
+    /**
+     * Additional label used during loss-augmented clustering
+     * @param idx Pixel index
+     * @return Return the additional label at pixel \p idx
+     */
+    inline Label additionalLabel(size_t /* idx */) const
+    {
+        return 0;
+    }
+
+    /**
      * Computes the pixel-to-cluster distance
      * @param fPx Feature of the pixel
      * @param lPx Class label of the pixel

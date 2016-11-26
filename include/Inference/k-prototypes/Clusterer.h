@@ -179,6 +179,8 @@ void Clusterer<EnergyFun>::allocatePrototypes(ColorImage<T> const& color, LabelI
         {
             // Only update for valid labels
             m_clusters[minCluster].labelFrequencies[curLabel]++;
+            Label const additionalLabel = m_energy.additionalLabel(i);
+            m_clusters[minCluster].additionalLabelFrequencies[additionalLabel]++;
             m_clusters[minCluster].updateLabel();
         }
     }
@@ -192,11 +194,11 @@ size_t Clusterer<EnergyFun>::reallocatePrototypes(ColorImage<T> const& color, La
     for (size_t i = 0; i < color.pixels(); ++i)
     {
         Feature curFeature(color, i);
-        Label curLabel = labels.atSite(i);
+        Label const curLabel = labels.atSite(i);
 
         // Compute closest cluster
-        size_t minCluster = findClosestCluster(curFeature, curLabel);
-        size_t oldCluster = m_clustership.atSite(i);
+        size_t const minCluster = findClosestCluster(curFeature, curLabel);
+        size_t const oldCluster = m_clustership.atSite(i);
 
         if (oldCluster != minCluster)
         {
@@ -213,6 +215,9 @@ size_t Clusterer<EnergyFun>::reallocatePrototypes(ColorImage<T> const& color, La
                 // Only update valid labels
                 m_clusters[minCluster].labelFrequencies[curLabel]++;
                 m_clusters[oldCluster].labelFrequencies[curLabel]--;
+                Label const additionalLabel = m_energy.additionalLabel(i);
+                m_clusters[minCluster].additionalLabelFrequencies[additionalLabel]++;
+                m_clusters[oldCluster].additionalLabelFrequencies[additionalLabel]--;
                 m_clusters[minCluster].updateLabel();
                 m_clusters[oldCluster].updateLabel();
             }

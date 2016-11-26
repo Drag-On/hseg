@@ -98,7 +98,7 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
 
     // Compute loss
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(groundTruth, numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, groundTruth, lossFactor, numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, predictionSp, groundTruth, lossFactor, clusters, numClasses);
     sampleResult.energy += loss;
 
     // Compute energy without weights on the ground truth

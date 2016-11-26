@@ -20,7 +20,10 @@ void Cluster::updateLabel()
         for (Label l = 0; l < numClasses; ++l)
         {
             if (l != i)
+            {
                 dist += labelFrequencies[l] * classDistance(l, i);
+                dist -= additionalLabelFrequencies[l] * additionalClassDistance(l, i);
+            }
         }
         ++i;
         return dist;

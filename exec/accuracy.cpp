@@ -7,11 +7,14 @@
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/path.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
+#include <Inference/k-prototypes/Clusterer.h>
 
 PROPERTIES_DEFINE(Accuracy,
                   PROP_DEFINE(std::string, fileList, "")
                   PROP_DEFINE(std::string, predDir, "")
+                  PROP_DEFINE(std::string, spDir, "")
                   PROP_DEFINE(std::string, gtDir, "")
+                  PROP_DEFINE(size_t, numSp, 300)
                   PROP_DEFINE(std::string, outDir, "./")
 )
 
@@ -63,6 +66,7 @@ int main()
 
     size_t const numClasses = 21ul;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
+    helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numSp);
     ConfusionMatrix accuracy(numClasses);
     float loss = 0;
     size_t rawPxCorrect = 0;
@@ -74,10 +78,11 @@ int main()
     for(auto const& f : fileNames)
     {
         std::string const& predFilename = properties.predDir + f + ".png";
+        std::string const& spFilename = properties.spDir + f + ".png";
         std::string const& gtFilename = properties.gtDir + f + ".png";
 
         // Load images
-        RGBImage predRGB;
+        RGBImage predRGB, spRGB;
         predRGB.read(predFilename);
         if (predRGB.pixels() == 0)
         {
@@ -85,6 +90,13 @@ int main()
             return ERR_IMAGE_LOAD;
         }
         LabelImage pred = helper::image::decolorize(predRGB, cmap);
+        spRGB.read(spFilename);
+        if (spRGB.pixels() == 0)
+        {
+            std::cerr << "Couldn't load superpixel image " << spFilename << std::endl;
+            return ERR_IMAGE_LOAD;
+        }
+        LabelImage sp = helper::image::decolorize(spRGB, cmap2);
 
         RGBImage gtRGB;
         gtRGB.read(gtFilename);
@@ -107,8 +119,12 @@ int main()
         size_t imgRawPxCount = 0;
 
         // Compute loss
+        UnaryFile fakeUnary;
+        WeightsVec fakeWeights(21);
+        EnergyFunction trainingEnergy(fakeUnary, fakeWeights, 0.f, Matrix5f{});
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses);
-        loss += LossAugmentedEnergyFunction::computeLoss(pred, gt, lossFactor, numClasses);
+        auto clusters = Clusterer<EnergyFunction>::computeClusters(sp, predRGB, pred, properties.numSp, numClasses, trainingEnergy);
+        loss += LossAugmentedEnergyFunction::computeLoss(pred, sp, gt, lossFactor, clusters, numClasses);
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) < numClasses)
             {
