@@ -4,6 +4,12 @@
 #include <Energy/WeightsVec.h>
 #include <map>
 #include <set>
+#include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
+#include <Energy/EnergyFunction.h>
+#include <Energy/feature_weights.h>
+#include <Inference/k-prototypes/Clusterer.h>
+#include <helper/image_helper.h>
+#include <Inference/GraphOptimizer/GraphOptimizer.h>
 #include "Timer.h"
 
 float loss(int y, int gt)
@@ -64,6 +70,41 @@ trainingEnergy(std::vector<float> const& x, std::vector<int> const& gt, std::vec
 
 int main()
 {
+    size_t numLabels = 21;
+    UnaryFile unary("data/2007_000129_prob.dat");
+    WeightsVec weights(numLabels, 100, 1000000, 10, 0);
+    Matrix5f featureWeights = readFeatureWeights("out/featureWeights.txt");
+    featureWeights = featureWeights.inverse();
+    EnergyFunction energy(unary, weights, 0.5f, featureWeights);
+
+    RGBImage rgb;
+    rgb.read("data/2007_000129.jpg");
+    auto cieLab = rgb.getCieLabImg();
+
+    size_t numClusters = 200;
+    Clusterer<EnergyFunction> clusterer(energy);
+    auto maxLabeling = LabelImage(unary.width(), unary.height());//unary.maxLabeling();
+    clusterer.run(numClusters, numLabels, cieLab, maxLabeling);
+    auto const& sp = clusterer.clustership();
+
+    TRW_S_Optimizer<EnergyFunction> trwsOptimizer(energy);
+    trwsOptimizer.run(cieLab, sp, numClusters);
+    auto const& labeling_trws = trwsOptimizer.labeling();
+
+    GraphOptimizer<EnergyFunction> graphOptimizer(energy);
+    graphOptimizer.run(cieLab, sp, numClusters);
+    auto const& labeling_graph = graphOptimizer.labeling();
+
+    auto cmap = helper::image::generateColorMapVOC(numLabels);
+    auto labelImg_trws = helper::image::colorize(labeling_trws, cmap);
+    auto labelImg_graph = helper::image::colorize(labeling_graph, cmap);
+    cv::Mat cvLabeling_trws = static_cast<cv::Mat>(labelImg_trws);
+    cv::Mat cvLabeling_graph = static_cast<cv::Mat>(labelImg_graph);
+    cv::imshow("TRW_S", cvLabeling_trws);
+    cv::imshow("Graph", cvLabeling_graph);
+    cv::waitKey();
+
+#if 0
     std::vector<float> x = {0.f, 1.6f, 0.95f, 1.55f};
     std::vector<int> gt = {0, 1, 1, 1};
     std::vector<int> y = {0, 0, 0, 0};
@@ -109,6 +150,7 @@ int main()
     {
         std::cout << i << "\t" << trainingEnergies[i] << std::endl;
     }
+#endif
 
     return 0;
 }
