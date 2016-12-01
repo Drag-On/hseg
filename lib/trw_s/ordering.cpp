@@ -4,8 +4,6 @@
 #include <assert.h>
 #include "MRFEnergy.h"
 
-#include "instances.inc"
-
 template <class T> void MRFEnergy<T>::SetAutomaticOrdering()
 {
 	int dMin;
@@ -157,3 +155,5 @@ template <class T> void MRFEnergy<T>::SetAutomaticOrdering()
 
 	CompleteGraphConstruction();
 }
+
+#include "instances.inc"

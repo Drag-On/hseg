@@ -4,8 +4,6 @@
 #include <assert.h>
 #include "MRFEnergy.h"
 
-#include "instances.inc"
-
 void DefaultErrorFn(char const* msg)
 {
 	fprintf(stderr, "%s\n", msg);
@@ -257,3 +255,5 @@ template <class T> void MRFEnergy<T>::CompleteGraphConstruction()
 
 	printf("done\n");
 }
+
+#include "instances.inc"
