@@ -10,6 +10,7 @@
 #include <Inference/k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <Inference/GraphOptimizer/GraphOptimizer.h>
+#include <Inference/InferenceIterator.h>
 #include "Timer.h"
 
 float loss(int y, int gt)
@@ -71,35 +72,54 @@ trainingEnergy(std::vector<float> const& x, std::vector<int> const& gt, std::vec
 int main()
 {
     size_t numLabels = 21;
+    size_t numClusters = 200;
     UnaryFile unary("data/2007_000129_prob.dat");
-    WeightsVec weights(numLabels, 100, 1000000, 10, 0);
+    WeightsVec weights(numLabels, 100, 10, 10, 10);
+    weights.read("out/weights_multi_large.dat");
     Matrix5f featureWeights = readFeatureWeights("out/featureWeights.txt");
     featureWeights = featureWeights.inverse();
     EnergyFunction energy(unary, weights, 0.5f, featureWeights);
+    auto cmap = helper::image::generateColorMapVOC(numLabels);
 
-    RGBImage rgb;
+    RGBImage rgb, gtRgb;
     rgb.read("data/2007_000129.jpg");
     auto cieLab = rgb.getCieLabImg();
+    gtRgb.read("data/2007_000129.png");
+    LabelImage gt;
+    gt = helper::image::decolorize(gtRgb, cmap);
 
-    size_t numClusters = 200;
-    Clusterer<EnergyFunction> clusterer(energy);
-    auto maxLabeling = LabelImage(unary.width(), unary.height());//unary.maxLabeling();
-    clusterer.run(numClusters, numLabels, cieLab, maxLabeling);
-    auto const& sp = clusterer.clustership();
+    Timer t(true);
+    InferenceIterator<EnergyFunction, TRW_S_Optimizer> inference_trws(energy, numClusters, numLabels, cieLab);
+    auto result = inference_trws.run();
+    auto labeling_trws = result.labeling;
+    t.pause();
+    std::cout << "TRWS took " << t.elapsed<Timer::seconds>() << std::endl;
 
-    TRW_S_Optimizer<EnergyFunction> trwsOptimizer(energy);
-    trwsOptimizer.run(cieLab, sp, numClusters);
-    auto const& labeling_trws = trwsOptimizer.labeling();
+    t.reset(true);
+    InferenceIterator<EnergyFunction, GraphOptimizer> inference_graph(energy, numClusters, numLabels, cieLab);
+    result = inference_graph.run();
+    auto labeling_graph = result.labeling;
+    t.pause();
+    std::cout << "Alpha-Beta-Swap took " << t.elapsed<Timer::seconds>() << std::endl;
 
-    GraphOptimizer<EnergyFunction> graphOptimizer(energy);
-    graphOptimizer.run(cieLab, sp, numClusters);
-    auto const& labeling_graph = graphOptimizer.labeling();
+    // Compute accuracy
+    size_t correct_trws = 0, correct_graph = 0;
+    for(size_t i = 0; i < gt.pixels(); ++i)
+    {
+        if(labeling_trws.atSite(i) == gt.atSite(i))
+            correct_trws++;
+        if(labeling_graph.atSite(i) == gt.atSite(i))
+            correct_graph++;
+    }
+    std::cout << "Accuracy TRWS: " << correct_trws / (float) gt.pixels() << std::endl;
+    std::cout << "Accuracy Graph: " << correct_graph / (float) gt.pixels() << std::endl;
 
-    auto cmap = helper::image::generateColorMapVOC(numLabels);
     auto labelImg_trws = helper::image::colorize(labeling_trws, cmap);
     auto labelImg_graph = helper::image::colorize(labeling_graph, cmap);
     cv::Mat cvLabeling_trws = static_cast<cv::Mat>(labelImg_trws);
     cv::Mat cvLabeling_graph = static_cast<cv::Mat>(labelImg_graph);
+    cv::imwrite("trws.png", cvLabeling_trws);
+    cv::imwrite("alphabeta.png", cvLabeling_graph);
     cv::imshow("TRW_S", cvLabeling_trws);
     cv::imshow("Graph", cvLabeling_graph);
     cv::waitKey();
