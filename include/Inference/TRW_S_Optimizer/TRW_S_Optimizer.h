@@ -139,7 +139,7 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
 
     // Do the actual minimization
     MRFEnergy<TypeGeneral>::Options options;
-    options.m_eps = 1000.0f;
+    options.m_eps = 0.0f;
     MRFEnergy<TypeGeneral>::REAL lowerBound = 0, energy = 0;
     mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
 

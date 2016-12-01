@@ -12,7 +12,7 @@
 /**
  * Infers both class labels and superpixels on an image
  */
-template<typename EnergyFun>
+template<typename EnergyFun, template<typename> class Optimizer = GraphOptimizer>
 class InferenceIterator
 {
 public:
@@ -49,8 +49,8 @@ private:
     float computeInitialEnergy(LabelImage const& labeling) const;
 };
 
-template<typename EnergyFun>
-InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun e, size_t numClusters, size_t numClasses,
+template<typename EnergyFun, template<typename> class Optimizer>
+InferenceIterator<EnergyFun, Optimizer>::InferenceIterator(EnergyFun e, size_t numClusters, size_t numClasses,
                                                 CieLabImage const& color)
         : m_energy(e),
           m_numClusters(numClusters),
@@ -59,12 +59,12 @@ InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun e, size_t numClusters,
 {
 }
 
-template<typename EnergyFun>
-InferenceResult InferenceIterator<EnergyFun>::run(size_t numIter)
+template<typename EnergyFun, template<typename> class Optimizer>
+InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(size_t numIter)
 {
     InferenceResult result;
     Clusterer<EnergyFun> clusterer(m_energy);
-    GraphOptimizer<EnergyFun> optimizer(m_energy);
+    Optimizer<EnergyFun> optimizer(m_energy);
 
     float energy = std::numeric_limits<float>::max();
     float lastEnergy = energy;
@@ -93,8 +93,8 @@ InferenceResult InferenceIterator<EnergyFun>::run(size_t numIter)
     return result;
 }
 
-template<typename EnergyFun>
-InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(size_t numIter)
+template<typename EnergyFun, template<typename> class Optimizer>
+InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(size_t numIter)
 {
     Clusterer<EnergyFun> clusterer(m_energy);
     GraphOptimizer<EnergyFun> optimizer(m_energy);
@@ -134,8 +134,8 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(size_t numIter)
     return result;
 }
 
-template<typename EnergyFun>
-float InferenceIterator<EnergyFun>::computeInitialEnergy(LabelImage const& labeling) const
+template<typename EnergyFun, template<typename> class Optimizer>
+float InferenceIterator<EnergyFun, Optimizer>::computeInitialEnergy(LabelImage const& labeling) const
 {
     LabelImage fakeSpLabeling(m_color.width(), m_color.height());
     Cluster c(&m_energy);
