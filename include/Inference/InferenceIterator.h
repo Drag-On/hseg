@@ -7,12 +7,13 @@
 
 #include <Energy/EnergyFunction.h>
 #include <Inference/InferenceResult.h>
+#include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
 #include "InferenceResultDetails.h"
 
 /**
  * Infers both class labels and superpixels on an image
  */
-template<typename EnergyFun, template<typename> class Optimizer = GraphOptimizer>
+template<typename EnergyFun, template<typename> class Optimizer = TRW_S_Optimizer>
 class InferenceIterator
 {
 public:
