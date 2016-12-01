@@ -314,7 +314,7 @@ inline TypeGeneral::EdgeData::EdgeData(Type type, REAL* data)
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypeGeneral::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypeGeneral::Vector::GetSizeInBytes(GlobalSize /*Kglobal*/, LocalSize K)
 {
 	if (K.m_K < 1)
 	{
@@ -322,12 +322,12 @@ inline int TypeGeneral::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
 	}
 	return K.m_K*sizeof(REAL);
 }
-inline void TypeGeneral::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeGeneral::Vector::Initialize(GlobalSize /*Kglobal*/, LocalSize K, NodeData data)
 {
 	memcpy(m_data, data.m_data, K.m_K*sizeof(REAL));
 }
 
-inline void TypeGeneral::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeGeneral::Vector::Add(GlobalSize /*Kglobal*/, LocalSize K, NodeData data)
 {
 	for (int k=0; k<K.m_K; k++)
 	{
@@ -335,17 +335,17 @@ inline void TypeGeneral::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData d
 	}
 }
 
-inline void TypeGeneral::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypeGeneral::Vector::SetZero(GlobalSize /*Kglobal*/, LocalSize K)
 {
 	memset(m_data, 0, K.m_K*sizeof(REAL));
 }
 
-inline void TypeGeneral::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeGeneral::Vector::Copy(GlobalSize /*Kglobal*/, LocalSize K, Vector* V)
 {
 	memcpy(m_data, V->m_data, K.m_K*sizeof(REAL));
 }
 
-inline void TypeGeneral::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeGeneral::Vector::Add(GlobalSize /*Kglobal*/, LocalSize K, Vector* V)
 {
 	for (int k=0; k<K.m_K; k++)
 	{
@@ -353,13 +353,13 @@ inline void TypeGeneral::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
 	}
 }
 
-inline TypeGeneral::REAL TypeGeneral::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypeGeneral::REAL TypeGeneral::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<K.m_K);
 	return m_data[k];
 }
 
-inline TypeGeneral::REAL TypeGeneral::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& kMin)
+inline TypeGeneral::REAL TypeGeneral::Vector::ComputeMin(GlobalSize /*Kglobal*/, LocalSize K, Label& kMin)
 {
 	REAL vMin = m_data[0];
 	kMin = 0;
@@ -375,7 +375,7 @@ inline TypeGeneral::REAL TypeGeneral::Vector::ComputeMin(GlobalSize Kglobal, Loc
 	return vMin;
 }
 
-inline TypeGeneral::REAL TypeGeneral::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypeGeneral::REAL TypeGeneral::Vector::ComputeAndSubtractMin(GlobalSize /*Kglobal*/, LocalSize K)
 {
 	REAL vMin = m_data[0];
 	for (int k=1; k<K.m_K; k++)
@@ -393,18 +393,18 @@ inline TypeGeneral::REAL TypeGeneral::Vector::ComputeAndSubtractMin(GlobalSize K
 	return vMin;
 }
 
-inline int TypeGeneral::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypeGeneral::Vector::GetArraySize(GlobalSize /*Kglobal*/, LocalSize K)
 {
 	return K.m_K;
 }
 
-inline TypeGeneral::REAL TypeGeneral::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypeGeneral::REAL TypeGeneral::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<K.m_K);
 	return m_data[k];
 }
 
-inline void TypeGeneral::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypeGeneral::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<K.m_K);
 	m_data[k] = x;
@@ -412,7 +412,7 @@ inline void TypeGeneral::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, 
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypeGeneral::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypeGeneral::Edge::GetSizeInBytes(GlobalSize /*Kglobal*/, LocalSize Ki, LocalSize Kj, EdgeData data)
 {
 	int messageSizeInBytes = ((Ki.m_K > Kj.m_K) ? Ki.m_K : Kj.m_K)*sizeof(REAL);
 
@@ -436,7 +436,7 @@ inline int TypeGeneral::Edge::GetBufSizeInBytes(int vectorMaxSizeInBytes)
 	return vectorMaxSizeInBytes;
 }
 
-inline void TypeGeneral::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypeGeneral::Edge::Initialize(GlobalSize /*Kglobal*/, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* /*Di*/, Vector* /*Dj*/)
 {
 	m_type = data.m_type;
 
@@ -463,7 +463,7 @@ inline TypeGeneral::Vector* TypeGeneral::Edge::GetMessagePtr()
 	return m_message;
 }
 
-inline void TypeGeneral::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypeGeneral::Edge::Swap(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/)
 {
 	if (m_type == GENERAL)
 	{
@@ -471,7 +471,7 @@ inline void TypeGeneral::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize 
 	}
 }
 
-inline TypeGeneral::REAL TypeGeneral::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* _buf)
+inline TypeGeneral::REAL TypeGeneral::Edge::UpdateMessage(GlobalSize /*Kglobal*/, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* _buf)
 {
 	Vector* buf = (Vector*) _buf;
 	REAL vMin;
@@ -570,7 +570,7 @@ inline TypeGeneral::REAL TypeGeneral::Edge::UpdateMessage(GlobalSize Kglobal, Lo
 	return vMin;
 }
 
-inline void TypeGeneral::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypeGeneral::Edge::AddColumn(GlobalSize /*Kglobal*/, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
 {
 	assert(ksource>=0 && ksource<Ksource.m_K);
 

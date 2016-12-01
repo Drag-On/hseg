@@ -289,7 +289,7 @@ inline TypeTruncatedQuadratic2D::EdgeData::EdgeData(REAL alphaX, REAL alphaY, RE
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypeTruncatedQuadratic2D::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypeTruncatedQuadratic2D::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize /* K */)
 {
 	if (Kglobal.m_KX < 1 || Kglobal.m_KY < 1)
 	{
@@ -297,12 +297,12 @@ inline int TypeTruncatedQuadratic2D::Vector::GetSizeInBytes(GlobalSize Kglobal, 
 	}
 	return Kglobal.m_K*sizeof(REAL);
 }
-inline void TypeTruncatedQuadratic2D::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeTruncatedQuadratic2D::Vector::Initialize(GlobalSize Kglobal, LocalSize /* K */, NodeData data)
 {
 	memcpy(m_data, data.m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedQuadratic2D::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeTruncatedQuadratic2D::Vector::Add(GlobalSize Kglobal, LocalSize /* K */, NodeData data)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -310,17 +310,17 @@ inline void TypeTruncatedQuadratic2D::Vector::Add(GlobalSize Kglobal, LocalSize 
 	}
 }
 
-inline void TypeTruncatedQuadratic2D::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypeTruncatedQuadratic2D::Vector::SetZero(GlobalSize Kglobal, LocalSize /* K */)
 {
 	memset(m_data, 0, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedQuadratic2D::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeTruncatedQuadratic2D::Vector::Copy(GlobalSize Kglobal, LocalSize /* K */, Vector* V)
 {
 	memcpy(m_data, V->m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedQuadratic2D::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeTruncatedQuadratic2D::Vector::Add(GlobalSize Kglobal, LocalSize /* K */, Vector* V)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -328,13 +328,13 @@ inline void TypeTruncatedQuadratic2D::Vector::Add(GlobalSize Kglobal, LocalSize 
 	}
 }
 
-inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::GetValue(GlobalSize Kglobal, LocalSize /* K */, Label k)
 {
 	assert(k.m_kx>=0 && k.m_kx<Kglobal.m_KX && k.m_ky>=0 && k.m_ky<Kglobal.m_KY);
 	return m_data[k.m_kx + k.m_ky*Kglobal.m_KX];
 }
 
-inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& _kMin)
+inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::ComputeMin(GlobalSize Kglobal, LocalSize /* K */, Label& _kMin)
 {
 	REAL vMin = m_data[0];
 	int kMin = 0;
@@ -353,7 +353,7 @@ inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::ComputeM
 	return vMin;
 }
 
-inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize /* K */)
 {
 	REAL vMin = m_data[0];
 	for (int k=1; k<Kglobal.m_K; k++)
@@ -371,18 +371,18 @@ inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::ComputeA
 	return vMin;
 }
 
-inline int TypeTruncatedQuadratic2D::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypeTruncatedQuadratic2D::Vector::GetArraySize(GlobalSize Kglobal, LocalSize /* K */)
 {
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::GetArrayValue(GlobalSize /* Kglobal */, LocalSize /* K */, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedQuadratic2D::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypeTruncatedQuadratic2D::Vector::SetArrayValue(GlobalSize /* Kglobal */, LocalSize /* K */, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;
@@ -390,7 +390,7 @@ inline void TypeTruncatedQuadratic2D::Vector::SetArrayValue(GlobalSize Kglobal, 
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypeTruncatedQuadratic2D::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypeTruncatedQuadratic2D::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize /* Ki */, LocalSize /* Kj */, EdgeData data)
 {
 	if (data.m_alphaX < 0 || data.m_alphaY < 0 || data.m_lambda < 0)
 	{
@@ -405,7 +405,7 @@ inline int TypeTruncatedQuadratic2D::Edge::GetBufSizeInBytes(int vectorMaxSizeIn
 	return K*sizeof(REAL) + (2*K+1)*sizeof(int);
 }
 
-inline void TypeTruncatedQuadratic2D::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypeTruncatedQuadratic2D::Edge::Initialize(GlobalSize Kglobal, LocalSize /* Ki */, LocalSize /* Kj */, EdgeData data, Vector* /* Di */, Vector* /* Dj */)
 {
 	m_alphaX = data.m_alphaX;
 	m_alphaY = data.m_alphaY;
@@ -418,11 +418,11 @@ inline TypeTruncatedQuadratic2D::Vector* TypeTruncatedQuadratic2D::Edge::GetMess
 	return &m_message;
 }
 
-inline void TypeTruncatedQuadratic2D::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypeTruncatedQuadratic2D::Edge::Swap(GlobalSize /* Kglobal */, LocalSize /* Ki */, LocalSize /* Kj */)
 {
 }
 
-inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* _buf)
+inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize /* Ksource */, LocalSize /* Kdest */, Vector* source, REAL gamma, int /* dir */, void* _buf)
 {
 	REAL* buf = (REAL*) _buf;
 	int* parabolas = (int*) ((char*)_buf + Kglobal.m_K*sizeof(REAL));
@@ -470,7 +470,7 @@ inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Edge::UpdateMess
 	return vMin;
 }
 
-inline void TypeTruncatedQuadratic2D::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypeTruncatedQuadratic2D::Edge::AddColumn(GlobalSize Kglobal, LocalSize /* Ksource */, LocalSize /* Kdest */, Label ksource, Vector* dest, int /* dir */)
 {
 	assert(ksource.m_kx>=0 && ksource.m_kx<Kglobal.m_KX && ksource.m_ky>=0 && ksource.m_ky<Kglobal.m_KY);
 

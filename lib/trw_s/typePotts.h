@@ -266,7 +266,7 @@ inline TypePotts::EdgeData::EdgeData(REAL lambdaPotts)
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypePotts::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypePotts::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	if (Kglobal.m_K < 1)
 	{
@@ -274,12 +274,12 @@ inline int TypePotts::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
 	}
 	return Kglobal.m_K*sizeof(REAL);
 }
-inline void TypePotts::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypePotts::Vector::Initialize(GlobalSize Kglobal, LocalSize /*K*/, NodeData data)
 {
 	memcpy(m_data, data.m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, NodeData data)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -287,17 +287,17 @@ inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData dat
 	}
 }
 
-inline void TypePotts::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypePotts::Vector::SetZero(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	memset(m_data, 0, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypePotts::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypePotts::Vector::Copy(GlobalSize Kglobal, LocalSize /*K*/, Vector* V)
 {
 	memcpy(m_data, V->m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, Vector* V)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -305,13 +305,13 @@ inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
 	}
 }
 
-inline TypePotts::REAL TypePotts::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypePotts::REAL TypePotts::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline TypePotts::REAL TypePotts::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& kMin)
+inline TypePotts::REAL TypePotts::Vector::ComputeMin(GlobalSize Kglobal, LocalSize /*K*/, Label& kMin)
 {
 	REAL vMin = m_data[0];
 	kMin = 0;
@@ -327,7 +327,7 @@ inline TypePotts::REAL TypePotts::Vector::ComputeMin(GlobalSize Kglobal, LocalSi
 	return vMin;
 }
 
-inline TypePotts::REAL TypePotts::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypePotts::REAL TypePotts::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	REAL vMin = m_data[0];
 	for (int k=1; k<Kglobal.m_K; k++)
@@ -345,18 +345,18 @@ inline TypePotts::REAL TypePotts::Vector::ComputeAndSubtractMin(GlobalSize Kglob
 	return vMin;
 }
 
-inline int TypePotts::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypePotts::Vector::GetArraySize(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	return Kglobal.m_K;
 }
 
-inline TypePotts::REAL TypePotts::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypePotts::REAL TypePotts::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypePotts::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypePotts::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;
@@ -364,7 +364,7 @@ inline void TypePotts::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, in
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypePotts::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypePotts::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data)
 {
 	if (data.m_lambdaPotts < 0)
 	{
@@ -373,12 +373,12 @@ inline int TypePotts::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, Loc
 	return sizeof(Edge) - sizeof(Vector) + Kglobal.m_K*sizeof(REAL);
 }
 
-inline int TypePotts::Edge::GetBufSizeInBytes(int vectorMaxSizeInBytes)
+inline int TypePotts::Edge::GetBufSizeInBytes(int /*vectorMaxSizeInBytes*/)
 {
 	return 0;
 }
 
-inline void TypePotts::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypePotts::Edge::Initialize(GlobalSize Kglobal, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data, Vector* /*Di*/, Vector* /*Dj*/)
 {
 	m_lambdaPotts = data.m_lambdaPotts;
 	memset(m_message.m_data, 0, Kglobal.m_K*sizeof(REAL));
@@ -389,11 +389,11 @@ inline TypePotts::Vector* TypePotts::Edge::GetMessagePtr()
 	return &m_message;
 }
 
-inline void TypePotts::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypePotts::Edge::Swap(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/)
 {
 }
 
-inline TypePotts::REAL TypePotts::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* buf)
+inline TypePotts::REAL TypePotts::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Vector* source, REAL gamma, int /*dir*/, void* /*buf*/)
 {
 	int k;
 	REAL vMin;
@@ -422,7 +422,7 @@ inline TypePotts::REAL TypePotts::Edge::UpdateMessage(GlobalSize Kglobal, LocalS
 	return vMin;
 }
 
-inline void TypePotts::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypePotts::Edge::AddColumn(GlobalSize Kglobal, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Label ksource, Vector* dest, int /*dir*/)
 {
 	assert(ksource>=0 && ksource<Kglobal.m_K);
 

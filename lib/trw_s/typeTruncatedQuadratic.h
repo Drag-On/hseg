@@ -274,7 +274,7 @@ inline TypeTruncatedQuadratic::EdgeData::EdgeData(REAL alpha, REAL lambda)
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypeTruncatedQuadratic::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypeTruncatedQuadratic::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	if (Kglobal.m_K < 1)
 	{
@@ -282,12 +282,12 @@ inline int TypeTruncatedQuadratic::Vector::GetSizeInBytes(GlobalSize Kglobal, Lo
 	}
 	return Kglobal.m_K*sizeof(REAL);
 }
-inline void TypeTruncatedQuadratic::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeTruncatedQuadratic::Vector::Initialize(GlobalSize Kglobal, LocalSize /*K*/, NodeData data)
 {
 	memcpy(m_data, data.m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, NodeData data)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -295,17 +295,17 @@ inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize K,
 	}
 }
 
-inline void TypeTruncatedQuadratic::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypeTruncatedQuadratic::Vector::SetZero(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	memset(m_data, 0, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedQuadratic::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeTruncatedQuadratic::Vector::Copy(GlobalSize Kglobal, LocalSize /*K*/, Vector* V)
 {
 	memcpy(m_data, V->m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, Vector* V)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -313,13 +313,13 @@ inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize K,
 	}
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& kMin)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::ComputeMin(GlobalSize Kglobal, LocalSize /*K*/, Label& kMin)
 {
 	REAL vMin = m_data[0];
 	kMin = 0;
@@ -335,7 +335,7 @@ inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::ComputeMin(G
 	return vMin;
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	REAL vMin = m_data[0];
 	for (int k=1; k<Kglobal.m_K; k++)
@@ -353,18 +353,18 @@ inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::ComputeAndSu
 	return vMin;
 }
 
-inline int TypeTruncatedQuadratic::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypeTruncatedQuadratic::Vector::GetArraySize(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedQuadratic::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypeTruncatedQuadratic::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;
@@ -372,7 +372,7 @@ inline void TypeTruncatedQuadratic::Vector::SetArrayValue(GlobalSize Kglobal, Lo
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypeTruncatedQuadratic::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypeTruncatedQuadratic::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data)
 {
 	if (data.m_alpha < 0 || data.m_lambda < 0)
 	{
@@ -387,7 +387,7 @@ inline int TypeTruncatedQuadratic::Edge::GetBufSizeInBytes(int vectorMaxSizeInBy
 	return K*sizeof(REAL) + (2*K+1)*sizeof(int);
 }
 
-inline void TypeTruncatedQuadratic::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypeTruncatedQuadratic::Edge::Initialize(GlobalSize Kglobal, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data, Vector* /*Di*/, Vector* /*Dj*/)
 {
 	m_alpha = data.m_alpha;
 	m_lambda = data.m_lambda;
@@ -399,11 +399,11 @@ inline TypeTruncatedQuadratic::Vector* TypeTruncatedQuadratic::Edge::GetMessageP
 	return &m_message;
 }
 
-inline void TypeTruncatedQuadratic::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypeTruncatedQuadratic::Edge::Swap(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/)
 {
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* _buf)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Vector* source, REAL gamma, int /*dir*/, void* _buf)
 {
 	REAL* buf = (REAL*) _buf;
 	int* parabolas = (int*) ((char*)_buf + Kglobal.m_K*sizeof(REAL));
@@ -447,7 +447,7 @@ inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Edge::UpdateMessage(
 	return vMin;
 }
 
-inline void TypeTruncatedQuadratic::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypeTruncatedQuadratic::Edge::AddColumn(GlobalSize Kglobal, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Label ksource, Vector* dest, int /*dir*/)
 {
 	assert(ksource>=0 && ksource<Kglobal.m_K);
 

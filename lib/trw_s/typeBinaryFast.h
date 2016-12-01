@@ -180,64 +180,64 @@ inline TypeBinaryFast::EdgeData::EdgeData(REAL V00, REAL V01, REAL V10, REAL V11
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypeBinaryFast::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypeBinaryFast::Vector::GetSizeInBytes(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	return sizeof(Vector);
 }
-inline void TypeBinaryFast::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeBinaryFast::Vector::Initialize(GlobalSize /*Kglobal*/, LocalSize /*K*/, NodeData data)
 {
 	m_data = data.m_data[1] - data.m_data[0];
 }
 
-inline void TypeBinaryFast::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeBinaryFast::Vector::Add(GlobalSize /*Kglobal*/, LocalSize /*K*/, NodeData data)
 {
 	m_data += data.m_data[1] - data.m_data[0];
 }
 
-inline void TypeBinaryFast::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypeBinaryFast::Vector::SetZero(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	m_data = 0;
 }
 
-inline void TypeBinaryFast::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeBinaryFast::Vector::Copy(GlobalSize /*Kglobal*/, LocalSize /*K*/, Vector* V)
 {
 	m_data = V->m_data;
 }
 
-inline void TypeBinaryFast::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeBinaryFast::Vector::Add(GlobalSize /*Kglobal*/, LocalSize /*K*/, Vector* V)
 {
 	m_data += V->m_data;
 }
 
-inline TypeBinaryFast::REAL TypeBinaryFast::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypeBinaryFast::REAL TypeBinaryFast::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<2);
 	return (k == 0) ? 0 : m_data;
 }
 
-inline TypeBinaryFast::REAL TypeBinaryFast::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& kMin)
+inline TypeBinaryFast::REAL TypeBinaryFast::Vector::ComputeMin(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label& kMin)
 {
 	kMin = (m_data >= 0) ? 0 : 1;
 	return 0;
 }
 
-inline TypeBinaryFast::REAL TypeBinaryFast::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypeBinaryFast::REAL TypeBinaryFast::Vector::ComputeAndSubtractMin(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	return 0;
 }
 
-inline int TypeBinaryFast::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypeBinaryFast::Vector::GetArraySize(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	return 1;
 }
 
-inline TypeBinaryFast::REAL TypeBinaryFast::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypeBinaryFast::REAL TypeBinaryFast::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int /*k*/)
 {
 	assert(k==0);
 	return m_data;
 }
 
-inline void TypeBinaryFast::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypeBinaryFast::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int /*k*/, REAL x)
 {
 	assert(k==0);
 	m_data = x;
@@ -245,17 +245,17 @@ inline void TypeBinaryFast::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize 
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypeBinaryFast::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypeBinaryFast::Edge::GetSizeInBytes(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData /*data*/)
 {
 	return sizeof(Edge);
 }
 
-inline int TypeBinaryFast::Edge::GetBufSizeInBytes(int vectorMaxSizeInBytes)
+inline int TypeBinaryFast::Edge::GetBufSizeInBytes(int /*vectorMaxSizeInBytes*/)
 {
 	return 0;
 }
 
-inline void TypeBinaryFast::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypeBinaryFast::Edge::Initialize(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data, Vector* Di, Vector* Dj)
 {
 	// V00 V01  = A B  = A A  +  0.5 * ( 0   0   + 0 P-Q  +  0   P+Q  )
 	// V10 V11    C D    D D             Q-P Q-P   0 P-Q     P+Q 0
@@ -275,11 +275,11 @@ inline TypeBinaryFast::Vector* TypeBinaryFast::Edge::GetMessagePtr()
 	return &m_message;
 }
 
-inline void TypeBinaryFast::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypeBinaryFast::Edge::Swap(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/)
 {
 }
 
-inline TypeBinaryFast::REAL TypeBinaryFast::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* buf)
+inline TypeBinaryFast::REAL TypeBinaryFast::Edge::UpdateMessage(GlobalSize /*Kglobal*/, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Vector* source, REAL gamma, int /*dir*/, void* /*buf*/)
 {
 	REAL s = gamma*source->m_data - m_message.m_data;
 
@@ -299,7 +299,7 @@ inline TypeBinaryFast::REAL TypeBinaryFast::Edge::UpdateMessage(GlobalSize Kglob
 	return 0;
 }
 
-inline void TypeBinaryFast::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypeBinaryFast::Edge::AddColumn(GlobalSize /*Kglobal*/, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Label ksource, Vector* dest, int /*dir*/)
 {
 	dest->m_data += (ksource == 0) ? m_lambdaIsing : -m_lambdaIsing;
 }
