@@ -243,53 +243,53 @@ inline TypeBinary::EdgeData::EdgeData(REAL V00, REAL V01, REAL V10, REAL V11)
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypeBinary::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypeBinary::Vector::GetSizeInBytes(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	return sizeof(Vector);
 }
-inline void TypeBinary::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeBinary::Vector::Initialize(GlobalSize /*Kglobal*/, LocalSize /*K*/, NodeData data)
 {
 	m_data[0] = data.m_data[0];
 	m_data[1] = data.m_data[1];
 }
 
-inline void TypeBinary::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeBinary::Vector::Add(GlobalSize /*Kglobal*/, LocalSize /*K*/, NodeData data)
 {
 	m_data[0] += data.m_data[0];
 	m_data[1] += data.m_data[1];
 }
 
-inline void TypeBinary::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypeBinary::Vector::SetZero(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	m_data[0] = 0;
 	m_data[1] = 0;
 }
 
-inline void TypeBinary::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeBinary::Vector::Copy(GlobalSize /*Kglobal*/, LocalSize /*K*/, Vector* V)
 {
 	m_data[0] = V->m_data[0];
 	m_data[1] = V->m_data[1];
 }
 
-inline void TypeBinary::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeBinary::Vector::Add(GlobalSize /*Kglobal*/, LocalSize /*K*/, Vector* V)
 {
 	m_data[0] += V->m_data[0];
 	m_data[1] += V->m_data[1];
 }
 
-inline TypeBinary::REAL TypeBinary::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypeBinary::REAL TypeBinary::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<2);
 	return m_data[k];
 }
 
-inline TypeBinary::REAL TypeBinary::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& kMin)
+inline TypeBinary::REAL TypeBinary::Vector::ComputeMin(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label& kMin)
 {
 	kMin = (m_data[0] <= m_data[1]) ? 0 : 1;
 	return m_data[kMin];
 }
 
-inline TypeBinary::REAL TypeBinary::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypeBinary::REAL TypeBinary::Vector::ComputeAndSubtractMin(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	REAL vMin;
 
@@ -309,18 +309,18 @@ inline TypeBinary::REAL TypeBinary::Vector::ComputeAndSubtractMin(GlobalSize Kgl
 	return vMin;
 }
 
-inline int TypeBinary::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypeBinary::Vector::GetArraySize(GlobalSize /*Kglobal*/, LocalSize /*K*/)
 {
 	return 2;
 }
 
-inline TypeBinary::REAL TypeBinary::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypeBinary::REAL TypeBinary::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<2);
 	return m_data[k];
 }
 
-inline void TypeBinary::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypeBinary::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<2);
 	m_data[k] = x;
@@ -328,17 +328,17 @@ inline void TypeBinary::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, i
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypeBinary::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypeBinary::Edge::GetSizeInBytes(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData /*data*/)
 {
 	return sizeof(Edge);
 }
 
-inline int TypeBinary::Edge::GetBufSizeInBytes(int vectorMaxSizeInBytes)
+inline int TypeBinary::Edge::GetBufSizeInBytes(int /*vectorMaxSizeInBytes*/)
 {
 	return 0;
 }
 
-inline void TypeBinary::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypeBinary::Edge::Initialize(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data, Vector* Di, Vector* Dj)
 {
 	// V00 V01  = A B  = A A  +  0.5 * ( 0   0   + 0 P-Q  +  0   P+Q  )
 	// V10 V11    C D    D D             Q-P Q-P   0 P-Q     P+Q 0
@@ -360,11 +360,11 @@ inline TypeBinary::Vector* TypeBinary::Edge::GetMessagePtr()
 	return &m_message;
 }
 
-inline void TypeBinary::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypeBinary::Edge::Swap(GlobalSize /*Kglobal*/, LocalSize /*Ki*/, LocalSize /*Kj*/)
 {
 }
 
-inline TypeBinary::REAL TypeBinary::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* buf)
+inline TypeBinary::REAL TypeBinary::Edge::UpdateMessage(GlobalSize /*Kglobal*/, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Vector* source, REAL gamma, int /*dir*/, void* /*buf*/)
 {
 	REAL data[2], vMin;
 
@@ -382,7 +382,7 @@ inline TypeBinary::REAL TypeBinary::Edge::UpdateMessage(GlobalSize Kglobal, Loca
 
 
 
-inline void TypeBinary::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypeBinary::Edge::AddColumn(GlobalSize /*Kglobal*/, LocalSize /*Ksource*/, LocalSize /*Kdest*/, Label ksource, Vector* dest, int /*dir*/)
 {
 	dest->m_data[1-ksource] += m_lambdaIsing;
 }

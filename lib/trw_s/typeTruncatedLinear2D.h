@@ -285,7 +285,7 @@ inline TypeTruncatedLinear2D::EdgeData::EdgeData(REAL alphaX, REAL alphaY, REAL 
 
 ///////////////////// Vector ///////////////////////
 
-inline int TypeTruncatedLinear2D::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize K)
+inline int TypeTruncatedLinear2D::Vector::GetSizeInBytes(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	if (Kglobal.m_KX < 1 || Kglobal.m_KY < 2)
 	{
@@ -293,12 +293,12 @@ inline int TypeTruncatedLinear2D::Vector::GetSizeInBytes(GlobalSize Kglobal, Loc
 	}
 	return Kglobal.m_K*sizeof(REAL);
 }
-inline void TypeTruncatedLinear2D::Vector::Initialize(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeTruncatedLinear2D::Vector::Initialize(GlobalSize Kglobal, LocalSize /*K*/, NodeData data)
 {
 	memcpy(m_data, data.m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedLinear2D::Vector::Add(GlobalSize Kglobal, LocalSize K, NodeData data)
+inline void TypeTruncatedLinear2D::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, NodeData data)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -306,17 +306,17 @@ inline void TypeTruncatedLinear2D::Vector::Add(GlobalSize Kglobal, LocalSize K, 
 	}
 }
 
-inline void TypeTruncatedLinear2D::Vector::SetZero(GlobalSize Kglobal, LocalSize K)
+inline void TypeTruncatedLinear2D::Vector::SetZero(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	memset(m_data, 0, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedLinear2D::Vector::Copy(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeTruncatedLinear2D::Vector::Copy(GlobalSize Kglobal, LocalSize /*K*/, Vector* V)
 {
 	memcpy(m_data, V->m_data, Kglobal.m_K*sizeof(REAL));
 }
 
-inline void TypeTruncatedLinear2D::Vector::Add(GlobalSize Kglobal, LocalSize K, Vector* V)
+inline void TypeTruncatedLinear2D::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, Vector* V)
 {
 	for (int k=0; k<Kglobal.m_K; k++)
 	{
@@ -324,13 +324,13 @@ inline void TypeTruncatedLinear2D::Vector::Add(GlobalSize Kglobal, LocalSize K, 
 	}
 }
 
-inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::GetValue(GlobalSize Kglobal, LocalSize K, Label k)
+inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::GetValue(GlobalSize Kglobal, LocalSize /*K*/, Label k)
 {
 	assert(k.m_kx>=0 && k.m_kx<Kglobal.m_KX && k.m_ky>=0 && k.m_ky<Kglobal.m_KY);
 	return m_data[k.m_kx + k.m_ky*Kglobal.m_KX];
 }
 
-inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::ComputeMin(GlobalSize Kglobal, LocalSize K, Label& _kMin)
+inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::ComputeMin(GlobalSize Kglobal, LocalSize /*K*/, Label& _kMin)
 {
 	REAL vMin = m_data[0];
 	int kMin = 0;
@@ -349,7 +349,7 @@ inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::ComputeMin(Glo
 	return vMin;
 }
 
-inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize K)
+inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::ComputeAndSubtractMin(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	REAL vMin = m_data[0];
 	for (int k=1; k<Kglobal.m_K; k++)
@@ -367,18 +367,18 @@ inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::ComputeAndSubt
 	return vMin;
 }
 
-inline int TypeTruncatedLinear2D::Vector::GetArraySize(GlobalSize Kglobal, LocalSize K)
+inline int TypeTruncatedLinear2D::Vector::GetArraySize(GlobalSize Kglobal, LocalSize /*K*/)
 {
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize K, int k)
+inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedLinear2D::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize K, int k, REAL x)
+inline void TypeTruncatedLinear2D::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;
@@ -386,7 +386,7 @@ inline void TypeTruncatedLinear2D::Vector::SetArrayValue(GlobalSize Kglobal, Loc
 
 ///////////////////// EdgeDataAndMessage implementation /////////////////////////
 
-inline int TypeTruncatedLinear2D::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data)
+inline int TypeTruncatedLinear2D::Edge::GetSizeInBytes(GlobalSize Kglobal, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data)
 {
 	if (data.m_alphaX < 0 || data.m_alphaY < 0 || data.m_lambda < 0)
 	{
@@ -395,12 +395,12 @@ inline int TypeTruncatedLinear2D::Edge::GetSizeInBytes(GlobalSize Kglobal, Local
 	return sizeof(Edge) - sizeof(Vector) + Kglobal.m_K*sizeof(REAL);
 }
 
-inline int TypeTruncatedLinear2D::Edge::GetBufSizeInBytes(int vectorMaxSizeInBytes)
+inline int TypeTruncatedLinear2D::Edge::GetBufSizeInBytes(int /*vectorMaxSizeInBytes*/)
 {
 	return 0;
 }
 
-inline void TypeTruncatedLinear2D::Edge::Initialize(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj, EdgeData data, Vector* Di, Vector* Dj)
+inline void TypeTruncatedLinear2D::Edge::Initialize(GlobalSize Kglobal, LocalSize /*Ki*/, LocalSize /*Kj*/, EdgeData data, Vector* /*Di*/, Vector* /*Dj*/)
 {
 	m_alphaX = data.m_alphaX;
 	m_alphaY = data.m_alphaY;
@@ -413,11 +413,11 @@ inline TypeTruncatedLinear2D::Vector* TypeTruncatedLinear2D::Edge::GetMessagePtr
 	return &m_message;
 }
 
-inline void TypeTruncatedLinear2D::Edge::Swap(GlobalSize Kglobal, LocalSize Ki, LocalSize Kj)
+inline void TypeTruncatedLinear2D::Edge::Swap(GlobalSize /* Kglobal */, LocalSize /* Ki */, LocalSize /* Kj */)
 {
 }
 
-inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Vector* source, REAL gamma, int dir, void* buf)
+inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Edge::UpdateMessage(GlobalSize Kglobal, LocalSize /* Ksource */, LocalSize /* Kdest */, Vector* source, REAL gamma, int /* dir */, void* /* buf */)
 {
 	Label k;
 	REAL vMin;
@@ -469,7 +469,7 @@ inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Edge::UpdateMessage(Gl
 	return vMin;
 }
 
-inline void TypeTruncatedLinear2D::Edge::AddColumn(GlobalSize Kglobal, LocalSize Ksource, LocalSize Kdest, Label ksource, Vector* dest, int dir)
+inline void TypeTruncatedLinear2D::Edge::AddColumn(GlobalSize Kglobal, LocalSize /* Ksource */, LocalSize /* Kdest */, Label ksource, Vector* dest, int /* dir */)
 {
 	assert(ksource.m_kx>=0 && ksource.m_kx<Kglobal.m_KX && ksource.m_ky>=0 && ksource.m_ky<Kglobal.m_KY);
 
