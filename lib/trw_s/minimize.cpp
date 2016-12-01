@@ -4,8 +4,6 @@
 #include <assert.h>
 #include "MRFEnergy.h"
 
-#include "instances.inc"
-
 template <class T> int MRFEnergy<T>::Minimize_TRW_S(Options& options, REAL& lowerBound, REAL& energy, REAL* min_marginals)
 {
 	Node* i;
@@ -305,3 +303,5 @@ template <class T> typename T::REAL MRFEnergy<T>::ComputeSolutionAndEnergy()
 
 	return E;
 }
+
+#include "instances.inc"
