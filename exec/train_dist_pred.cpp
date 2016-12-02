@@ -24,6 +24,22 @@ PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(std::string, propertiesFile, "properties/training_dist_pred.info", -p)
 )
 
+enum ErrorCode
+{
+    SUCCESS = 0,
+    CANT_READ_IMAGE = 1,
+    CANT_READ_GT = 2,
+    IMAGE_GT_DONT_MATCH = 3,
+    INVALID_UNARY = 4,
+    INVALID_FEATURE_WEIGHTS = 5,
+    INVALID_PRED_LABELING = 6,
+    INVALID_PRED_SP = 7,
+    INVALID_GT_SP = 8,
+    CANT_WRITE_PRED_LABELING = 9,
+    CANT_WRITE_PRED_SP = 10,
+    CANT_WRITE_GT_SP = 11,
+};
+
 int main(int argc, char* argv[])
 {
     // Read properties
@@ -47,7 +63,7 @@ int main(int argc, char* argv[])
     if(boost::filesystem::exists(labelPath) && boost::filesystem::exists(spPath) && boost::filesystem::exists(bestSpPath))
     {
         std::cout << "Result for " << properties.imageFile << " already exists in " << labelPath << " and " << spPath << ". Skipping." << std::endl;
-        return 0;
+        return SUCCESS;
     }
 
     size_t const numClasses = 21;
@@ -66,17 +82,17 @@ int main(int argc, char* argv[])
     if(!rgbImage.read(properties.imageFile))
     {
         std::cerr << "Couldn't read image \"" << properties.imageFile << "\"" << std::endl;
-        return -1;
+        return CANT_READ_IMAGE;
     }
     if(!groundTruthRGB.read(properties.groundTruthFile))
     {
         std::cerr << "Couldn't read ground truth \"" << properties.groundTruthFile << "\"" << std::endl;
-        return -1;
+        return CANT_READ_GT;
     }
     if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
     {
         std::cerr << "Image " << properties.imageFile << " and its ground truth don't match." << std::endl;
-        return -2;
+        return IMAGE_GT_DONT_MATCH;
     }
     CieLabImage cieLabImage = rgbImage.getCieLabImg();
     LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
@@ -85,11 +101,16 @@ int main(int argc, char* argv[])
     if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
     {
         std::cerr << "Invalid unary scores " << properties.unaryFile << std::endl;
-        return -3;
+        return INVALID_UNARY;
     }
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
+    if(featureWeights.isIdentity())
+    {
+        std::cerr << "Couldn't read feature weights " << properties.featureWeightFile << "!" << std::endl;
+        return INVALID_FEATURE_WEIGHTS;
+    }
 
     // Predict superpixels that best explain the ground truth
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
@@ -107,27 +128,37 @@ int main(int argc, char* argv[])
     cv::Mat sp = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2));
     cv::Mat bestSpMat = static_cast<cv::Mat>(helper::image::colorize(bestSp, cmap2));
 
-    if(labeling.empty() || sp.empty())
+    if(labeling.empty())
     {
-        std::cerr << "Predicted labeling and/or superpixels invalid." << std::endl;
-        return -4;
+        std::cerr << "Predicted labeling invalid." << std::endl;
+        return INVALID_PRED_LABELING;
+    }
+    if(sp.empty())
+    {
+        std::cerr << "Predicted superpixels invalid." << std::endl;
+        return INVALID_PRED_SP;
+    }
+    if(bestSpMat.empty())
+    {
+        std::cerr << "Predicted gt superpixels invalid." << std::endl;
+        return INVALID_GT_SP;
     }
 
     if(!cv::imwrite(labelPath, labeling))
     {
         std::cerr << "Couldn't write predicted labeling to \"" << labelPath << "\"" << std::endl;
-        return -5;
+        return CANT_WRITE_PRED_LABELING;
     }
     if(!cv::imwrite(spPath, sp))
     {
         std::cerr << "Couldn't write predicted superpixels to \"" << spPath << "\"" << std::endl;
-        return -6;
+        return CANT_WRITE_PRED_SP;
     }
     if(!cv::imwrite(bestSpPath, bestSpMat))
     {
         std::cerr << "Couldn't write predicted ground truth superpixels to \"" << bestSpPath << "\"" << std::endl;
-        return -7;
+        return CANT_WRITE_GT_SP;
     }
 
-    return 0;
+    return SUCCESS;
 }
