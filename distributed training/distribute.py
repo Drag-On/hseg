@@ -8,11 +8,12 @@ import getopt
 import os
 import shutil
 import time
+import random
 
 execPred="./hseg_train_dist_pred"
-imgPath="/remwork/atcremers65/moellerj/dataset_small/color/"
-gtPath="/remwork/atcremers65/moellerj/dataset_small/gt/"
-unPath="/remwork/atcremers65/moellerj/dataset_small/unaries/"
+imgPath="/work/moellerj/dataset_small/color/"
+gtPath="/work/moellerj/dataset_small/gt/"
+unPath="/work/moellerj/dataset_small/unaries/"
 weightsFile="/remwork/atcremers65/moellerj/training_new/weights.dat"
 featureWeightsFile="/remwork/atcremers65/moellerj/training_new/featureWeights.txt"
 outPath="/remwork/atcremers65/moellerj/training_new/results/"
@@ -75,7 +76,8 @@ if __name__ == '__main__':
     with open(trainingFile) as f:
         lines = f.read().splitlines()
 
-    print("{}".format(lines))
+    random.shuffle(lines) # If a host doesn't work properly it is unlikely that the same job is scheduled to it twice in a row
+    #print("{}".format(lines))
 
     for errcode, filename, attempts in futures.map_as_completed(runWorker, lines):
         print("Finished {} with return code {} after {} attempts.".format(filename, errcode, attempts))
