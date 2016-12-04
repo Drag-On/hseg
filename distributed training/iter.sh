@@ -6,7 +6,7 @@ exec 2> >(tee -ia err.log >&2)  # Log stderr to err.log
 startIter=$1
 endIter=5000
 
-mv -f hosts.all.txt hosts.txt
+cp -f hosts.all.txt hosts.txt
 ./setup_hosts.sh
 
 if [ -z "${1+x}" ]; then
@@ -29,8 +29,8 @@ for m in $(seq "$startIter" "$endIter"); do
     while [[ $scheduleAttempts -lt 3 ]]; do
       scheduleAttempts=$((scheduleAttempts+1))
       hostfileVer=$(./pickHostFile.sh)
-      mv -f "hosts.$hostfileVer.txt" hosts.txt
-      echo "Using hostfile \"hostfileVer\""
+      cp -f "hosts.$hostfileVer.txt" hosts.txt
+      echo "Using hostfile \"$hostfileVer\""
       python -m scoop --hostfile=hosts.txt --path=/work/moellerj/training_temp/ distribute.py
       err=$?
       if [ $err -ne 0 ]; then
