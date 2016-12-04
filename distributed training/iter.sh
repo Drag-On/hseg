@@ -4,6 +4,9 @@ exec >  >(tee -ia out.log)      # Log stdout to out.log
 exec 2> >(tee -ia err.log >&2)  # Log stderr to err.log
 
 startIter=$1
+endIter=5000
+
+mv -f hosts.all.txt hosts.txt
 ./setup_hosts.sh
 
 if [ -z "${1+x}" ]; then
@@ -15,7 +18,7 @@ else
   startIter=$1
 fi
 
-for m in $(seq "$startIter" 500); do
+for m in $(seq "$startIter" "$endIter"); do
   echo "Iteration $m"
 
   mergeAttempts=0
@@ -25,6 +28,9 @@ for m in $(seq "$startIter" 500); do
     scheduleAttempts=0
     while [[ $scheduleAttempts -lt 3 ]]; do
       scheduleAttempts=$((scheduleAttempts+1))
+      hostfileVer=$(./pickHostFile.sh)
+      mv -f "hosts.$hostfileVer.txt" hosts.txt
+      echo "Using hostfile \"hostfileVer\""
       python -m scoop --hostfile=hosts.txt --path=/work/moellerj/training_temp/ distribute.py
       err=$?
       if [ $err -ne 0 ]; then
