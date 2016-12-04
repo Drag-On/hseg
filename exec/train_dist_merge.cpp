@@ -32,6 +32,16 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE(bool, useDiminishingStepSize, true)
 )
 
+enum ErrorCode
+{
+    SUCCESS = 0,
+    INVALID_FEATURE_WEIGHTS = 1,
+    INVALID_FILE_LIST = 2,
+    INVALID_SAMPLE = 3,
+    CANT_READ_WEIGHTS = 4,
+    CANT_WRITE_WEIGHTS = 5,
+};
+
 std::vector<std::string> readFileNames(std::string const& listFile)
 {
     std::vector<std::string> list;
@@ -132,12 +142,17 @@ int main(int argc, char* argv[])
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
+    if(featureWeights.isIdentity())
+    {
+        std::cerr << "Couldn't read feature weights " << properties.featureWeightFile << "!" << std::endl;
+        return INVALID_FEATURE_WEIGHTS;
+    }
 
     WeightsVec curWeights(numClasses, 100, 100, 100, 100);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
-        return -1;
+        return CANT_READ_WEIGHTS;
     }
     std::cout << "====================" << std::endl;
     std::cout << "Initial weights:" << std::endl;
@@ -149,7 +164,7 @@ int main(int argc, char* argv[])
     if(list.empty())
     {
         std::cerr << "File list \"" << properties.trainingList << "\" is empty." << std::endl;
-        return -2;
+        return INVALID_FILE_LIST;
     }
 
     // Iterate over all predictions
@@ -172,7 +187,7 @@ int main(int argc, char* argv[])
         if(!sampleResult.valid)
         {
             std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
-            return 2;
+            return INVALID_SAMPLE;
         }
 
         sum += sampleResult.diff;
@@ -215,12 +230,15 @@ int main(int argc, char* argv[])
     curWeights -= sum;
 
     if(!curWeights.write(properties.out))
+    {
         std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+        return CANT_WRITE_WEIGHTS;
+    }
     std::cout << "====================" << std::endl;
     std::cout << curWeights << std::endl;
     std::cout << "====================" << std::endl;
 
     curWeights.write(energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat");
 
-    return 0;
+    return SUCCESS;
 }
