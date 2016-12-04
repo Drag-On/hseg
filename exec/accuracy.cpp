@@ -9,10 +9,10 @@
 #include <Energy/LossAugmentedEnergyFunction.h>
 
 PROPERTIES_DEFINE(Accuracy,
-                  PROP_DEFINE(std::string, fileList, "")
-                  PROP_DEFINE(std::string, predDir, "")
-                  PROP_DEFINE(std::string, gtDir, "")
-                  PROP_DEFINE(std::string, outDir, "./")
+                  PROP_DEFINE_A(std::string, fileList, "", -l)
+                  PROP_DEFINE_A(std::string, predDir, "", -p)
+                  PROP_DEFINE_A(std::string, gtDir, "", -g)
+                  PROP_DEFINE_A(std::string, outDir, "./", -o)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -43,11 +43,12 @@ struct ImageAccuracyData
     float rawAccuracy = 0.f;
 };
 
-int main()
+int main(int argc, char** argv)
 {
     // Read properties
     AccuracyProperties properties;
     properties.read("properties/accuracy.info");
+    properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
