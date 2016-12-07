@@ -15,6 +15,7 @@ PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
                                PROP_DEFINE_A(std::string, showWeightFile, "", -sw)
                                PROP_DEFINE_A(std::string, writeWeightFile, "", -ww)
+                               PROP_DEFINE_A(std::string, writeWeightFileText, "", -wtw)
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
                                PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
                                PROP_DEFINE_A(std::string, estimateSpDistance, "", -ed)
@@ -78,6 +79,71 @@ bool writeWeight(std::string const& weightFile)
     std::cout << "==========" << std::endl;
     WeightsVec w(21ul, u, p, f, l);
     return w.write(weightFile);
+}
+
+bool writeWeightFileText(UtilProperties const& properties)
+{
+    size_t const numClasses = properties.Constants.numClasses;
+    WeightsVec weightsVec(numClasses);
+    if (!weightsVec.read(properties.job.writeWeightFileText))
+    {
+        std::cerr << "Couldn't read weight file \"" << properties.job.writeWeightFileText << "\"" << std::endl;
+        return false;
+    }
+    WeightsVec const& w = weightsVec;
+
+    std::ofstream unaryOut(properties.Paths.out + "weights.unary.csv");
+    if(unaryOut.is_open())
+    {
+        unaryOut << w.unary(0);
+        for(size_t i = 1; i < numClasses; ++i)
+            unaryOut << "\t" << w.unary(i);
+        unaryOut << std::endl;
+        unaryOut.close();
+    }
+    else
+        std::cerr << "Couldn't write unary weights to \"" << properties.Paths.out << "weights.unary.csv" << "\"" << std::endl;
+
+    std::ofstream pairwiseOut(properties.Paths.out + "weights.pairwise.csv");
+    if(pairwiseOut.is_open())
+    {
+        for (Label l1 = 0; l1 < numClasses; ++l1)
+        {
+            pairwiseOut << w.pairwise(l1, 0);
+            for(Label l2 = 1; l2 < numClasses; ++l2)
+                pairwiseOut << "\t" << w.pairwise(l1, l2);
+            pairwiseOut << std::endl;
+        }
+        pairwiseOut.close();
+    }
+    else
+        std::cerr << "Couldn't write pairwise weights to \"" << properties.Paths.out << "weights.pairwise.csv" << "\"" << std::endl;
+
+    std::ofstream spFeatureOut(properties.Paths.out + "weights.feature.csv");
+    if(spFeatureOut.is_open())
+    {
+        spFeatureOut << w.feature() << std::endl;
+        spFeatureOut.close();
+    }
+    else
+        std::cerr << "Couldn't write feature weights to \"" << properties.Paths.out << "weights.feature.csv" << "\"" << std::endl;
+
+    std::ofstream spClassOut(properties.Paths.out + "weights.sp.csv");
+    if(spClassOut.is_open())
+    {
+        for (Label l1 = 0; l1 < numClasses; ++l1)
+        {
+            spClassOut << w.classWeight(l1, 0);
+            for(Label l2 = 1; l2 < numClasses; ++l2)
+                spClassOut << "\t" << w.classWeight(l1, l2);
+            spClassOut << std::endl;
+        }
+        spClassOut.close();
+    }
+    else
+        std::cerr << "Couldn't write superpixel weights to \"" << properties.Paths.out << "weights.sp.csv" << "\"" << std::endl;
+
+    return true;
 }
 
 bool fillGroundTruth(UtilProperties const& properties)
@@ -532,6 +598,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.writeWeightFile.empty())
         writeWeight(properties.job.writeWeightFile);
+
+    if(!properties.job.writeWeightFileText.empty())
+        writeWeightFileText(properties);
 
     if(!properties.job.fillGroundTruth.empty())
         fillGroundTruth(properties);
