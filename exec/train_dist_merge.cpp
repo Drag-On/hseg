@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
         return INVALID_FEATURE_WEIGHTS;
     }
 
-    WeightsVec curWeights(numClasses, 0, 0, 0, 0);
+    WeightsVec curWeights(numClasses, 100, 100, 100, 100);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
