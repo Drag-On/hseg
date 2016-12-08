@@ -68,8 +68,8 @@ InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(size_t numIter)
 
     float energy = std::numeric_limits<float>::max();
     float lastEnergy = energy;
-    result.labeling = m_energy.unaryFile().maxLabeling();
-    //result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
+    //result.labeling = m_energy.unaryFile().maxLabeling();
+    result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
     for (size_t iter = 0; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
     {
         lastEnergy = energy;
@@ -101,7 +101,8 @@ InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(size
 
     InferenceResultDetails result;
 
-    LabelImage maxLabeling = m_energy.unaryFile().maxLabeling();
+    //LabelImage maxLabeling = m_energy.unaryFile().maxLabeling();
+    LabelImage maxLabeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
     float initialEnergy = computeInitialEnergy(maxLabeling);
     float lastEnergy = initialEnergy;
     float energy = initialEnergy;
