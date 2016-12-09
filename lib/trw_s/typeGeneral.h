@@ -353,7 +353,7 @@ inline void TypeGeneral::Vector::Add(GlobalSize /*Kglobal*/, LocalSize K, Vector
 	}
 }
 
-inline TypeGeneral::REAL TypeGeneral::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
+inline TypeGeneral::REAL TypeGeneral::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize K, Label k)
 {
 	assert(k>=0 && k<K.m_K);
 	return m_data[k];
@@ -398,13 +398,13 @@ inline int TypeGeneral::Vector::GetArraySize(GlobalSize /*Kglobal*/, LocalSize K
 	return K.m_K;
 }
 
-inline TypeGeneral::REAL TypeGeneral::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
+inline TypeGeneral::REAL TypeGeneral::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize K, int k)
 {
 	assert(k>=0 && k<K.m_K);
 	return m_data[k];
 }
 
-inline void TypeGeneral::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
+inline void TypeGeneral::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize K, int k, REAL x)
 {
 	assert(k>=0 && k<K.m_K);
 	m_data[k] = x;

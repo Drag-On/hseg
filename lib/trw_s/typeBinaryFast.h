@@ -231,13 +231,13 @@ inline int TypeBinaryFast::Vector::GetArraySize(GlobalSize /*Kglobal*/, LocalSiz
 	return 1;
 }
 
-inline TypeBinaryFast::REAL TypeBinaryFast::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int /*k*/)
+inline TypeBinaryFast::REAL TypeBinaryFast::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
 {
 	assert(k==0);
 	return m_data;
 }
 
-inline void TypeBinaryFast::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int /*k*/, REAL x)
+inline void TypeBinaryFast::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k==0);
 	m_data = x;

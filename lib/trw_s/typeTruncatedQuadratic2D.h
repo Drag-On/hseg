@@ -376,13 +376,13 @@ inline int TypeTruncatedQuadratic2D::Vector::GetArraySize(GlobalSize Kglobal, Lo
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::GetArrayValue(GlobalSize /* Kglobal */, LocalSize /* K */, int k)
+inline TypeTruncatedQuadratic2D::REAL TypeTruncatedQuadratic2D::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize /* K */, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedQuadratic2D::Vector::SetArrayValue(GlobalSize /* Kglobal */, LocalSize /* K */, int k, REAL x)
+inline void TypeTruncatedQuadratic2D::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize /* K */, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;

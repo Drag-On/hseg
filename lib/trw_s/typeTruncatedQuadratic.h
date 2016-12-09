@@ -313,7 +313,7 @@ inline void TypeTruncatedQuadratic::Vector::Add(GlobalSize Kglobal, LocalSize /*
 	}
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetValue(GlobalSize Kglobal, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
@@ -358,13 +358,13 @@ inline int TypeTruncatedQuadratic::Vector::GetArraySize(GlobalSize Kglobal, Loca
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
+inline TypeTruncatedQuadratic::REAL TypeTruncatedQuadratic::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedQuadratic::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
+inline void TypeTruncatedQuadratic::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;

@@ -309,7 +309,7 @@ inline void TypeTruncatedLinear::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/
 	}
 }
 
-inline TypeTruncatedLinear::REAL TypeTruncatedLinear::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
+inline TypeTruncatedLinear::REAL TypeTruncatedLinear::Vector::GetValue(GlobalSize Kglobal, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
@@ -354,13 +354,13 @@ inline int TypeTruncatedLinear::Vector::GetArraySize(GlobalSize Kglobal, LocalSi
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedLinear::REAL TypeTruncatedLinear::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
+inline TypeTruncatedLinear::REAL TypeTruncatedLinear::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedLinear::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
+inline void TypeTruncatedLinear::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;

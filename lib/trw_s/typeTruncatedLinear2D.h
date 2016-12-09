@@ -372,13 +372,13 @@ inline int TypeTruncatedLinear2D::Vector::GetArraySize(GlobalSize Kglobal, Local
 	return Kglobal.m_K;
 }
 
-inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
+inline TypeTruncatedLinear2D::REAL TypeTruncatedLinear2D::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypeTruncatedLinear2D::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
+inline void TypeTruncatedLinear2D::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;

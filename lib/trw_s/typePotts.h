@@ -305,7 +305,7 @@ inline void TypePotts::Vector::Add(GlobalSize Kglobal, LocalSize /*K*/, Vector* 
 	}
 }
 
-inline TypePotts::REAL TypePotts::Vector::GetValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, Label k)
+inline TypePotts::REAL TypePotts::Vector::GetValue(GlobalSize Kglobal, LocalSize /*K*/, Label k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
@@ -350,13 +350,13 @@ inline int TypePotts::Vector::GetArraySize(GlobalSize Kglobal, LocalSize /*K*/)
 	return Kglobal.m_K;
 }
 
-inline TypePotts::REAL TypePotts::Vector::GetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k)
+inline TypePotts::REAL TypePotts::Vector::GetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	return m_data[k];
 }
 
-inline void TypePotts::Vector::SetArrayValue(GlobalSize /*Kglobal*/, LocalSize /*K*/, int k, REAL x)
+inline void TypePotts::Vector::SetArrayValue(GlobalSize Kglobal, LocalSize /*K*/, int k, REAL x)
 {
 	assert(k>=0 && k<Kglobal.m_K);
 	m_data[k] = x;
