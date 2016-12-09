@@ -19,6 +19,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, fillGroundTruth, "", -f)
                                PROP_DEFINE_A(std::string, estimatePairwiseSigmaSq, "", -ep)
                                PROP_DEFINE_A(std::string, estimateSpDistance, "", -ed)
+                               PROP_DEFINE_A(std::string, pairwiseStatistics, "", -ps)
                                PROP_DEFINE_A(std::string, maxLoss, "", -ml)
                                PROP_DEFINE_A(std::string, outline, "", -ol)
                                PROP_DEFINE_A(std::string, rescale, "", -rs)
@@ -458,6 +459,91 @@ bool estimateSpDistance(UtilProperties const& properties)
     return true;
 }
 
+bool pairwiseStatistics(UtilProperties const& properties)
+{
+    // Read in files to consider
+    std::vector<std::string> list = readLines(properties.job.pairwiseStatistics);
+
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+//    std::vector<size_t> classOccurences(properties.Constants.numClasses, 0);
+    std::vector<float> pairwiseWeights((properties.Constants.numClasses * properties.Constants.numClasses) / 2, 0.f);
+
+    // Iterate them
+    for(auto const& s : list)
+    {
+        std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
+        std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
+        RGBImage image, gtRGB;
+        if(!image.read(imageFile))
+        {
+            std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
+            return false;
+        }
+        if(!gtRGB.read(gtFile))
+        {
+            std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
+
+//        std::vector<bool> classOccurence(properties.Constants.numClasses, false);
+
+        for(size_t i = 0; i < gt.pixels(); ++i)
+        {
+            size_t l = gt.atSite(i);
+//            classOccurence[l] = true;
+            auto coords = helper::coord::siteTo2DCoordinate(i, gt.width());
+            decltype(coords) coordsR = {coords.x() + 1, coords.y()};
+            decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+            if (coordsR.x() < gt.width())
+            {
+                size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), gt.width());
+                size_t lR = gt.atSite(siteR);
+                if (lR < l)
+                    std::swap(l, lR);
+                if(l != lR)
+                    pairwiseWeights[l + lR * (lR - 1) / 2]++;
+            }
+            if (coordsD.y() < gt.height())
+            {
+                size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), gt.width());
+                size_t lD = gt.atSite(siteD);
+                if (lD < l)
+                    std::swap(l, lD);
+                if(l != lD)
+                    pairwiseWeights[l + lD * (lD - 1) / 2]++;
+            }
+        }
+
+        /*for(size_t l = 0; l < classOccurence.size(); ++l)
+            if(classOccurence[l])
+                classOccurences[l]++;*/
+    }
+
+    for(size_t i = 0; i < pairwiseWeights.size(); ++i)
+        pairwiseWeights[i] /= list.size();
+
+    for(size_t l1 = 0; l1 < properties.Constants.numClasses; ++l1)
+    {
+        for(size_t l2 = 0; l2 < properties.Constants.numClasses; ++l2)
+        {
+            if(l1 == l2)
+            {
+                std::cout << 0 << "\t";
+                continue;
+            }
+            if (l2 < l1)
+                std::cout << pairwiseWeights[l2 + l1 * (l1 - 1) / 2] << "\t";
+            else
+                std::cout << pairwiseWeights[l1 + l2 * (l2 - 1) / 2] << "\t";
+        }
+        std::cout << std::endl;
+    }
+
+    return true;
+}
+
 bool computeMaxLoss(UtilProperties const& properties)
 {
     // Read in files to consider
@@ -610,6 +696,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.estimateSpDistance.empty())
         estimateSpDistance(properties);
+
+    if(!properties.job.pairwiseStatistics.empty())
+        pairwiseStatistics(properties);
 
     if(!properties.job.maxLoss.empty())
         computeMaxLoss(properties);
