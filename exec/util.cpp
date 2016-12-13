@@ -94,55 +94,59 @@ bool writeWeightFileText(UtilProperties const& properties)
     WeightsVec const& w = weightsVec;
 
     std::ofstream unaryOut(properties.Paths.out + "weights.unary.csv");
-    if(unaryOut.is_open())
+    if (unaryOut.is_open())
     {
         unaryOut << w.unary(0);
-        for(size_t i = 1; i < numClasses; ++i)
+        for (size_t i = 1; i < numClasses; ++i)
             unaryOut << "\t" << w.unary(i);
         unaryOut << std::endl;
         unaryOut.close();
     }
     else
-        std::cerr << "Couldn't write unary weights to \"" << properties.Paths.out << "weights.unary.csv" << "\"" << std::endl;
+        std::cerr << "Couldn't write unary weights to \"" << properties.Paths.out << "weights.unary.csv" << "\""
+                  << std::endl;
 
     std::ofstream pairwiseOut(properties.Paths.out + "weights.pairwise.csv");
-    if(pairwiseOut.is_open())
+    if (pairwiseOut.is_open())
     {
         for (Label l1 = 0; l1 < numClasses; ++l1)
         {
             pairwiseOut << w.pairwise(l1, 0);
-            for(Label l2 = 1; l2 < numClasses; ++l2)
+            for (Label l2 = 1; l2 < numClasses; ++l2)
                 pairwiseOut << "\t" << w.pairwise(l1, l2);
             pairwiseOut << std::endl;
         }
         pairwiseOut.close();
     }
     else
-        std::cerr << "Couldn't write pairwise weights to \"" << properties.Paths.out << "weights.pairwise.csv" << "\"" << std::endl;
+        std::cerr << "Couldn't write pairwise weights to \"" << properties.Paths.out << "weights.pairwise.csv" << "\""
+                  << std::endl;
 
     std::ofstream spFeatureOut(properties.Paths.out + "weights.feature.csv");
-    if(spFeatureOut.is_open())
+    if (spFeatureOut.is_open())
     {
         spFeatureOut << w.feature() << std::endl;
         spFeatureOut.close();
     }
     else
-        std::cerr << "Couldn't write feature weights to \"" << properties.Paths.out << "weights.feature.csv" << "\"" << std::endl;
+        std::cerr << "Couldn't write feature weights to \"" << properties.Paths.out << "weights.feature.csv" << "\""
+                  << std::endl;
 
     std::ofstream spClassOut(properties.Paths.out + "weights.sp.csv");
-    if(spClassOut.is_open())
+    if (spClassOut.is_open())
     {
         for (Label l1 = 0; l1 < numClasses; ++l1)
         {
             spClassOut << w.classWeight(l1, 0);
-            for(Label l2 = 1; l2 < numClasses; ++l2)
+            for (Label l2 = 1; l2 < numClasses; ++l2)
                 spClassOut << "\t" << w.classWeight(l1, l2);
             spClassOut << std::endl;
         }
         spClassOut.close();
     }
     else
-        std::cerr << "Couldn't write superpixel weights to \"" << properties.Paths.out << "weights.sp.csv" << "\"" << std::endl;
+        std::cerr << "Couldn't write superpixel weights to \"" << properties.Paths.out << "weights.sp.csv" << "\""
+                  << std::endl;
 
     return true;
 }
@@ -150,7 +154,7 @@ bool writeWeightFileText(UtilProperties const& properties)
 bool fillGroundTruth(UtilProperties const& properties)
 {
     RGBImage gtRGB;
-    if(!gtRGB.read(properties.job.fillGroundTruth))
+    if (!gtRGB.read(properties.job.fillGroundTruth))
     {
         std::cerr << "Couldn't open ground truth image from \"" << properties.job.fillGroundTruth << "\"." << std::endl;
         return false;
@@ -162,44 +166,44 @@ bool fillGroundTruth(UtilProperties const& properties)
     // Find invalid pixels
     size_t const numClasses = properties.Constants.numClasses;
     std::vector<size_t> invalid;
-    for(size_t i = 0; i < gt.pixels(); ++i)
-        if(gt.atSite(i) >= numClasses)
+    for (size_t i = 0; i < gt.pixels(); ++i)
+        if (gt.atSite(i) >= numClasses)
             invalid.push_back(i);
 
     // Fix the invalid pixels iteratively
-    while(!invalid.empty())
+    while (!invalid.empty())
     {
         LabelImage curFixed = fixedGt;
-        for(auto iter = invalid.begin(); iter != invalid.end(); )
+        for (auto iter = invalid.begin(); iter != invalid.end();)
         {
             // Check most prevalent adjacent label
             std::map<Label, size_t> adjacentLabels;
             auto coords = helper::coord::siteTo2DCoordinate(*iter, gt.width());
-            if(coords.x() > 0)
+            if (coords.x() > 0)
             {
                 Label leftLabel = curFixed.at(coords.x() - 1, coords.y());
-                if(leftLabel < numClasses)
+                if (leftLabel < numClasses)
                     adjacentLabels[leftLabel]++;
             }
-            if(coords.x() < gt.width() - 1)
+            if (coords.x() < gt.width() - 1)
             {
                 Label rightLabel = curFixed.at(coords.x() + 1, coords.y());
-                if(rightLabel < numClasses)
+                if (rightLabel < numClasses)
                     adjacentLabels[rightLabel]++;
             }
-            if(coords.y() > 0)
+            if (coords.y() > 0)
             {
                 Label upperLabel = curFixed.at(coords.x(), coords.y() - 1);
-                if(upperLabel < numClasses)
+                if (upperLabel < numClasses)
                     adjacentLabels[upperLabel]++;
             }
-            if(coords.y() < gt.height() - 1)
+            if (coords.y() < gt.height() - 1)
             {
                 Label lowerLabel = curFixed.at(coords.x(), coords.y() + 1);
-                if(lowerLabel < numClasses)
+                if (lowerLabel < numClasses)
                     adjacentLabels[lowerLabel]++;
             }
-            if(!adjacentLabels.empty())
+            if (!adjacentLabels.empty())
             {
                 auto max = std::max_element(adjacentLabels.begin(), adjacentLabels.end(),
                                             [](const std::pair<Label, size_t>& p1,
@@ -217,7 +221,7 @@ bool fillGroundTruth(UtilProperties const& properties)
     RGBImage result = helper::image::colorize(fixedGt, cmap);
     cv::Mat resultMat = static_cast<cv::Mat>(result);
     std::string filename = boost::filesystem::path(properties.job.fillGroundTruth).filename().string();
-    if(!cv::imwrite(properties.Paths.out + filename, resultMat))
+    if (!cv::imwrite(properties.Paths.out + filename, resultMat))
     {
         std::cerr << "Couldn't write result to \"" << properties.Paths.out + filename << "\"." << std::endl;
         return false;
@@ -250,18 +254,18 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
     std::vector<double> variances;
 
     // Read in files from the specified folder
-    for(auto const& file : list)
+    for (auto const& file : list)
     {
         // Read in color image and ground truth image
         RGBImage color, gtRGB;
         std::string clrFileName = properties.Paths.image + file + properties.FileExtensions.image;
-        if(!color.read(clrFileName))
+        if (!color.read(clrFileName))
         {
             std::cerr << "Couldn't read color image \"" << clrFileName << "\"." << std::endl;
             return false;
         }
         std::string gtFileName = properties.Paths.groundTruth + file + properties.FileExtensions.groundTruth;
-        if(!gtRGB.read(gtFileName))
+        if (!gtRGB.read(gtFileName))
         {
             std::cerr << "Couldn't read ground truth image \"" << gtFileName << "\"." << std::endl;
             return false;
@@ -283,8 +287,8 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
                 {
                     N++;
                     double point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x() + 1, coords.y(), 0), 2) +
-                                  std::pow(cielab.atSite(i, 1) - cielab.at(coords.x() + 1, coords.y(), 1), 2) +
-                                  std::pow(cielab.atSite(i, 2) - cielab.at(coords.x() + 1, coords.y(), 2), 2);
+                                   std::pow(cielab.atSite(i, 1) - cielab.at(coords.x() + 1, coords.y(), 1), 2) +
+                                   std::pow(cielab.atSite(i, 2) - cielab.at(coords.x() + 1, coords.y(), 2), 2);
                     data.push_back(point);
                 }
             }
@@ -295,8 +299,8 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
                 {
                     N++;
                     double point = std::pow(cielab.atSite(i, 0) - cielab.at(coords.x(), coords.y() + 1, 0), 2) +
-                                  std::pow(cielab.atSite(i, 1) - cielab.at(coords.x(), coords.y() + 1, 1), 2) +
-                                  std::pow(cielab.atSite(i, 2) - cielab.at(coords.x(), coords.y() + 1, 2), 2);
+                                   std::pow(cielab.atSite(i, 1) - cielab.at(coords.x(), coords.y() + 1, 1), 2) +
+                                   std::pow(cielab.atSite(i, 2) - cielab.at(coords.x(), coords.y() + 1, 2), 2);
                     data.push_back(point);
                 }
             }
@@ -306,7 +310,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
 
         // Estimate ML mean for this image
         double mean = 0;
-        for(auto const& d : data)
+        for (auto const& d : data)
             mean += d;
         mean /= N;
 
@@ -314,7 +318,7 @@ bool estimatePairwiseSigmaSq(UtilProperties const& properties)
 
         // Estimate ML variance for this image
         double variance = 0;
-        for(auto const& d : data)
+        for (auto const& d : data)
             variance += std::pow(d - mean, 2);
         variance /= N;
 
@@ -356,7 +360,7 @@ bool estimateSpDistance(UtilProperties const& properties)
     // Compute mean
     Vector5f mean = Vector5f::Zero();
     size_t N = 0;
-    for(auto const& s : list)
+    for (auto const& s : list)
     {
         std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
         std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
@@ -384,7 +388,7 @@ bool estimateSpDistance(UtilProperties const& properties)
         auto clusters = Clusterer<EnergyFunction>::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
                                                                    properties.Constants.numClasses, energy);
 
-        for(size_t i = 0; i < gtSp.pixels(); ++i)
+        for (size_t i = 0; i < gtSp.pixels(); ++i)
         {
             Label l = gtSp.atSite(i);
             auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
@@ -404,24 +408,24 @@ bool estimateSpDistance(UtilProperties const& properties)
 
     // Estimate sample covariance
     Matrix5f cov = Matrix5f::Zero();
-    for(auto const& s : list)
+    for (auto const& s : list)
     {
         std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
         std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
         std::string gtSpFile = properties.Paths.groundTruthSp + s + properties.FileExtensions.groundTruthSp;
         RGBImage image, gtRGB, gtSpRGB;
-        if(!image.read(imageFile))
+        if (!image.read(imageFile))
         {
             std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
             return false;
         }
-        if(!gtRGB.read(gtFile))
+        if (!gtRGB.read(gtFile))
         {
             std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
             return false;
         }
         LabelImage gt = helper::image::decolorize(gtRGB, cmap);
-        if(!gtSpRGB.read(gtSpFile))
+        if (!gtSpRGB.read(gtSpFile))
         {
             std::cerr << "Couldn't read ground truth superpixel image \"" << gtSpFile << "\"." << std::endl;
             return false;
@@ -433,7 +437,7 @@ bool estimateSpDistance(UtilProperties const& properties)
                                                                    properties.Constants.numClasses, energy);
 
         // Compute sum
-        for(size_t i = 0; i < gtSp.pixels(); ++i)
+        for (size_t i = 0; i < gtSp.pixels(); ++i)
         {
             Label l = gtSp.atSite(i);
             auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
@@ -466,33 +470,30 @@ bool pairwiseStatistics(UtilProperties const& properties)
 
     auto cmap = helper::image::generateColorMapVOC(256);
 
-//    std::vector<size_t> classOccurences(properties.Constants.numClasses, 0);
+    size_t pairwiseConnections = 0;
     std::vector<float> pairwiseWeights((properties.Constants.numClasses * properties.Constants.numClasses) / 2, 0.f);
 
     // Iterate them
-    for(auto const& s : list)
+    for (auto const& s : list)
     {
         std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
         std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
         RGBImage image, gtRGB;
-        if(!image.read(imageFile))
+        if (!image.read(imageFile))
         {
             std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
             return false;
         }
-        if(!gtRGB.read(gtFile))
+        if (!gtRGB.read(gtFile))
         {
             std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
             return false;
         }
         LabelImage gt = helper::image::decolorize(gtRGB, cmap);
 
-//        std::vector<bool> classOccurence(properties.Constants.numClasses, false);
-
-        for(size_t i = 0; i < gt.pixels(); ++i)
+        for (size_t i = 0; i < gt.pixels(); ++i)
         {
             size_t l = gt.atSite(i);
-//            classOccurence[l] = true;
             auto coords = helper::coord::siteTo2DCoordinate(i, gt.width());
             decltype(coords) coordsR = {coords.x() + 1, coords.y()};
             decltype(coords) coordsD = {coords.x(), coords.y() + 1};
@@ -500,35 +501,33 @@ bool pairwiseStatistics(UtilProperties const& properties)
             {
                 size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), gt.width());
                 size_t lR = gt.atSite(siteR);
+                pairwiseConnections++;
                 if (lR < l)
                     std::swap(l, lR);
-                if(l != lR)
+                if (l != lR)
                     pairwiseWeights[l + lR * (lR - 1) / 2]++;
             }
             if (coordsD.y() < gt.height())
             {
                 size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), gt.width());
                 size_t lD = gt.atSite(siteD);
+                pairwiseConnections++;
                 if (lD < l)
                     std::swap(l, lD);
-                if(l != lD)
+                if (l != lD)
                     pairwiseWeights[l + lD * (lD - 1) / 2]++;
             }
         }
-
-        /*for(size_t l = 0; l < classOccurence.size(); ++l)
-            if(classOccurence[l])
-                classOccurences[l]++;*/
     }
 
-    for(size_t i = 0; i < pairwiseWeights.size(); ++i)
-        pairwiseWeights[i] /= list.size();
+    for (size_t i = 0; i < pairwiseWeights.size(); ++i)
+        pairwiseWeights[i] /= pairwiseConnections;
 
-    for(size_t l1 = 0; l1 < properties.Constants.numClasses; ++l1)
+    for (size_t l1 = 0; l1 < properties.Constants.numClasses; ++l1)
     {
-        for(size_t l2 = 0; l2 < properties.Constants.numClasses; ++l2)
+        for (size_t l2 = 0; l2 < properties.Constants.numClasses; ++l2)
         {
-            if(l1 == l2)
+            if (l1 == l2)
             {
                 std::cout << 0 << "\t";
                 continue;
@@ -553,17 +552,17 @@ bool computeMaxLoss(UtilProperties const& properties)
 
     // Iterate them
     float maxLoss = 0.f;
-    for(auto const& s : list)
+    for (auto const& s : list)
     {
         std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
         std::string gtFile = properties.Paths.groundTruth + s + properties.FileExtensions.groundTruth;
         RGBImage image, gtRGB;
-        if(!image.read(imageFile))
+        if (!image.read(imageFile))
         {
             std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
             return false;
         }
-        if(!gtRGB.read(gtFile))
+        if (!gtRGB.read(gtFile))
         {
             std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
             return false;
@@ -614,7 +613,7 @@ bool rescale(UtilProperties const& properties)
     std::vector<std::string> list = readLines(properties.job.rescale);
     auto cmap = helper::image::generateColorMapVOC(255);
 
-    for(std::string const& file : list)
+    for (std::string const& file : list)
     {
         std::string filenameColor = file + properties.FileExtensions.image;
         std::string filenameGt = file + properties.FileExtensions.groundTruth;
@@ -629,7 +628,7 @@ bool rescale(UtilProperties const& properties)
         // Color image
         std::cout << outPathColor << filenameColor;
         RGBImage img;
-        if(!img.read(pathColor))
+        if (!img.read(pathColor))
         {
             std::cerr << " Couldn't read image \"" << pathColor << "\"." << std::endl;
             return false;
@@ -641,7 +640,7 @@ bool rescale(UtilProperties const& properties)
         // Ground truth image
         std::cout << outPathGt << filenameGt;
         RGBImage gt;
-        if(!gt.read(pathGt))
+        if (!gt.read(pathGt))
         {
             std::cerr << " Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
             return false;
@@ -653,7 +652,7 @@ bool rescale(UtilProperties const& properties)
         // Unary
         std::cout << outPathUnary << filenameUnary;
         UnaryFile unary;
-        if(!unary.read(pathUnary))
+        if (!unary.read(pathUnary))
         {
             std::cerr << " Couldn't read unary \"" << pathUnary << "\"." << std::endl;
             return false;
@@ -682,31 +681,31 @@ int main(int argc, char** argv)
     if (!properties.job.showWeightFile.empty())
         showWeight(properties.job.showWeightFile);
 
-    if(!properties.job.writeWeightFile.empty())
+    if (!properties.job.writeWeightFile.empty())
         writeWeight(properties.job.writeWeightFile);
 
-    if(!properties.job.writeWeightFileText.empty())
+    if (!properties.job.writeWeightFileText.empty())
         writeWeightFileText(properties);
 
-    if(!properties.job.fillGroundTruth.empty())
+    if (!properties.job.fillGroundTruth.empty())
         fillGroundTruth(properties);
 
-    if(!properties.job.estimatePairwiseSigmaSq.empty())
+    if (!properties.job.estimatePairwiseSigmaSq.empty())
         estimatePairwiseSigmaSq(properties);
 
-    if(!properties.job.estimateSpDistance.empty())
+    if (!properties.job.estimateSpDistance.empty())
         estimateSpDistance(properties);
 
-    if(!properties.job.pairwiseStatistics.empty())
+    if (!properties.job.pairwiseStatistics.empty())
         pairwiseStatistics(properties);
 
-    if(!properties.job.maxLoss.empty())
+    if (!properties.job.maxLoss.empty())
         computeMaxLoss(properties);
 
-    if(!properties.job.outline.empty())
+    if (!properties.job.outline.empty())
         outline(properties);
 
-    if(!properties.job.rescale.empty())
+    if (!properties.job.rescale.empty())
         rescale(properties);
 
     return 0;
