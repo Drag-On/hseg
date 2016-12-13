@@ -115,6 +115,12 @@ public:
     float sqNorm() const;
 
     /**
+     * Clamps all values less than \p value to \p value
+     * @param value Value to clamp to
+     */
+    void clampBelow(float value);
+
+    /**
      * Writes the weights vector to a file on harddisk
      * @param filename File to write to
      * @return True in case the file has been written properly, otherwise false

@@ -292,6 +292,9 @@ int main(int argc, char** argv)
         sum *= learningRate;
         curWeights -= sum;
 
+        // Project onto the feasible set
+        curWeights.clampBelow(0.f);
+
         if (!curWeights.write(properties.outDir + properties.outFile))
             std::cerr << "Couldn't write weights to file " << properties.outDir + properties.outFile << std::endl;
         curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat");

@@ -292,3 +292,14 @@ std::vector<Weight>& WeightsVec::classWeights()
 {
     return m_classWeights;
 }
+
+void WeightsVec::clampBelow(float value)
+{
+    for(auto& e : m_unaryWeights)
+        e = std::max(value, e);
+    for(auto& e : m_pairwiseWeights)
+        e = std::max(value, e);
+    for(auto& e : m_classWeights)
+        e = std::max(value, e);
+    m_featureWeight = std::max(value, m_featureWeight);
+}
