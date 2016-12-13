@@ -14,10 +14,10 @@ execPred="./hseg_train_dist_pred"
 imgPath="/work/moellerj/dataset_small/color/"
 gtPath="/work/moellerj/dataset_small/gt/"
 unPath="/work/moellerj/dataset_small/unaries/"
-weightsFile="/remwork/atcremers65/moellerj/training_new/weights.dat"
-featureWeightsFile="/remwork/atcremers65/moellerj/training_new/featureWeights.txt"
-outPath="/remwork/atcremers65/moellerj/training_new/results/"
-numClusters=200
+weightsFile="/remwork/atcremers65/moellerj/training_new_noinit_400/weights.dat"
+featureWeightsFile="/remwork/atcremers65/moellerj/training_new_noinit_400/featureWeights.txt"
+outPath="/remwork/atcremers65/moellerj/training_new_noinit_400/results/"
+numClusters=400
 trainingFile="train.txt"
 
 def runWorker(filename):
@@ -46,8 +46,6 @@ def runWorker(filename):
     return errcode, filename, attempts
 
 if __name__ == '__main__':
-    startIter = 0
-    endIter = 100
     try:
         opts, args = getopt.getopt(sys.argv[1:], "e:i:g:u:o:w:f:n:t:")
     except getopt.GetoptError:

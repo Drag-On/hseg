@@ -31,6 +31,7 @@ for m in $(seq "$startIter" "$endIter"); do
       hostfileVer=$(./pickHostFile.sh)
       cp -f "hosts.$hostfileVer.txt" hosts.txt
       echo "Using hostfile \"$hostfileVer\""
+      ./setup_hosts.sh
       python -m scoop --hostfile=hosts.txt --path=/work/moellerj/training_temp/ distribute.py
       err=$?
       if [ $err -ne 0 ]; then
@@ -58,16 +59,11 @@ for m in $(seq "$startIter" "$endIter"); do
     exit 1
   fi
 
-  # Send new weights to the hosts
-  while IFS='' read -r line || [[ -n "$line" ]]; do
-    host=${line%% *}
-    scp "$PWD/weights.dat" "$host:/work/moellerj/training_temp/"
-  done < "hosts.txt"
-
-  rm -r /remwork/atcremers65/moellerj/training_new/results/*
-  mkdir /remwork/atcremers65/moellerj/training_new/results/labeling
-  mkdir /remwork/atcremers65/moellerj/training_new/results/sp
-  mkdir /remwork/atcremers65/moellerj/training_new/results/sp_gt
+  # Empty the results folder to make space for new iteration results
+  rm -r /remwork/atcremers65/moellerj/training_new_noinit_400/results/*
+  mkdir /remwork/atcremers65/moellerj/training_new_noinit_400/results/labeling
+  mkdir /remwork/atcremers65/moellerj/training_new_noinit_400/results/sp
+  mkdir /remwork/atcremers65/moellerj/training_new_noinit_400/results/sp_gt
 
   touch iter
   echo "$m" > iter
