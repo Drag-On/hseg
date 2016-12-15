@@ -10,8 +10,7 @@
 #include <Inference/k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <Inference/GraphOptimizer/GraphOptimizer.h>
-#include <Inference/InferenceIterator.h>
-#include "Timer.h"
+#include <Timer.h>
 
 float loss(int y, int gt)
 {
@@ -68,6 +67,124 @@ trainingEnergy(std::vector<float> const& x, std::vector<int> const& gt, std::vec
     return e;
 }
 
+int smoothCostFun(int s1, int s2, int l1, int l2)
+{
+    return l1 != l2 ? 1 : 0;
+}
+
+LabelImage tryAlphaBeta(Image<float, 3> const& img, UnaryFile const& unary, float lambda)
+{
+    size_t numPx = img.pixels();
+    size_t numNodes = numPx;
+
+    // Setup graph
+    GCoptimizationGeneralGraph graph(numNodes, unary.classes());
+    for (size_t i = 0; i < numPx; ++i)
+    {
+        auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
+
+        // Set up pixel neighbor connections
+        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
+        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+        if (coordsR.x() < img.width())
+        {
+            size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
+            graph.setNeighbors(i, siteR, lambda);
+        }
+        if (coordsD.y() < img.height())
+        {
+            size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
+            graph.setNeighbors(i, siteD, lambda);
+        }
+        // Set up unary cost
+        for (Label l = 0; l < unary.classes(); ++l)
+            graph.setDataCost(i, l, -unary.at(coords.x(), coords.y(), l));
+    }
+
+    // Set up pairwise cost
+    graph.setSmoothCost(smoothCostFun);
+
+    // Do alpha-beta-swap
+    try
+    {
+        graph.swap();
+    }
+    catch(GCException e)
+    {
+        e.Report();
+    }
+
+    // Copy over result
+    LabelImage labeling(img.width(), img.height());
+    for (size_t i = 0; i < numPx; ++i)
+        labeling.atSite(i) = graph.whatLabel(i);
+
+    return labeling;
+}
+
+LabelImage tryTrwS(Image<float, 3> const& img, UnaryFile const& unary, float lambda)
+{
+    size_t numPx = img.pixels();
+    size_t numNodes = numPx;
+    size_t numClasses = unary.classes();
+
+    // Set up the graph
+    TypePotts::GlobalSize globalSize(numClasses);
+    MRFEnergy<TypePotts> mrfEnergy(globalSize);
+
+    std::vector<MRFEnergy<TypePotts>::NodeId> nodeIds;
+    nodeIds.reserve(numNodes);
+
+    // Unaries
+    for (size_t i = 0; i < numNodes; ++i)
+    {
+        // Unary confidences
+        std::vector<TypePotts::REAL> confidences(numClasses, 0.f);
+        if (i < numPx) // Only nodes that represent pixels have unaries.
+            for (size_t l = 0; l < numClasses; ++l)
+                confidences[l] = -unary.atSite(i, l);
+        auto id = mrfEnergy.AddNode(TypePotts::LocalSize(), TypePotts::NodeData(confidences.data()));
+        nodeIds.push_back(id);
+    }
+
+    // Pairwise
+    for (size_t i = 0; i < numPx; ++i)
+    {
+        auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
+
+        // Set up pixel neighbor connections
+        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
+        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+        if (coordsR.x() < img.width())
+        {
+            size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
+            TypePotts::EdgeData edgeData(lambda);
+            mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteR], edgeData);
+        }
+        if (coordsD.y() < img.height())
+        {
+            size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
+            TypePotts::EdgeData edgeData(lambda);
+            mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteD], edgeData);
+        }
+    }
+
+    // Do the actual minimization
+    MRFEnergy<TypePotts>::Options options;
+    options.m_eps = 0.0f;
+    options.m_printIter=1000000;
+    options.m_printMinIter=1000000;
+    MRFEnergy<TypePotts>::REAL lowerBound = 0, energy = 0;
+    mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
+
+    // Copy over result
+    LabelImage labeling(img.width(), img.height());
+    for (size_t i = 0; i < numPx; ++i)
+        labeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
+
+    return labeling;
+}
+
 
 int main()
 {
@@ -88,6 +205,42 @@ int main()
     LabelImage gt;
     gt = helper::image::decolorize(gtRgb, cmap);
 
+    size_t const numIter = 10;
+    Timer::milliseconds alpha_beta_ms = Timer::milliseconds::zero();
+    LabelImage labeling_graph;
+    for(size_t i = 0; i < numIter; ++i)
+    {
+        Timer t(true);
+        labeling_graph = tryAlphaBeta(cieLab, unary, 5);
+        t.pause();
+        alpha_beta_ms += t.elapsed();
+    }
+    alpha_beta_ms /= numIter;
+    std::cout << "Alpha-Beta-Swap: " << alpha_beta_ms << std::endl;
+
+    Timer::milliseconds trws_ms = Timer::milliseconds::zero();
+    LabelImage labeling_trws;
+    for(size_t i = 0; i < numIter; ++i)
+    {
+        Timer t(true);
+        labeling_trws = tryTrwS(cieLab, unary, 5);
+        t.pause();
+        trws_ms += t.elapsed();
+    }
+    trws_ms /= numIter;
+    std::cout << "TRW-S: " << trws_ms << std::endl;
+
+    auto labelImg_trws = helper::image::colorize(labeling_trws, cmap);
+    auto labelImg_graph = helper::image::colorize(labeling_graph, cmap);
+    cv::Mat cvLabeling_trws = static_cast<cv::Mat>(labelImg_trws);
+    cv::Mat cvLabeling_graph = static_cast<cv::Mat>(labelImg_graph);
+    cv::imwrite("trws.png", cvLabeling_trws);
+    cv::imwrite("alphabeta.png", cvLabeling_graph);
+    cv::imshow("TRW_S", cvLabeling_trws);
+    cv::imshow("Graph", cvLabeling_graph);
+    cv::waitKey();
+
+#if 0
     Timer t(true);
     InferenceIterator<EnergyFunction, TRW_S_Optimizer> inference_trws(energy, numClusters, numLabels, cieLab);
     auto result = inference_trws.run();
@@ -123,6 +276,7 @@ int main()
     cv::imshow("TRW_S", cvLabeling_trws);
     cv::imshow("Graph", cvLabeling_graph);
     cv::waitKey();
+#endif
 
 #if 0
     std::vector<float> x = {0.f, 1.6f, 0.95f, 1.55f};
