@@ -115,10 +115,9 @@ public:
     float sqNorm() const;
 
     /**
-     * Clamps all values less than \p value to \p value
-     * @param value Value to clamp to
+     * Clamps all values to the closest feasible value
      */
-    void clampBelow(float value);
+    void clampToFeasible();
 
     /**
      * Writes the weights vector to a file on harddisk

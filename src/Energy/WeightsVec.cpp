@@ -293,13 +293,15 @@ std::vector<Weight>& WeightsVec::classWeights()
     return m_classWeights;
 }
 
-void WeightsVec::clampBelow(float value)
+void WeightsVec::clampToFeasible()
 {
-    for(auto& e : m_unaryWeights)
-        e = std::max(value, e);
+    // All values are permitted for unary weights
+    // Pairwise must be positive
     for(auto& e : m_pairwiseWeights)
-        e = std::max(value, e);
+        e = std::max(0.f, e);
+    // Class weights must be positive
     for(auto& e : m_classWeights)
-        e = std::max(value, e);
-    m_featureWeight = std::max(value, m_featureWeight);
+        e = std::max(0.f, e);
+    // Feature weights must be at least 1
+    m_featureWeight = std::max(1.f, m_featureWeight);
 }

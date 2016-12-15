@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
         return INVALID_FEATURE_WEIGHTS;
     }
 
-    WeightsVec curWeights(numClasses, 100, 100, 100, 100);
+    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
     curWeights -= sum;
 
     // Project onto the feasible set
-    curWeights.clampBelow(0.f);
+    curWeights.clampToFeasible();
 
     if(!curWeights.write(properties.out))
     {
