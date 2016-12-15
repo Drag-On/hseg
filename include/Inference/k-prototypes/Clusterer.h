@@ -58,10 +58,10 @@ private:
     EnergyFun m_energy;
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
-    float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
+    float const m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
 
     template<typename T>
-    void initPrototypes(ColorImage<T> const& color, LabelImage const& labels);
+    void initPrototypes(ColorImage<T> const& color, LabelImage const& labels, size_t numClusters);
 
     template<typename T>
     void allocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
@@ -101,10 +101,11 @@ size_t Clusterer<EnergyFun>::run(size_t numClusters, size_t /* numLabels */, Col
 {
     assert(color.pixels() == labels.pixels());
 
-    m_clusters.resize(numClusters, Cluster(&m_energy));
+    //m_clusters.resize(numClusters, Cluster(&m_energy));
+    m_clusters.reserve(numClusters);
     m_clustership = LabelImage(color.width(), color.height());
 
-    initPrototypes(color, labels);
+    initPrototypes(color, labels, numClusters);
     allocatePrototypes(color, labels);
 
     //float energy = computeEnergy(color, labels);
@@ -133,29 +134,64 @@ size_t Clusterer<EnergyFun>::run(size_t numClusters, size_t /* numLabels */, Col
 
 template<typename EnergyFun>
 template<typename T>
-void Clusterer<EnergyFun>::initPrototypes(ColorImage<T> const& color, LabelImage const& labels)
+void Clusterer<EnergyFun>::initPrototypes(ColorImage<T> const& color, LabelImage const& labels, size_t numClusters)
 {
-    // Randomly select k objects as initial prototypes
+    // Randomly select a pixel as initial prototype
     std::default_random_engine generator(0/*std::chrono::system_clock::now().time_since_epoch().count()*/);
     std::uniform_int_distribution<size_t> distribution(0, color.pixels() - 1);
-    for (auto& c : m_clusters)
+    std::vector<float> distances(color.pixels(), 0.f); // Distance to closest cluster center
+    // Only pick this site if the label is valid. It might be invalid for clustering on ground truth images,
+    // where some pixels are marked as "any label".
+    while(true)
     {
-        if (c.size > 0)
-            continue;
+        size_t const site = distribution(generator);
+        Label const l = labels.atSite(site);
+        if(l < m_energy.unaryFile().classes())
+        {
+            m_clusters.emplace_back(&m_energy);
+            m_clusters.back().label = l;
+            m_clusters.back().mean = Feature(color, site);
+            break;
+        }
+    }
+    // Compute the distance between each object and the newly created cluster center
+    size_t i = 0;
+    std::generate(distances.begin(), distances.end(), [&]
+    {
+        float const dist = m_energy.pixelToClusterDistance(Feature(color, i), labels.atSite(i), m_clusters, 0);
+        ++i;
+        return dist;
+    });
 
-        size_t site;
+    // Pick a new object as the next cluster proportional to the squared distance
+    std::vector<float> weights(color.pixels(), 0.f);
+    for(size_t c = 1; c < numClusters; ++c)
+    {
+        size_t n = 0;
+        std::generate(weights.begin(), weights.end(), [&] { float const d = distances[n++]; return d * d; });
+        std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
         while(true)
         {
-            // Only pick this site if the label is valid. It might be invalid for clustering on ground truth images,
-            // where some pixels are marked as "any label".
-            site = distribution(generator);
-            auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
-            c.label = labels.at(coords.x(), coords.y(), 0);
-            if(c.label < m_energy.unaryFile().classes())
+            size_t const site = distribution(generator);
+            Label const l = labels.atSite(site);
+            if(l < m_energy.unaryFile().classes())
+            {
+                m_clusters.emplace_back(&m_energy);
+                m_clusters.back().label = l;
+                m_clusters.back().mean = Feature(color, site);
                 break;
+            }
         }
-        c.mean = Feature(color, site);
+        // Recompute cluster distances
+        size_t i = 0;
+        std::generate(distances.begin(), distances.end(), [&]
+        {
+            float const dist = m_energy.pixelToClusterDistance(Feature(color, i), labels.atSite(i), m_clusters, c);
+            ++i;
+            return std::min(dist, distances[i - 1]);
+        });
     }
+
 }
 
 template<typename EnergyFun>
