@@ -104,8 +104,7 @@ public:
         if(l >= m_unaryScores.classes())
             return 0;
 
-        auto coords = helper::coord::siteTo2DCoordinate(i, m_unaryScores.width());
-        return m_weights.unary(l) * (-m_unaryScores.at(coords.x(), coords.y(), l));
+        return m_weights.unary(l) * (-m_unaryScores.atSite(i, l));
     }
 
     /**
