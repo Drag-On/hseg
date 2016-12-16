@@ -21,7 +21,6 @@ struct Cluster
 
     Feature mean; //< Mean feature
     Feature accumFeature; //< Accumulated feature. Divide by size to get the current mean!
-    Feature accumSqFeature; //< Accumulated squared feature.
     Label label = 0; //< Dominant class label
     std::vector<Label> labelFrequencies; //< Label frequencies inside the cluster
     size_t size = 0; //< Amount of attached pixels
