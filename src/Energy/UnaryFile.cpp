@@ -121,3 +121,27 @@ void UnaryFile::rescale(float factor)
         }
     }
 }
+
+float UnaryFile::minScore() const
+{
+    return *std::min_element(m_data.begin(), m_data.end());
+}
+
+float UnaryFile::maxScore() const
+{
+    return *std::max_element(m_data.begin(), m_data.end());
+}
+
+void UnaryFile::makePositiveBaseZero()
+{
+    float min = minScore();
+    for(auto& d : m_data)
+        d -= min;
+}
+
+void UnaryFile::makeNegativeBaseZero()
+{
+    float max = maxScore();
+    for(auto& d : m_data)
+        d -= max;
+}

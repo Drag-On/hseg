@@ -120,6 +120,26 @@ public:
      */
     LabelImage maxLabeling() const;
 
+    /**
+     * @return The lowest score value in the file
+     */
+    float minScore() const;
+
+    /**
+     * @return The largest score value in the file
+     */
+    float maxScore() const;
+
+    /**
+     * Shifts all scores into the positive range by subtracting the current minimum
+     */
+    void makePositiveBaseZero();
+
+    /**
+     * Shifts all scores into the negative range by subtracting the current maximum
+     */
+    void makeNegativeBaseZero();
+
 private:
     bool m_valid = false;
     Coord m_width = 0;
