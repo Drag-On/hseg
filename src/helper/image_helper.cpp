@@ -3,6 +3,7 @@
 //
 
 #include <boost/unordered_map.hpp>
+#include <typedefs.h>
 #include "helper/image_helper.h"
 
 namespace helper
@@ -75,7 +76,7 @@ namespace helper
 
             // Compute label image
             LabelImage labels(rgb.width(), rgb.height());
-            for (Site s = 0; s < labels.pixels(); ++s)
+            for (SiteId s = 0; s < labels.pixels(); ++s)
             {
                 Color c = {rgb.atSite(s, 0), rgb.atSite(s, 1), rgb.atSite(s, 2)};
                 assert(lookup.count(c) > 0);
@@ -91,9 +92,9 @@ namespace helper
             assert(labelImg.width() == colorImg.width() && labelImg.height() == colorImg.height());
 
             RGBImage result = colorImg;
-            for(size_t x = 0; x < labelImg.width() - 1; ++x)
+            for(Coord x = 0; x < labelImg.width() - 1; ++x)
             {
-                for(size_t y = 0; y < labelImg.height() - 1; ++y)
+                for(Coord y = 0; y < labelImg.height() - 1; ++y)
                 {
                     // If label changes
                     if (labelImg.at(x, y) != labelImg.at(x + 1, y) || labelImg.at(x, y) != labelImg.at(x, y + 1))

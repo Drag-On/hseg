@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <Image/Image.h>
+#include <typedefs.h>
 
 /**
  * Loads the scores for an image from file
@@ -37,7 +38,7 @@ public:
     /**
      * @return Width of the image
      */
-    inline size_t width() const
+    inline Coord width() const
     {
         return m_width;
     }
@@ -45,7 +46,7 @@ public:
     /**
      * @return Height of the image
      */
-    inline size_t height() const
+    inline Coord height() const
     {
         return m_height;
     }
@@ -53,7 +54,7 @@ public:
     /**
      * @return Amount of classes
      */
-    inline size_t classes() const
+    inline Label classes() const
     {
         return m_classes;
     }
@@ -65,7 +66,7 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    inline float at(size_t x, size_t y, size_t c) const
+    inline float at(Coord x, Coord y, Label c) const
     {
         assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
         return m_data[x + (y * m_width) + (c * m_width * m_height)];
@@ -77,7 +78,7 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    inline float atSite(size_t s, size_t c) const
+    inline float atSite(SiteId s, Label c) const
     {
         assert(s < m_width * m_height);
         assert(s + (c * m_width * m_height) < m_data.size());
@@ -111,7 +112,7 @@ public:
      * @param y Y coordinate
      * @return Class label with maximum score at the given pixel
      */
-    Label maxLabelAt(size_t x, size_t y) const;
+    Label maxLabelAt(Coord x, Coord y) const;
 
     /**
      * Computes a labeling by taking he maximum score at every pixel
@@ -121,12 +122,12 @@ public:
 
 private:
     bool m_valid = false;
-    size_t m_width = 0;
-    size_t m_height = 0;
-    size_t m_classes = 21; // Is currently not written to the files
+    Coord m_width = 0;
+    Coord m_height = 0;
+    Label m_classes = 21; // Is currently not written to the files
     std::vector<float> m_data;
 
-    inline float& at(size_t x, size_t y, size_t c)
+    inline float& at(Coord x, Coord y, Label c)
     {
         assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
         return m_data[x + (y * m_width) + (c * m_width * m_height)];

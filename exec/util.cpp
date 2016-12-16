@@ -495,8 +495,8 @@ bool pairwiseStatistics(UtilProperties const& properties)
         {
             size_t l = gt.atSite(i);
             auto coords = helper::coord::siteTo2DCoordinate(i, gt.width());
-            decltype(coords) coordsR = {coords.x() + 1, coords.y()};
-            decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+            decltype(coords) coordsR = {static_cast<Coord>(coords.x() + 1), coords.y()};
+            decltype(coords) coordsD = {coords.x(), static_cast<Coord>(coords.y() + 1)};
             if (coordsR.x() < gt.width())
             {
                 size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), gt.width());

@@ -5,8 +5,8 @@
 #ifndef HSEG_CLUSTER_H
 #define HSEG_CLUSTER_H
 
-#include <Image/Image.h>
 #include <functional>
+#include <typedefs.h>
 #include "Feature.h"
 
 class EnergyFunction;
@@ -23,8 +23,8 @@ struct Cluster
     Feature accumFeature; //< Accumulated feature. Divide by size to get the current mean!
     Label label = 0; //< Dominant class label
     std::vector<Label> labelFrequencies; //< Label frequencies inside the cluster
-    size_t size = 0; //< Amount of attached pixels
-    size_t numClasses = 0;
+    uint32_t size = 0; //< Amount of attached pixels
+    Label numClasses = 0;
     std::function<float(Label,Label)> classDistance;
 
     /**

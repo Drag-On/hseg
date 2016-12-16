@@ -11,11 +11,12 @@
 #include <helper/coordinate_helper.h>
 #include <Energy/EnergyFunction.h>
 #include "Cluster.h"
+#include "typedefs.h"
 
 /**
  * Clusters an image based on color, position, and a given labeling
  */
-template<typename EnergyFun, typename ClusterId = uint16_t>
+template<typename EnergyFun, typename ClusterId = Label>
 class Clusterer
 {
 public:

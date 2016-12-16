@@ -19,7 +19,7 @@ PROPERTIES_DEFINE(TrainDistMerge,
                   PROP_DEFINE_A(float, T, 1.f, -T)
                   PROP_DEFINE_A(float, C, 1.f, -C)
                   PROP_DEFINE_A(float, pairwiseSigmaSq, 1.00166e-06, -s)
-                  PROP_DEFINE_A(size_t, numClusters, 300, -c)
+                  PROP_DEFINE_A(Label, numClusters, 300, -c)
                   PROP_DEFINE_A(std::string, trainingList, "", -l)
                   PROP_DEFINE_A(std::string, weightFile, "", -w)
                   PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
@@ -64,11 +64,11 @@ struct SampleResult
 };
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename,
-                           helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, size_t numClasses,
+                           helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, Label numClasses,
                            WeightsVec const& curWeights, Matrix5f const& featureWeights)
 {
     SampleResult sampleResult;
-    size_t numClusters = properties.numClusters;
+    Label numClusters = properties.numClusters;
 
     // Load images etc...
     RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB, predictionRGB, predictionSpRGB;
@@ -134,10 +134,10 @@ int main(int argc, char* argv[])
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    size_t const numClasses = 21;
-    size_t const numClusters = properties.numClusters;
+    Label const numClasses = 21;
+    Label const numClusters = properties.numClusters;
 
-    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
+    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max<Label>(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(numClusters);
 
     Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);

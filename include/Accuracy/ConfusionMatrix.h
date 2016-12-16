@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <vector>
 #include <Image/Image.h>
+#include <typedefs.h>
 
 class ConfusionMatrix
 {
@@ -17,7 +18,7 @@ public:
      * Creates a confusion matrix for a given number of classes
      * @param numClasses Amount of classes
      */
-    explicit ConfusionMatrix(size_t numClasses) noexcept;
+    explicit ConfusionMatrix(Label numClasses) noexcept;
 
     /**
      * Creates a confusion matrix from a labeling and the ground truth
@@ -26,7 +27,7 @@ public:
      * @param labeling Label image
      * @param groundTruth Ground truth image
      */
-    ConfusionMatrix(size_t numClasses, LabelImage const& labeling, LabelImage const& groundTruth);
+    ConfusionMatrix(Label numClasses, LabelImage const& labeling, LabelImage const& groundTruth);
 
     /**
      * Gives the amount of pixels that have been classified as a certain label but should have been another one
@@ -59,7 +60,7 @@ public:
     explicit operator cv::Mat() const;
 
 private:
-    size_t m_numClasses;
+    Label m_numClasses;
     std::vector<size_t> m_mat; // First index is true label, second index is inferred label
 
     size_t& at(Label trueLabel, Label inferredLabel);

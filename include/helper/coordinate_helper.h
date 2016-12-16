@@ -9,6 +9,7 @@
 #include <utility>
 #include <tuple>
 #include "Image/Coordinates.h"
+#include "typedefs.h"
 
 namespace helper
 {
@@ -21,7 +22,7 @@ namespace helper
          * @param width Width
          * @return The site
          */
-        inline size_t coordinateToSite(size_t x, size_t y, size_t width)
+        inline SiteId coordinateToSite(Coord x, Coord y, Coord width)
         {
             return x + y * width;
         }
@@ -35,7 +36,7 @@ namespace helper
          * @param height Height
          * @return The site
          */
-        inline size_t coordinateToSite(size_t x, size_t y, size_t z, size_t width, size_t height)
+        inline SiteId coordinateToSite(Coord x, Coord y, Coord z, Coord width, Coord height)
         {
             return x + y * width + z * width * height;
         }
@@ -46,9 +47,9 @@ namespace helper
          * @param width Width
          * @return 2d coordinate
          */
-        inline Coords2d<size_t> siteTo2DCoordinate(size_t site, size_t width)
+        inline Coords2d<Coord> siteTo2DCoordinate(SiteId site, Coord width)
         {
-            Coords2d<size_t> coords;
+            Coords2d<Coord> coords;
             coords.x() = site % width;
             coords.y() = site / width;
             return coords;
@@ -60,9 +61,9 @@ namespace helper
          * @param width Width
          * @return 2d coordinate
          */
-        inline Coords3d<size_t> siteTo3DCoordinate(size_t site, size_t width, size_t height)
+        inline Coords3d<Coord> siteTo3DCoordinate(SiteId site, Coord width, Coord height)
         {
-            Coords3d<size_t> coords;
+            Coords3d<Coord> coords;
             coords[0] = site % width;
             coords[1] = (site / width) % height;
             coords[2] = site / (width * height);

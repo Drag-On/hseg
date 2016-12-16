@@ -13,7 +13,7 @@
 #include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(TrainDistPred,
-                  PROP_DEFINE_A(size_t, numClusters, 300, -c)
+                  PROP_DEFINE_A(Label, numClusters, 300, -c)
                   PROP_DEFINE_A(float, pairwiseSigmaSq, 1.00166e-06, -s)
                   PROP_DEFINE_A(std::string, weightFile, "", -w)
                   PROP_DEFINE_A(std::string, imageFile, "", -i)
@@ -66,9 +66,9 @@ int main(int argc, char* argv[])
         return SUCCESS;
     }
 
-    size_t const numClasses = 21;
-    size_t const numClusters = properties.numClusters;
-    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
+    Label const numClasses = 21;
+    Label const numClusters = properties.numClusters;
+    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max<Label>(256, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     WeightsVec curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.weightFile))

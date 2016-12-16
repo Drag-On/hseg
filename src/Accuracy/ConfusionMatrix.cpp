@@ -4,13 +4,13 @@
 
 #include "Accuracy/ConfusionMatrix.h"
 
-ConfusionMatrix::ConfusionMatrix(size_t numClasses) noexcept
+ConfusionMatrix::ConfusionMatrix(Label numClasses) noexcept
         : m_numClasses(numClasses),
           m_mat(std::vector<size_t>(numClasses * numClasses, 0))
 {
 }
 
-ConfusionMatrix::ConfusionMatrix(size_t numClasses, LabelImage const& labeling, LabelImage const& groundTruth)
+ConfusionMatrix::ConfusionMatrix(Label numClasses, LabelImage const& labeling, LabelImage const& groundTruth)
         : m_numClasses(numClasses),
           m_mat(std::vector<size_t>(numClasses * numClasses, 0))
 {

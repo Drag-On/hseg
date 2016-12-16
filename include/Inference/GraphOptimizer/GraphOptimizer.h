@@ -11,6 +11,7 @@
 #include <boost/unordered_map.hpp>
 //#include <helper/hash_helper.h>
 #include "GCoptimization.h"
+#include "typedefs.h"
 
 /**
  * Opimizes the energy function for the class labeling
@@ -34,7 +35,7 @@ public:
      *          initialize it with the previous result.
      */
     template<typename T>
-    void run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP);
+    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP);
 
     /**
      * @return The computed labeling
@@ -79,36 +80,36 @@ inline LabelImage const& GraphOptimizer<EnergyFun>::labeling() const
 
 template<typename EnergyFun>
 template<typename T>
-void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP)
+void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP)
 {
-    size_t numPx = img.pixels();
-    size_t numNodes = numPx + numSP;
+    SiteId numPx = img.pixels();
+    SiteId numNodes = numPx + numSP;
 
     // Setup graph
     GCoptimizationGeneralGraph graph(numNodes, m_energy.numClasses());
-    for (size_t i = 0; i < numPx; ++i)
+    for (SiteId i = 0; i < numPx; ++i)
     {
         auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
 
         if(m_energy.weights().hasPairwiseWeight())
         {
             // Set up pixel neighbor connections
-            decltype(coords) coordsR = {coords.x() + 1, coords.y()};
-            decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+            decltype(coords) coordsR = {static_cast<Coord>(coords.x() + 1), coords.y()};
+            decltype(coords) coordsD = {coords.x(), static_cast<Coord>(coords.y() +  1)};
             if (coordsR.x() < img.width())
             {
-                size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
+                SiteId siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
                 graph.setNeighbors(i, siteR, 1);
             }
             if (coordsD.y() < img.height())
             {
-                size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
+                SiteId siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
                 graph.setNeighbors(i, siteD, 1);
             }
         }
 
         // Set up connection to auxiliary nodes
-        size_t auxSite = sp.atSite(i) + numPx;
+        SiteId auxSite = sp.atSite(i) + numPx;
         graph.setNeighbors(i, auxSite, 1);
 
         // Set up unary cost
@@ -123,7 +124,7 @@ void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& 
     // Warm start from previous labeling if available
     if (m_labeling.width() == img.width() && m_labeling.height() == img.height())
     {
-        for (size_t s = 0; s < m_labeling.pixels(); ++s)
+        for (SiteId s = 0; s < m_labeling.pixels(); ++s)
             graph.setLabel(s, m_labeling.atSite(s));
     }
 
@@ -139,7 +140,7 @@ void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& 
 
     // Copy over result
     m_labeling = LabelImage(img.width(), img.height());
-    for (size_t i = 0; i < numPx; ++i)
+    for (SiteId i = 0; i < numPx; ++i)
         m_labeling.atSite(i) = graph.whatLabel(i);
 }
 

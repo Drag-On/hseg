@@ -24,7 +24,7 @@ WeightsVec::WeightsVec(Label numLabels, bool defaultInit)
     }
 }
 
-WeightsVec::WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float featureWeight, float labelWeight)
+WeightsVec::WeightsVec(Label numLabels, Weight unaryWeight, Weight pairwiseWeight, Weight featureWeight, Weight labelWeight)
         : m_numLabels(numLabels)
 {
     m_unaryWeights.resize(numLabels, unaryWeight);

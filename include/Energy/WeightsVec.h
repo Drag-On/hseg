@@ -8,8 +8,9 @@
 
 #include <vector>
 #include <Image/Image.h>
+#include <typedefs.h>
 
-using Weight = float;
+using Weight = Cost;
 
 /**
  * Contains all (trainable) weights needed by the energy function
@@ -46,7 +47,7 @@ public:
      * @param featureWeight Weight of the feature term
      * @param labelWeight Label weight
      */
-    WeightsVec(Label numLabels, float unaryWeight, float pairwiseWeight, float featureWeight, float labelWeight);
+    WeightsVec(Label numLabels, Weight unaryWeight, Weight pairwiseWeight, Weight featureWeight, Weight labelWeight);
 
     /**
      * Weight of the unary term

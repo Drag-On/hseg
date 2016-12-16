@@ -10,6 +10,7 @@
 #include <string>
 #include <helper/opencv_helper.h>
 #include "Coordinates.h"
+#include "typedefs.h"
 #include <cv.hpp>
 #if CV_MAJOR_VERSION==3
 #include <opencv2/imgcodecs.hpp>
@@ -18,11 +19,8 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #endif
 
-using ImgCoord = size_t;
+using ImgCoords = Coords2d<Coord>;
 
-using ImgCoords = Coords2d<ImgCoord>;
-
-using Site = size_t;
 
 /**
  * Image of variable size and with a variable amount of channels
@@ -43,7 +41,7 @@ public:
      * @param width Image width
      * @param height Image height
      */
-    Image(size_t width, size_t height) noexcept;
+    Image(Coord width, Coord height) noexcept;
 
     /**
      * Copy constructor
@@ -123,22 +121,22 @@ public:
     /**
      * @return Image width
      */
-    size_t width() const;
+    Coord width() const;
 
     /**
      * @return Image height
      */
-    size_t height() const;
+    Coord height() const;
 
     /**
      * @return Amount of channels
      */
-    size_t channels() const;
+    Coord channels() const;
 
     /**
      * @return Amount of pixels
      */
-    size_t pixels() const;
+    SiteId pixels() const;
 
     /**
      * Computes the amount of pixels that are different from another image of the same size
@@ -154,7 +152,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T const& at(ImgCoord x, ImgCoord y, ImgCoord c = 0) const;
+    T const& at(Coord x, Coord y, Coord c = 0) const;
 
     /**
      * Retrieve a pixel value
@@ -163,7 +161,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T& at(ImgCoord x, ImgCoord y, ImgCoord c = 0);
+    T& at(Coord x, Coord y, Coord c = 0);
 
     /**
      * Retrieve a pixel value
@@ -171,7 +169,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T const& atSite(size_t site, ImgCoord c = 0) const;
+    T const& atSite(SiteId site, Coord c = 0) const;
 
     /**
      * Retrieve a pixel value
@@ -179,7 +177,7 @@ public:
      * @param c Channel
      * @return Pixel value at the given pixel and channel
      */
-    T& atSite(size_t site, ImgCoord c = 0);
+    T& atSite(SiteId site, Coord c = 0);
 
     /**
      * Rescales the image
@@ -202,8 +200,8 @@ public:
     Image& scaleColorSpace(T min, T max);
 
 private:
-    size_t m_width = 0;
-    size_t m_height = 0;
+    Coord m_width = 0;
+    Coord m_height = 0;
     std::vector<T> m_data;
 };
 
@@ -224,18 +222,13 @@ using RGBImage = ColorImage<unsigned char>;
 using CieLabImage = ColorImage<float>;
 
 /**
- * A label
- */
-using Label = unsigned int;
-
-/**
  * Label image encoded as bytes
  */
 using LabelImage = Image<Label, 1>;
 
 
 template<typename T, size_t C>
-Image<T, C>::Image(size_t width, size_t height) noexcept
+Image<T, C>::Image(Coord width, Coord height) noexcept
         : m_width(width),
           m_height(height),
           m_data(width * height * C, 0)
@@ -309,12 +302,12 @@ Image<T, C>::operator cv::Mat() const
 {
     cv::Mat result(m_height, m_width, helper::opencv::getOpenCvType<T>(C));
 
-    for (size_t y = 0; y < m_height; ++y)
+    for (Coord y = 0; y < m_height; ++y)
     {
-        for (size_t x = 0; x < m_width; ++x)
+        for (Coord x = 0; x < m_width; ++x)
         {
             cv::Vec<T, C> color;
-            for (size_t c = 0; c < C; ++c)
+            for (Coord c = 0; c < C; ++c)
                 color[c] = at(x, y, c);
             result.at<cv::Vec<T, C>>(y, x) = color;
         }
@@ -324,31 +317,31 @@ Image<T, C>::operator cv::Mat() const
 }
 
 template<typename T, size_t C>
-inline size_t Image<T, C>::width() const
+inline Coord Image<T, C>::width() const
 {
     return m_width;
 }
 
 template<typename T, size_t C>
-inline size_t Image<T, C>::height() const
+inline Coord Image<T, C>::height() const
 {
     return m_height;
 }
 
 template<typename T, size_t C>
-inline size_t Image<T, C>::channels() const
+inline Coord Image<T, C>::channels() const
 {
     return C;
 }
 
 template<typename T, size_t C>
-inline size_t Image<T, C>::pixels() const
+inline SiteId Image<T, C>::pixels() const
 {
     return m_width * m_height;
 }
 
 template<typename T, size_t C>
-inline T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
+inline T const& Image<T, C>::at(Coord x, Coord y, Coord c) const
 {
     assert(c < C);
     assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
@@ -356,7 +349,7 @@ inline T const& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c) const
 }
 
 template<typename T, size_t C>
-inline T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
+inline T& Image<T, C>::at(Coord x, Coord y, Coord c)
 {
     assert(c < C);
     assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
@@ -364,7 +357,7 @@ inline T& Image<T, C>::at(ImgCoord x, ImgCoord y, ImgCoord c)
 }
 
 template<typename T, size_t C>
-inline T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
+inline T const& Image<T, C>::atSite(SiteId site, Coord c) const
 {
     assert(c < C);
     assert(site + (c * m_width * m_height) < m_data.size());
@@ -372,7 +365,7 @@ inline T const& Image<T, C>::atSite(size_t site, ImgCoord c) const
 }
 
 template<typename T, size_t C>
-inline T& Image<T, C>::atSite(size_t site, ImgCoord c)
+inline T& Image<T, C>::atSite(SiteId site, Coord c)
 {
     assert(c < C);
     assert(site + (c * m_width * m_height) < m_data.size());
@@ -423,8 +416,8 @@ size_t Image<T, C>::diff(Image<T, C> const& other) const
     assert(other.width() == width() && other.height() == height());
 
     size_t result = 0;
-    for (size_t i = 0; i < pixels(); ++i)
-        for (size_t c = 0; c < C; ++c)
+    for (SiteId i = 0; i < pixels(); ++i)
+        for (Coord c = 0; c < C; ++c)
             if (atSite(i, c) != other.atSite(i, c))
                 result++;
     return result;
@@ -441,12 +434,12 @@ void Image<T, C>::rescale(float factor, bool interpolate)
     m_height = static_cast<size_t>(resized.rows);
     m_data.resize(m_width * m_height * C, 0);
 
-    for (size_t y = 0; y < m_height; ++y)
+    for (Coord y = 0; y < m_height; ++y)
     {
-        for (size_t x = 0; x < m_width; ++x)
+        for (Coord x = 0; x < m_width; ++x)
         {
             auto color = resized.at<cv::Vec<uchar, C>>(y, x);
-            for (size_t c = 0; c < C; ++c)
+            for (Coord c = 0; c < C; ++c)
                 at(x, y, c) = color[c];
         }
     }
