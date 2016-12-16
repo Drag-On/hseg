@@ -23,7 +23,7 @@ public:
      * @param numClasses Amount of classes
      * @param color Color image
      */
-    InferenceIterator(EnergyFun e, size_t numClusters, size_t numClasses, CieLabImage const& color);
+    InferenceIterator(EnergyFun e, Label numClusters, Label numClasses, CieLabImage const& color);
 
     /**
      * Does the actual inference
@@ -41,8 +41,8 @@ public:
 
 private:
     EnergyFun m_energy;
-    size_t m_numClusters;
-    size_t m_numClasses;
+    Label m_numClusters;
+    Label m_numClasses;
     CieLabImage const& m_color;
     float const m_eps = 1e3f;
 
@@ -50,7 +50,7 @@ private:
 };
 
 template<typename EnergyFun, template<typename> class Optimizer>
-InferenceIterator<EnergyFun, Optimizer>::InferenceIterator(EnergyFun e, size_t numClusters, size_t numClasses,
+InferenceIterator<EnergyFun, Optimizer>::InferenceIterator(EnergyFun e, Label numClusters, Label numClasses,
                                                 CieLabImage const& color)
         : m_energy(e),
           m_numClusters(numClusters),
@@ -97,7 +97,7 @@ template<typename EnergyFun, template<typename> class Optimizer>
 InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(size_t numIter)
 {
     Clusterer<EnergyFun> clusterer(m_energy);
-    GraphOptimizer<EnergyFun> optimizer(m_energy);
+    Optimizer<EnergyFun> optimizer(m_energy);
 
     InferenceResultDetails result;
 
