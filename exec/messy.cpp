@@ -4,12 +4,12 @@
 #include <Energy/WeightsVec.h>
 #include <map>
 #include <set>
-#include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
 #include <Energy/EnergyFunction.h>
 #include <Energy/feature_weights.h>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <Inference/GraphOptimizer/GraphOptimizer.h>
+#include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
 #include <Timer.h>
 
 float loss(int y, int gt)
