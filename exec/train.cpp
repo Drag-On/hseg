@@ -71,7 +71,7 @@ struct SampleResult
 SampleResult processSample(std::string const& colorImgFilename, std::string const& gtImageFilename,
                            std::string const& unaryFilename, TrainProperties const& properties,
                            helper::image::ColorMap const& cmap, size_t numClasses, size_t numClusters,
-                           WeightsVec const& curWeights, Matrix5f const& featureWeights)
+                           WeightsVec const& curWeights, Matrix5 const& featureWeights)
 {
     SampleResult sampleResult;
 
@@ -181,7 +181,7 @@ int main(int argc, char** argv)
     size_t T = properties.numIter;
     size_t N = std::min(filenames.size(), properties.imagesPerIter);
 
-    Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    Matrix5 featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
     std::cout << "Used feature weights: " << std::endl;
     std::cout << featureWeights << std::endl;

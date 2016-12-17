@@ -7,9 +7,9 @@
 #include <iomanip>
 #include "Energy/feature_weights.h"
 
-Matrix5f readFeatureWeights(std::string const& filename)
+Matrix5 readFeatureWeights(std::string const& filename)
 {
-    Matrix5f weights = Matrix5f::Identity();
+    Matrix5 weights = Matrix5::Identity();
 
     std::ifstream in(filename);
     if(in.is_open())
@@ -42,7 +42,7 @@ Matrix5f readFeatureWeights(std::string const& filename)
     return weights;
 }
 
-bool writeFeatureWeights(std::string const& filename, Matrix5f const& weights)
+bool writeFeatureWeights(std::string const& filename, Matrix5 const& weights)
 {
     std::ofstream out(filename);
     if(out.is_open())

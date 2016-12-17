@@ -193,7 +193,7 @@ int main()
     UnaryFile unary("data/2007_000129_prob.dat");
     WeightsVec weights(numLabels, 100, 10, 10, 10);
     weights.read("out/weights_multi_large.dat");
-    Matrix5f featureWeights = readFeatureWeights("out/featureWeights.txt");
+    Matrix5 featureWeights = readFeatureWeights("out/featureWeights.txt");
     featureWeights = featureWeights.inverse();
     EnergyFunction energy(unary, weights, 0.5f, featureWeights);
     auto cmap = helper::image::generateColorMapVOC(numLabels);

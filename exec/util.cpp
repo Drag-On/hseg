@@ -354,11 +354,11 @@ bool estimateSpDistance(UtilProperties const& properties)
 
     UnaryFile fakeUnary;
     WeightsVec fakeWeights(properties.Constants.numClasses);
-    Matrix5f fakeFeatureWeights;
+    Matrix5 fakeFeatureWeights;
     EnergyFunction energy(fakeUnary, fakeWeights, 0, fakeFeatureWeights);
 
     // Compute mean
-    Vector5f mean = Vector5f::Zero();
+    Vector5 mean = Vector5::Zero();
     size_t N = 0;
     for (auto const& s : list)
     {
@@ -393,7 +393,7 @@ bool estimateSpDistance(UtilProperties const& properties)
             Label l = gtSp.atSite(i);
             auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
 
-            Vector5f vec;
+            Vector5 vec;
             vec(0) = cielab.atSite(i, 0) - clusters[l].mean.r();
             vec(1) = cielab.atSite(i, 1) - clusters[l].mean.g();
             vec(2) = cielab.atSite(i, 2) - clusters[l].mean.b();
@@ -407,7 +407,7 @@ bool estimateSpDistance(UtilProperties const& properties)
     mean /= N;
 
     // Estimate sample covariance
-    Matrix5f cov = Matrix5f::Zero();
+    Matrix5 cov = Matrix5::Zero();
     for (auto const& s : list)
     {
         std::string imageFile = properties.Paths.image + s + properties.FileExtensions.image;
@@ -442,7 +442,7 @@ bool estimateSpDistance(UtilProperties const& properties)
             Label l = gtSp.atSite(i);
             auto coords = helper::coord::siteTo2DCoordinate(i, cielab.width());
 
-            Vector5f vec;
+            Vector5 vec;
             vec(0) = cielab.atSite(i, 0) - clusters[l].mean.r();
             vec(1) = cielab.atSite(i, 1) - clusters[l].mean.g();
             vec(2) = cielab.atSite(i, 2) - clusters[l].mean.b();

@@ -30,14 +30,14 @@ public:
      * @param numIter Amount of iterations to do. If 0, run until convergence.
      * @return Resulting labeling and segmentation
      */
-    InferenceResult run(size_t numIter = 0);
+    InferenceResult run(uint32_t numIter = 0);
 
     /**
      * Does inference and saves detailed results
      * @param numIter Amount of iterations to do. If 0, run until convergence.
      * @return Detailed results
      */
-    InferenceResultDetails runDetailed(size_t numIter = 0);
+    InferenceResultDetails runDetailed(uint32_t numIter = 0);
 
 private:
     EnergyFun m_energy;
@@ -46,7 +46,7 @@ private:
     CieLabImage const& m_color;
     float const m_eps = 1e3f;
 
-    float computeInitialEnergy(LabelImage const& labeling) const;
+    Cost computeInitialEnergy(LabelImage const& labeling) const;
 };
 
 template<typename EnergyFun, template<typename> class Optimizer>
@@ -60,17 +60,17 @@ InferenceIterator<EnergyFun, Optimizer>::InferenceIterator(EnergyFun e, Label nu
 }
 
 template<typename EnergyFun, template<typename> class Optimizer>
-InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(size_t numIter)
+InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
 {
     InferenceResult result;
     Clusterer<EnergyFun> clusterer(m_energy);
     Optimizer<EnergyFun> optimizer(m_energy);
 
-    float energy = std::numeric_limits<float>::max();
-    float lastEnergy = energy;
+    Cost energy = std::numeric_limits<Cost>::max();
+    Cost lastEnergy = energy;
     //result.labeling = m_energy.unaryFile().maxLabeling();
     result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
-    for (size_t iter = 0; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    for (uint32_t iter = 0; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
     {
         lastEnergy = energy;
 
@@ -94,7 +94,7 @@ InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(size_t numIter)
 }
 
 template<typename EnergyFun, template<typename> class Optimizer>
-InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(size_t numIter)
+InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(uint32_t numIter)
 {
     Clusterer<EnergyFun> clusterer(m_energy);
     Optimizer<EnergyFun> optimizer(m_energy);
@@ -103,15 +103,15 @@ InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(size
 
     //LabelImage maxLabeling = m_energy.unaryFile().maxLabeling();
     LabelImage maxLabeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
-    float initialEnergy = computeInitialEnergy(maxLabeling);
-    float lastEnergy = initialEnergy;
-    float energy = initialEnergy;
+    Cost initialEnergy = computeInitialEnergy(maxLabeling);
+    Cost lastEnergy = initialEnergy;
+    Cost energy = initialEnergy;
     result.energy.push_back(initialEnergy);
 
     LabelImage spLabeling;
     LabelImage classLabeling = maxLabeling;
-    size_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    uint32_t iter = 0;
+    for (; (numIter > 0) ? (iter < numIter) : (std::abs(lastEnergy - energy) >= m_eps || iter == 0); ++iter)
     {
         lastEnergy = energy;
 
@@ -136,11 +136,11 @@ InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(size
 }
 
 template<typename EnergyFun, template<typename> class Optimizer>
-float InferenceIterator<EnergyFun, Optimizer>::computeInitialEnergy(LabelImage const& labeling) const
+Cost InferenceIterator<EnergyFun, Optimizer>::computeInitialEnergy(LabelImage const& labeling) const
 {
     LabelImage fakeSpLabeling(m_color.width(), m_color.height());
     Cluster c(&m_energy);
-    for (size_t i = 0; i < m_color.pixels(); ++i)
+    for (SiteId i = 0; i < m_color.pixels(); ++i)
     {
         c.accumFeature += Feature(m_color, i);
         c.labelFrequencies[labeling.atSite(i)]++;
@@ -150,7 +150,7 @@ float InferenceIterator<EnergyFun, Optimizer>::computeInitialEnergy(LabelImage c
     c.updateLabel();
     std::vector<Cluster> fakeClusters(1, c);
 
-    float energy = m_energy.giveEnergy(labeling, m_color, fakeSpLabeling, fakeClusters);
+    Cost energy = m_energy.giveEnergy(labeling, m_color, fakeSpLabeling, fakeClusters);
     return energy;
 }
 

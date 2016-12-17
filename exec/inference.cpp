@@ -83,7 +83,7 @@ int main()
     }
 
     // Read in feature weights
-    Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
+    Matrix5 featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
     featureWeights = featureWeights.inverse();
     std::cout << "Used feature weights:" << std::endl;
     std::cout << featureWeights << std::endl;

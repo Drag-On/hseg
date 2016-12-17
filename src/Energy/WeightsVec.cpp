@@ -46,7 +46,7 @@ Weight WeightsVec::pairwise(Label l1, Label l2) const
     // Pairwise indices are stored as upper triangular matrix
     size_t const index = l1 + l2 * (l2 - 1) / 2;
     assert(index < m_pairwiseWeights.size());
-    return std::max(0.f, m_pairwiseWeights[index]);
+    return std::max<Weight>(0.f, m_pairwiseWeights[index]);
 }
 
 Weight WeightsVec::classWeight(Label l1, Label l2) const
@@ -62,10 +62,10 @@ Weight WeightsVec::classWeight(Label l1, Label l2) const
     // Pairwise indices are stored as upper triangular matrix
     size_t const index = l1 + l2 * (l2 - 1) / 2;
     assert(index < m_classWeights.size());
-    return std::max(0.f, m_classWeights[index]);
+    return std::max<Weight>(0.f, m_classWeights[index]);
 }
 
-Weight& WeightsVec::pairwise(Label l1, Label l2)
+float& WeightsVec::pairwise(Label l1, Label l2)
 {
     // Diagonal is always zero
     assert(l1 != l2);
@@ -80,7 +80,7 @@ Weight& WeightsVec::pairwise(Label l1, Label l2)
     return m_pairwiseWeights[index];
 }
 
-Weight& WeightsVec::classWeight(Label l1, Label l2)
+float& WeightsVec::classWeight(Label l1, Label l2)
 {
     // Diagonal is always zero
     assert(l1 != l2);
@@ -178,9 +178,9 @@ Weight WeightsVec::sumSuperpixel() const
     return result;
 }
 
-float WeightsVec::sqNorm() const
+Weight WeightsVec::sqNorm() const
 {
-    float sqNorm = 0;
+    Weight sqNorm = 0;
 
     for (size_t i = 0; i < m_unaryWeights.size(); ++i)
         sqNorm += m_unaryWeights[i] * m_unaryWeights[i];
@@ -278,17 +278,17 @@ bool WeightsVec::hasPairwiseWeight() const
     return hasPairwise;
 }
 
-std::vector<Weight>& WeightsVec::unaryWeights()
+std::vector<float>& WeightsVec::unaryWeights()
 {
     return m_unaryWeights;
 }
 
-std::vector<Weight>& WeightsVec::pairwiseWeights()
+std::vector<float>& WeightsVec::pairwiseWeights()
 {
     return m_pairwiseWeights;
 }
 
-std::vector<Weight>& WeightsVec::classWeights()
+std::vector<float>& WeightsVec::classWeights()
 {
     return m_classWeights;
 }
@@ -298,10 +298,10 @@ void WeightsVec::clampToFeasible()
     // All values are permitted for unary weights
     // Pairwise must be positive
     for(auto& e : m_pairwiseWeights)
-        e = std::max(0.f, e);
+        e = std::max<Weight>(0.f, e);
     // Class weights must be positive
     for(auto& e : m_classWeights)
-        e = std::max(0.f, e);
+        e = std::max<Weight>(0.f, e);
     // Feature weights must be at least 1
-    m_featureWeight = std::max(1.f, m_featureWeight);
+    m_featureWeight = std::max<Weight>(1.f, m_featureWeight);
 }

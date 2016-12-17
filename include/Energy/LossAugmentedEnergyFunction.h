@@ -20,12 +20,12 @@ public:
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      * @param groundTruth Ground truth image. The reference must stay valid as long as this object persists.
      */
-    LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq,
-                                Matrix5f const& featureWeights, LabelImage const& groundTruth);
+    LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, Cost pairwiseSigmaSq,
+                                Matrix5 const& featureWeights, LabelImage const& groundTruth);
 
-    inline float unaryCost(size_t i, Label l) const
+    inline Cost unaryCost(size_t i, Label l) const
     {
-        float loss = 0;
+        Cost loss = 0;
         if (m_groundTruth.atSite(i) != l && m_groundTruth.atSite(i) < m_unaryScores.classes())
             loss = m_lossFactor;
 
@@ -35,7 +35,7 @@ public:
     /**
      * @return Loss of a single misclassified pixel on this image
      */
-    float lossFactor();
+    Cost lossFactor();
 
     /**
      * Computes the loss of a labeling
@@ -45,8 +45,8 @@ public:
      * @param numClasses Amount of classes
      * @return The loss
      */
-    static float
-    computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, float lossFactor, size_t numClasses);
+    static Cost
+    computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor, Label numClasses);
 
     /**
      * Computes the loss factor on an image
@@ -54,11 +54,11 @@ public:
      * @param numClasses Amount of classes
      * @return The loss factor on this image
      */
-    static float computeLossFactor(LabelImage const& groundTruth, size_t numClasses);
+    static Cost computeLossFactor(LabelImage const& groundTruth, Label numClasses);
 
 private:
     LabelImage const& m_groundTruth;
-    float m_lossFactor;
+    Cost m_lossFactor;
 };
 
 

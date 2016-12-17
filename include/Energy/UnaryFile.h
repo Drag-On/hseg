@@ -66,7 +66,7 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    inline float at(Coord x, Coord y, Label c) const
+    inline Cost at(Coord x, Coord y, Label c) const
     {
         assert(x + (y * m_width) + (c * m_width * m_height) < m_data.size());
         return m_data[x + (y * m_width) + (c * m_width * m_height)];
@@ -78,7 +78,7 @@ public:
      * @param c Class label
      * @return Score of the given combination
      */
-    inline float atSite(SiteId s, Label c) const
+    inline Cost atSite(SiteId s, Label c) const
     {
         assert(s < m_width * m_height);
         assert(s + (c * m_width * m_height) < m_data.size());
@@ -123,12 +123,12 @@ public:
     /**
      * @return The lowest score value in the file
      */
-    float minScore() const;
+    Cost minScore() const;
 
     /**
      * @return The largest score value in the file
      */
-    float maxScore() const;
+    Cost maxScore() const;
 
     /**
      * Shifts all scores into the positive range by subtracting the current minimum

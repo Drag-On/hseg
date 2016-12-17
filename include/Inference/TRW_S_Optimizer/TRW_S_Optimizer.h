@@ -33,7 +33,7 @@ public:
      *          initialize it with the previous result.
      */
     template<typename T>
-    void run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP);
+    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP);
 
     /**
      * @return The computed labeling
@@ -53,11 +53,11 @@ TRW_S_Optimizer<EnergyFun>::TRW_S_Optimizer(EnergyFun const& energy) noexcept
 
 template<typename EnergyFun>
 template<typename T>
-void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, size_t numSP)
+void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP)
 {
-    size_t numPx = img.pixels();
-    size_t numNodes = numPx + numSP;
-    size_t numClasses = m_energy.numClasses();
+    SiteId numPx = img.pixels();
+    SiteId numNodes = numPx + numSP;
+    Label numClasses = m_energy.numClasses();
 
     // Set up the graph
     TypeGeneral::GlobalSize globalSize;
@@ -67,19 +67,19 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
     nodeIds.reserve(numNodes);
 
     // Unaries
-    for (size_t i = 0; i < numNodes; ++i)
+    for (SiteId i = 0; i < numNodes; ++i)
     {
         // Unary confidences
         std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
         if (i < numPx) // Only nodes that represent pixels have unaries.
-            for (size_t l = 0; l < numClasses; ++l)
+            for (Label l = 0; l < numClasses; ++l)
                 confidences[l] = m_energy.unaryCost(i, l);
         auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
         nodeIds.push_back(id);
     }
 
     // Pairwise
-    for (size_t i = 0; i < numPx; ++i)
+    for (SiteId i = 0; i < numPx; ++i)
     {
         auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
 
@@ -90,14 +90,14 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
             decltype(coords) coordsD = {coords.x(), coords.y() + 1};
             if (coordsR.x() < img.width())
             {
-                size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
+                SiteId siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
                 std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
-                float pxCost = m_energy.pairwisePixelWeight(img, i, siteR);
-                for(size_t l1 = 0; l1 < numClasses; ++l1)
+                Cost pxCost = m_energy.pairwisePixelWeight(img, i, siteR);
+                for(Label l1 = 0; l1 < numClasses; ++l1)
                 {
-                    for(size_t l2 = 0; l2 < l1; ++l2)
+                    for(Label l2 = 0; l2 < l1; ++l2)
                     {
-                        float cost = m_energy.pairwiseClassWeight(l1, l2);
+                        Cost cost = m_energy.pairwiseClassWeight(l1, l2);
                         costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = pxCost * cost;
                     }
                 }
@@ -106,14 +106,14 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
             }
             if (coordsD.y() < img.height())
             {
-                size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
+                SiteId siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
                 std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
-                float pxCost = m_energy.pairwisePixelWeight(img, i, siteD);
-                for(size_t l1 = 0; l1 < numClasses; ++l1)
+                Cost pxCost = m_energy.pairwisePixelWeight(img, i, siteD);
+                for(Label l1 = 0; l1 < numClasses; ++l1)
                 {
-                    for(size_t l2 = 0; l2 < l1; ++l2)
+                    for(Label l2 = 0; l2 < l1; ++l2)
                     {
-                        float cost = m_energy.pairwiseClassWeight(l1, l2);
+                        Cost cost = m_energy.pairwiseClassWeight(l1, l2);
                         costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = pxCost * cost;
                     }
                 }
@@ -123,13 +123,13 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
         }
 
         // Set up connection to auxiliary nodes
-        size_t auxSite = sp.atSite(i) + numPx;
+        SiteId auxSite = sp.atSite(i) + numPx;
         std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
-        for(size_t l1 = 0; l1 < numClasses; ++l1)
+        for(Label l1 = 0; l1 < numClasses; ++l1)
         {
-            for(size_t l2 = 0; l2 < l1; ++l2)
+            for(Label l2 = 0; l2 < l1; ++l2)
             {
-                float cost = m_energy.classDistance(l1, l2);
+                Cost cost = m_energy.classDistance(l1, l2);
                 costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = cost;
             }
         }
@@ -145,7 +145,7 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
 
     // Copy over result
     m_labeling = LabelImage(img.width(), img.height());
-    for (size_t i = 0; i < numPx; ++i)
+    for (SiteId i = 0; i < numPx; ++i)
         m_labeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
 
 }

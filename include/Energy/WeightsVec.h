@@ -19,17 +19,17 @@ class WeightsVec
 {
 private:
     Label m_numLabels;
-    std::vector<Weight> m_unaryWeights;
-    std::vector<Weight> m_pairwiseWeights;
-    Weight m_featureWeight;
-    std::vector<Weight> m_classWeights;
+    std::vector<float> m_unaryWeights;
+    std::vector<float> m_pairwiseWeights;
+    float m_featureWeight;
+    std::vector<float> m_classWeights;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);
 
-    Weight& pairwise(Label l1, Label l2);
+    float& pairwise(Label l1, Label l2);
 
-    Weight& classWeight(Label l1, Label l2);
+    float& classWeight(Label l1, Label l2);
 
 public:
     /**
@@ -79,7 +79,7 @@ public:
      */
     inline Weight feature() const
     {
-        return std::max(0.f, m_featureWeight);
+        return std::max<Weight>(0.f, m_featureWeight);
     }
 
     /**
@@ -113,7 +113,7 @@ public:
     /**
      * @return The squared norm of the vector
      */
-    float sqNorm() const;
+    Weight sqNorm() const;
 
     /**
      * Clamps all values to the closest feasible value
@@ -162,11 +162,11 @@ public:
      */
     WeightsVec& operator*=(WeightsVec const& other);
 
-    std::vector<Weight>& unaryWeights();
+    std::vector<float>& unaryWeights();
 
-    std::vector<Weight>& pairwiseWeights();
+    std::vector<float>& pairwiseWeights();
 
-    std::vector<Weight>& classWeights();
+    std::vector<float>& classWeights();
 };
 
 std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights);

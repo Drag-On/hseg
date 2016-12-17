@@ -5,7 +5,7 @@
 #include "Energy/LossAugmentedEnergyFunction.h"
 
 LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights,
-                                                         float pairwiseSigmaSq, Matrix5f const& featureWeights,
+                                                         Cost pairwiseSigmaSq, Matrix5 const& featureWeights,
                                                          LabelImage const& groundTruth)
         : EnergyFunction(unaries, weights, pairwiseSigmaSq, featureWeights),
           m_groundTruth(groundTruth)
@@ -13,26 +13,26 @@ LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unarie
     m_lossFactor = computeLossFactor(groundTruth, unaries.classes());
 }
 
-float LossAugmentedEnergyFunction::lossFactor()
+Cost LossAugmentedEnergyFunction::lossFactor()
 {
     return m_lossFactor;
 }
 
-float
-LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, float lossFactor,
-                                         size_t numClasses)
+Cost
+LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor,
+                                         Label numClasses)
 {
-    float loss = 0;
-    for (size_t i = 0; i < labeling.pixels(); ++i)
+    Cost loss = 0;
+    for (SiteId i = 0; i < labeling.pixels(); ++i)
         if (groundTruth.atSite(i) != labeling.atSite(i) && groundTruth.atSite(i) < numClasses)
             loss += lossFactor;
     return loss;
 }
 
-float LossAugmentedEnergyFunction::computeLossFactor(LabelImage const& groundTruth, size_t numClasses)
+Cost LossAugmentedEnergyFunction::computeLossFactor(LabelImage const& groundTruth, Label numClasses)
 {
-    float lossFactor = 0;
-    for (size_t i = 0; i < groundTruth.pixels(); ++i)
+    Cost lossFactor = 0;
+    for (SiteId i = 0; i < groundTruth.pixels(); ++i)
         if (groundTruth.atSite(i) < numClasses)
             lossFactor++;
     lossFactor = 1e8f / lossFactor;

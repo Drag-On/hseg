@@ -65,7 +65,7 @@ struct SampleResult
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename,
                            helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, Label numClasses,
-                           WeightsVec const& curWeights, Matrix5f const& featureWeights)
+                           WeightsVec const& curWeights, Matrix5 const& featureWeights)
 {
     SampleResult sampleResult;
     Label numClusters = properties.numClusters;
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max<Label>(256ul, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(numClusters);
 
-    Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    Matrix5 featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
     if(featureWeights.isIdentity())
     {

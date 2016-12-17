@@ -33,7 +33,7 @@ PROPERTIES_DEFINE(InferenceBatch,
 
 bool process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
              WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
-             Matrix5f const& featureWeights)
+             Matrix5 const& featureWeights)
 {
     // Load images
     RGBImage rgb;
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     std::cout << weights << std::endl;
 
     // Load feature weights
-    Matrix5f featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
+    Matrix5 featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
     featureWeights = featureWeights.inverse();
     std::cout << "Used feature weights:" << std::endl;
     std::cout << featureWeights << std::endl;

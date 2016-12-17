@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
         return INVALID_UNARY;
     }
 
-    Matrix5f featureWeights = readFeatureWeights(properties.featureWeightFile);
+    Matrix5 featureWeights = readFeatureWeights(properties.featureWeightFile);
     featureWeights = featureWeights.inverse();
     if(featureWeights.isIdentity())
     {

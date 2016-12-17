@@ -175,7 +175,7 @@ GraphOptimizer<EnergyFun>::PairwiseCost<T>::compute(GraphOptimizer<EnergyFun>::P
         std::pair<SiteID, SiteID> pair{s1, s2};
         assert(m_pixelEnergies.count(pair) != 0);
         EnergyTermType pxEnergy = m_pEnergy->pairwisePixelWeight(m_color, s1, s2);
-        float classWeight = m_pEnergy->pairwiseClassWeight(l1, l2);
+        EnergyTermType classWeight = m_pEnergy->pairwiseClassWeight(l1, l2);
         return std::round(pxEnergy * classWeight);
     }
     else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight

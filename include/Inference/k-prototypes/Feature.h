@@ -15,7 +15,7 @@
 class Feature
 {
 private:
-    Eigen::Matrix<float, 5, 1> m_features;
+    Eigen::Matrix<Cost, 5, 1> m_features;
 public:
     /**
      * Default constructor
@@ -28,7 +28,7 @@ public:
      * @param site Site
      */
     template<typename T>
-    Feature(Image<T, 3> const& color, size_t site)
+    Feature(Image<T, 3> const& color, SiteId site)
     {
         auto coords = helper::coord::siteTo2DCoordinate(site, color.width());
         m_features << color.atSite(site, 0), color.atSite(site, 1), color.atSite(site, 2), coords.x(), coords.y();
@@ -98,7 +98,7 @@ public:
      */
     inline Feature& operator/=(size_t count)
     {
-        m_features /= static_cast<float>(count);
+        m_features /= static_cast<Cost>(count);
         return *this;
     }
 
@@ -135,7 +135,7 @@ public:
     /**
      * @return X coordinate
      */
-    inline float x() const
+    inline Cost x() const
     {
         return m_features(3);
     }
@@ -143,7 +143,7 @@ public:
     /**
      * @return Y coordinate
      */
-    inline float y() const
+    inline Cost y() const
     {
         return m_features(4);
     }
@@ -151,7 +151,7 @@ public:
     /**
      * @return R component
      */
-    inline float r() const
+    inline Cost r() const
     {
         return m_features(0);
     }
@@ -159,7 +159,7 @@ public:
     /**
      * @return G component
      */
-    inline float g() const
+    inline Cost g() const
     {
         return m_features(1);
     }
@@ -167,12 +167,12 @@ public:
     /**
      * @return B component
      */
-    inline float b() const
+    inline Cost b() const
     {
         return m_features(2);
     }
 
-    inline Eigen::Matrix<float, 5, 1> const& vec() const
+    inline Eigen::Matrix<Cost, 5, 1> const& vec() const
     {
         return m_features;
     }

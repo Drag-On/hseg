@@ -11,9 +11,10 @@
 #include <Inference/k-prototypes/Cluster.h>
 #include "WeightsVec.h"
 #include <Eigen/Dense>
+#include "typedefs.h"
 
-using Matrix5f = Eigen::Matrix<float, 5, 5>;
-using Vector5f = Eigen::Matrix<float, 5, 1>;
+using Matrix5 = Eigen::Matrix<Cost, 5, 5>;
+using Vector5 = Eigen::Matrix<Cost, 5, 1>;
 
 /**
  * Provides functionality to compute (partial) energies of the target energy function.
@@ -29,7 +30,7 @@ public:
      * @param pairwiseSigmaSq Sigma-Square inside of the exponential
      * @param featureWeights Matrix of feature weights
      */
-    EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, float pairwiseSigmaSq, Matrix5f const& featureWeights);
+    EnergyFunction(UnaryFile const& unaries, WeightsVec const& weights, Cost pairwiseSigmaSq, Matrix5 const& featureWeights);
 
     /**
      * Computes the overall energy
@@ -40,7 +41,7 @@ public:
      * @return The energy of the given configuration
      */
     template<typename T>
-    float giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+    Cost giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                      std::vector<Cluster> const& clusters) const;
 
     /**
@@ -99,7 +100,7 @@ public:
      * @param l Class label to compute score for
      * @return The cost of assigning class label \p l to pixel \p i
      */
-    inline float unaryCost(size_t i, Label l) const
+    inline Cost unaryCost(SiteId i, Label l) const
     {
         if(l >= m_unaryScores.classes())
             return 0;
@@ -115,7 +116,7 @@ public:
      * @return The partial cost
      */
     template<typename T>
-    float pairwisePixelWeight(ColorImage<T> const& img, size_t i, size_t j) const;
+    Cost pairwisePixelWeight(ColorImage<T> const& img, SiteId i, SiteId j) const;
 
     /**
      * Computes the partial cost of a pairwise connection as given by the labels of the pixels
@@ -123,7 +124,7 @@ public:
      * @param l2 Second label
      * @return The partial cost
      */
-    inline float pairwiseClassWeight(Label l1, Label l2) const
+    inline Cost pairwiseClassWeight(Label l1, Label l2) const
     {
         if (l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
             return 0;
@@ -137,10 +138,10 @@ public:
      * @param feature2 The second feature
      * @return The feature distance
      */
-    inline float featureDistance(Feature const& feature, Feature const& feature2) const
+    inline Cost featureDistance(Feature const& feature, Feature const& feature2) const
     {
-        Vector5f f = feature.vec() - feature2.vec();
-        float dist = f.transpose() * m_featureWeights * f;
+        Vector5 f = feature.vec() - feature2.vec();
+        Cost dist = f.transpose() * m_featureWeights * f;
         return m_weights.feature() * dist;
     }
 
@@ -150,7 +151,7 @@ public:
      * @param l2 Second class label
      * @return The class label distance
      */
-    inline float classDistance(Label l1, Label l2) const
+    inline Cost classDistance(Label l1, Label l2) const
     {
         if (l1 == l2 || l1 >= m_unaryScores.classes() || l2 >= m_unaryScores.classes())
             return 0;
@@ -166,7 +167,7 @@ public:
      * @param clusterId Cluster index
      * @return The pixel-to-cluster distance
      */
-    inline float pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, size_t clusterId) const
+    inline Cost pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, Label clusterId) const
     {
         return featureDistance(fPx, cl[clusterId].mean) + classDistance(lPx, cl[clusterId].label);
     }
@@ -178,7 +179,7 @@ public:
      * @return 0 in case the labels are identical, otherwise 1
      */
     template<typename T>
-    inline float simplePotts(T l1, T l2) const;
+    inline Cost simplePotts(T l1, T l2) const;
 
     /**
      * @return The unary file
@@ -199,12 +200,12 @@ public:
 protected:
     UnaryFile const& m_unaryScores;
     WeightsVec const& m_weights;
-    float m_pairWiseSigmaSq;
-    Matrix5f m_featureWeights;
+    Cost m_pairWiseSigmaSq;
+    Matrix5 m_featureWeights;
 };
 
 template<typename T>
-float EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
+Cost EnergyFunction::giveEnergy(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                                  std::vector<Cluster> const& clusters) const
 {
     WeightsVec energy = m_weights;
@@ -216,9 +217,9 @@ template<typename T>
 void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img,
                                                    WeightsVec& energyW) const
 {
-    for (size_t x = 0; x < labeling.width(); ++x)
+    for (Coord x = 0; x < labeling.width(); ++x)
     {
-        for (size_t y = 0; y < labeling.height(); ++y)
+        for (Coord y = 0; y < labeling.height(); ++y)
         {
             Label l = labeling.at(x, y);
             if(x + 1 < labeling.width())
@@ -247,13 +248,13 @@ void EnergyFunction::computePairwiseEnergyByWeight(LabelImage const& labeling, C
 }
 
 template<typename T>
-float EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, size_t i, size_t j) const
+Cost EnergyFunction::pairwisePixelWeight(ColorImage<T> const& img, SiteId i, SiteId j) const
 {
-    float rDiff = img.atSite(i, 0) - img.atSite(j, 0);
-    float gDiff = img.atSite(i, 1) - img.atSite(j, 1);
-    float bDiff = img.atSite(i, 2) - img.atSite(j, 2);
-    float colorDiffNormSq = rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
-    float weight = std::exp(-m_pairWiseSigmaSq * colorDiffNormSq);
+    Cost rDiff = img.atSite(i, 0) - img.atSite(j, 0);
+    Cost gDiff = img.atSite(i, 1) - img.atSite(j, 1);
+    Cost bDiff = img.atSite(i, 2) - img.atSite(j, 2);
+    Cost colorDiffNormSq = rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
+    Cost weight = std::exp(-m_pairWiseSigmaSq * colorDiffNormSq);
     return weight;
 }
 
@@ -261,7 +262,7 @@ template<typename T>
 void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorImage<T> const& img, LabelImage const& sp,
                                              std::vector<Cluster> const& clusters, WeightsVec& energyW) const
 {
-    for (size_t i = 0; i < labeling.pixels(); ++i)
+    for (SiteId i = 0; i < labeling.pixels(); ++i)
     {
         assert(clusters.size() > sp.atSite(i));
 
@@ -291,7 +292,7 @@ WeightsVec EnergyFunction::giveEnergyByWeight(LabelImage const& labeling, ColorI
 }
 
 template<typename T>
-inline float EnergyFunction::simplePotts(T l1, T l2) const
+inline Cost EnergyFunction::simplePotts(T l1, T l2) const
 {
     if (l1 == l2)
         return 0;

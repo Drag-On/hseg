@@ -6,5 +6,5 @@
 
 Feature::Feature()
 {
-    m_features = Eigen::Matrix<float, 5, 1>::Zero();
+    m_features = Eigen::Matrix<Cost, 5, 1>::Zero();
 }
