@@ -13,6 +13,7 @@ PROPERTIES_DEFINE(Accuracy,
                   PROP_DEFINE_A(std::string, predDir, "", -p)
                   PROP_DEFINE_A(std::string, gtDir, "", -g)
                   PROP_DEFINE_A(std::string, outDir, "./", -o)
+                  PROP_DEFINE_A(float, C, 0.1f, -C)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -129,7 +130,7 @@ int main(int argc, char** argv)
         rawPxCorrect += imgRawPxCorrect;
     }
 
-    loss /= fileNames.size();
+    loss *= properties.C / fileNames.size();
 
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;
