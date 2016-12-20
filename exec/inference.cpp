@@ -99,9 +99,8 @@ int main()
 
     std::cout << "Computed " << result.numIter << " iterations (" << t.elapsed<Timer::milliseconds>() << ")" << std::endl;
     std::cout << "Energy after each iteration: ";
-    for(size_t i = 0; i < result.energy.size() - 1; ++i)
-        std::cout << result.energy[i] << ", ";
-    std::cout << result.energy.back() << std::endl;
+    for(size_t i = 0; i < result.energy.size(); ++i)
+        std::cout << i << "\t" << result.energy[i] << std::endl;
 
     // Compute accuracy
     if (useGroundTruth)
