@@ -45,6 +45,7 @@ public:
 private:
     EnergyFun m_energy;
     LabelImage m_labeling;
+    static constexpr GCoptimization::EnergyTermType s_constFactor = 1000; // Used because the optimizer uses integer energies
 
     template<typename T>
     class PairwiseCost : public GCoptimization::SmoothCostFunctor
@@ -114,7 +115,7 @@ void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& 
 
         // Set up unary cost
         for (Label l = 0; l < m_energy.numClasses(); ++l)
-            graph.setDataCost(i, l, m_energy.unaryCost(i, l));
+            graph.setDataCost(i, l, static_cast<GCoptimization::EnergyTermType>(std::round(m_energy.unaryCost(i, l) * s_constFactor)));
     }
 
     // Set up pairwise cost
@@ -176,10 +177,10 @@ GraphOptimizer<EnergyFun>::PairwiseCost<T>::compute(GraphOptimizer<EnergyFun>::P
         assert(m_pixelEnergies.count(pair) != 0);
         EnergyTermType pxEnergy = m_pEnergy->pairwisePixelWeight(m_color, s1, s2);
         EnergyTermType classWeight = m_pEnergy->pairwiseClassWeight(l1, l2);
-        return std::round(pxEnergy * classWeight);
+        return static_cast<EnergyTermType>(std::round(pxEnergy * classWeight * s_constFactor));
     }
     else // Otherwise one of the nodes is an auxilliary node, therefore apply the class weight
-        return std::round(m_pEnergy->classDistance(l1, l2));
+        return static_cast<EnergyTermType>(std::round(m_pEnergy->classDistance(l1, l2) * s_constFactor));
 }
 
 #endif //HSEG_GRAPHOPTIMIZER_H
