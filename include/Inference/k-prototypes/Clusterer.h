@@ -50,6 +50,14 @@ public:
         return m_clustership;
     }
 
+    /**
+     * @return Current clusters
+     */
+    inline std::vector<Cluster> const& clusters() const
+    {
+        return m_clusters;
+    }
+
     template<typename T>
     static std::vector<Cluster>
     computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling, ClusterId numClusters,
@@ -73,14 +81,6 @@ private:
     uint32_t reallocatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
 
     ClusterId findClosestCluster(Feature const& feature, Label classLabel) const;
-
-    /**
-     * @return Current clusters
-     */
-    inline std::vector<Cluster> const& clusters() const
-    {
-        return m_clusters;
-    }
 };
 
 template<typename EnergyFun, typename ClusterId>
