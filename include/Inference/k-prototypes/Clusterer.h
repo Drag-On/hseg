@@ -66,7 +66,6 @@ public:
 private:
     EnergyFun m_energy;
     std::vector<Cluster> m_clusters;
-    std::vector<Feature> m_features;
     LabelImage m_clustership;
     bool m_initialized = false;
     float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
@@ -115,11 +114,7 @@ uint32_t Clusterer<EnergyFun, ClusterId>::run(ClusterId numClusters, Label /* nu
     if(!m_initialized)
     {
         m_clusters.resize(numClusters, Cluster(&m_energy));
-        //m_clusters.reserve(numClusters);
         m_clustership = LabelImage(color.width(), color.height());
-        m_features.reserve(color.pixels());
-        for (SiteId i = 0; i < color.pixels(); ++i)
-            m_features.push_back(Feature(color, i));
 
         initPrototypes(color, labels);
         allocatePrototypes(color, labels);
@@ -183,7 +178,7 @@ void Clusterer<EnergyFun, ClusterId>::allocatePrototypes(ColorImage<T> const& co
 {
     for (SiteId i = 0; i < color.pixels(); ++i)
     {
-        Feature const& curFeature = m_features[i];
+        Feature curFeature(color, i);
         Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
@@ -210,7 +205,7 @@ uint32_t Clusterer<EnergyFun, ClusterId>::reallocatePrototypes(ColorImage<T> con
     uint32_t moves = 0;
     for (SiteId i = 0; i < color.pixels(); ++i)
     {
-        Feature const& curFeature = m_features[i];
+        Feature curFeature(color, i);
         Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
