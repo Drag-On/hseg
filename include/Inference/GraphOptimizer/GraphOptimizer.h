@@ -58,7 +58,6 @@ private:
 
         EnergyFun const* m_pEnergy;
         ColorImage<T> const& m_color;
-        boost::unordered_map<PixelPairType, EnergyTermType/*, helper::hash::hash<PixelPairType>*/> m_pixelEnergies;
 
         PairwiseCost(EnergyFun const& energy, ColorImage<T> const& color);
 
@@ -174,7 +173,6 @@ GraphOptimizer<EnergyFun>::PairwiseCost<T>::compute(GraphOptimizer<EnergyFun>::P
     if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
     {
         std::pair<SiteID, SiteID> pair{s1, s2};
-        assert(m_pixelEnergies.count(pair) != 0);
         Cost pxEnergy = m_pEnergy->pairwisePixelWeight(m_color, s1, s2);
         Cost classWeight = m_pEnergy->pairwiseClassWeight(l1, l2);
         return static_cast<EnergyTermType>(std::round(pxEnergy * classWeight * s_constFactor));
