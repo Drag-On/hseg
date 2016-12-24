@@ -96,6 +96,13 @@ public:
     explicit operator cv::Mat() const;
 
     /**
+     * Compares two images for equality
+     * @param other Other image
+     * @return True if images are identical, otherwise false
+     */
+    bool operator==(Image const& other) const;
+
+    /**
      * Read an image from file
      * @param filename File to read from
      * @return True in case of success, otherwise false
@@ -314,6 +321,12 @@ Image<T, C>::operator cv::Mat() const
     }
 
     return result;
+}
+
+template<typename T, size_t C>
+bool Image<T, C>::operator==(Image<T, C> const& other) const
+{
+    return m_data == other.m_data;
 }
 
 template<typename T, size_t C>
