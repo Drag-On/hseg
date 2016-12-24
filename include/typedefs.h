@@ -9,7 +9,7 @@
 
 using Label = uint16_t;
 using SiteId = uint32_t;
-using Coord = uint16_t;
+using Coord = uint32_t;
 using Cost = float;
 
 #endif //HSEG_TYPEDEFS_H
