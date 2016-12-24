@@ -124,16 +124,15 @@ uint32_t Clusterer<EnergyFun, ClusterId>::run(ClusterId numClusters, Label /* nu
     //float energy = computeEnergy(color, labels);
     //std::cout << "Energy after cluster allocation: " << energy << std::endl;
 
-    uint32_t moves = color.pixels(), lastMoves;
+    uint32_t moves;
     uint32_t iter = 0;
     do
     {
         iter++;
-        lastMoves = moves;
         moves = reallocatePrototypes(color, labels);
 
-        //std::cout << iter << ": moves: " << moves << ", diff: " << std::abs(lastMoves - moves) << ", threshold: " << rgb.pixels() * m_conv << std::endl;
-    } while (std::abs(lastMoves - moves) > color.pixels() * m_conv);
+        //std::cout << iter << ": moves: " << moves << ", threshold: " << color.pixels() * m_conv << std::endl;
+    } while (moves > color.pixels() * m_conv);
 
     //std::cout << "Converged after " << iter << " iterations (up to convergence criterion)" << std::endl;
     //energy = computeEnergy(color, labels);
