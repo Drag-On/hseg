@@ -98,7 +98,7 @@ int main()
     t.pause();
 
     std::cout << "Computed " << result.numIter << " iterations (" << t.elapsed<Timer::milliseconds>() << ")" << std::endl;
-    std::cout << "Energy after each iteration: ";
+    std::cout << "Energy after each iteration: " << std::endl;
     for(size_t i = 0; i < result.energy.size(); ++i)
         std::cout << i << "\t" << result.energy[i] << std::endl;
 
