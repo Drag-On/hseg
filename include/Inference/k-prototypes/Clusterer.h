@@ -24,23 +24,22 @@ public:
      * Constructor
      * @param energy Energy function to optimize with respect to the superpixel segmentation. The reference needs to
      *               stay valid as long as the clusterer exists
+     * @param color Color image
+     * @param labels Initial labeling
+     * @param numClusters Amount of clusters
      */
-    Clusterer(EnergyFun energy);
+    template<typename T>
+    Clusterer(EnergyFun energy, ColorImage<T> const& color, LabelImage const& labels, ClusterId numClusters);
 
     /**
      * Runs the clustering process
-     * @param numClusters Amount of clusters to generate.
-     * @param numLabels Amount of class labels that can occur on the label image
-     * @param color Color image
      * @param labels Label image
      * @returns The amount of iterations that have been done
-     * @tparam T Type of the image data
      * @details The resulting clustering will never have more clusters than specified, but it might well not use all
      *          of them. If this is called multiple times on the same object, the algorithm will be warm-started with
      *          the previous result.
      */
-    template<typename T>
-    uint32_t run(ClusterId numClusters, Label numLabels, ColorImage<T> const& color, LabelImage const& labels);
+    uint32_t run(LabelImage const& labels);
 
     /**
      * @return Clustering result
@@ -67,28 +66,23 @@ private:
     EnergyFun m_energy;
     std::vector<Cluster> m_clusters;
     LabelImage m_clustership;
-    bool m_initialized = false;
-    float m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
+    std::vector<Feature> m_features;
+    float const m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
 
     /**
      * Initializes both clusters and clustership.
-     * @tparam T Type of the color image
-     * @param color Color image
      * @param labels Labeling
      * @param numClusters Amount of clusters
      * @warning This will never terminate if there are less pixels with valid labels than there are cluster centers!
      */
-    template<typename T>
-    void initPrototypes(ColorImage<T> const& color, LabelImage const& labels, ClusterId numClusters);
+    void initPrototypes(LabelImage const& labels, ClusterId numClusters);
 
     /**
      * Updates the clusters according to the clustership
      * @tparam T Color image type
-     * @param color Color image
      * @param labels Labeling
      */
-    template<typename T>
-    void updatePrototypes(ColorImage<T> const& color, LabelImage const& labels);
+    void updatePrototypes(LabelImage const& labels);
 
     /**
      * Updates the clustership according to the clusters
@@ -97,8 +91,7 @@ private:
      * @param labels Labeling
      * @return Amount of pixels that have switched cluster association
      */
-    template<typename T>
-    uint32_t updateClustership(ColorImage<T> const& color, LabelImage const& labels);
+    uint32_t updateClustership(LabelImage const& labels);
 
     /**
      * Computes the clostest cluster according to the energy function
@@ -110,9 +103,21 @@ private:
 };
 
 template<typename EnergyFun, typename ClusterId>
-Clusterer<EnergyFun, ClusterId>::Clusterer(EnergyFun energy)
+template <typename T>
+Clusterer<EnergyFun, ClusterId>::Clusterer(EnergyFun energy, ColorImage<T> const& color, LabelImage const& labels, ClusterId numClusters)
         : m_energy(energy)
 {
+    assert(color.pixels() == labels.pixels());
+
+    // Cache features
+    m_features.reserve(color.pixels());
+    for(SiteId i = 0; i < color.pixels(); ++i)
+        m_features.emplace_back(color, i);
+
+    // Initialize clusters and clustership
+    m_clusters.reserve(numClusters);
+    m_clustership = LabelImage(color.width(), color.height());
+    initPrototypes(labels, numClusters);
 }
 
 template<typename EnergyFun, typename ClusterId>
@@ -133,96 +138,84 @@ ClusterId Clusterer<EnergyFun, ClusterId>::findClosestCluster(Feature const& fea
 }
 
 template<typename EnergyFun, typename ClusterId>
-template<typename T>
-uint32_t Clusterer<EnergyFun, ClusterId>::run(ClusterId numClusters, Label /* numLabels */, ColorImage<T> const& color, LabelImage const& labels)
+uint32_t Clusterer<EnergyFun, ClusterId>::run(LabelImage const& labels)
 {
-    assert(color.pixels() == labels.pixels());
-
-    if(!m_initialized)
-    {
-        m_clusters.reserve(numClusters);
-        m_clustership = LabelImage(color.width(), color.height());
-
-        initPrototypes(color, labels, numClusters);
-        m_initialized = true;
-    }
+    assert(m_features.size() == labels.pixels());
 
     uint32_t moves;
     uint32_t iter = 0;
     do
     {
-
         iter++;
-        updatePrototypes(color, labels);
-        moves = updateClustership(color, labels);
+        updatePrototypes(labels);
+        moves = updateClustership(labels);
 
         //std::cout << iter << ": moves: " << moves << ", threshold: " << color.pixels() * m_conv << std::endl;
-    } while (moves > color.pixels() * m_conv);
+    } while (moves > labels.pixels() * m_conv);
 
     return iter;
 }
 
 template<typename EnergyFun, typename ClusterId>
-template<typename T>
-void Clusterer<EnergyFun, ClusterId>::initPrototypes(ColorImage<T> const& color, LabelImage const& labels, ClusterId numClusters)
+void Clusterer<EnergyFun, ClusterId>::initPrototypes(LabelImage const& labels, ClusterId numClusters)
 {
     struct allocation
     {
-        size_t clusterId;
-        float distance;
-        allocation(size_t id, float dist) : clusterId(id), distance(dist) {}
+        ClusterId clusterId;
+        Cost distance;
+        allocation(size_t id, Cost dist) : clusterId(id), distance(dist) {}
     };
 
     // Randomly select a pixel as initial prototype
     std::default_random_engine generator(0/*std::chrono::system_clock::now().time_since_epoch().count()*/);
-    std::uniform_int_distribution<size_t> distribution(0, color.pixels() - 1);
+    std::uniform_int_distribution<SiteId> distribution(0, labels.pixels() - 1);
     std::vector<allocation> clAlloc; // Distance to closest cluster center
-    clAlloc.reserve(color.pixels());
+    clAlloc.reserve(labels.pixels());
     // Only pick this site if the label is valid. It might be invalid for clustering on ground truth images,
     // where some pixels are marked as "any label".
     // Note that this will never terminate if there are no pixels with valid labels!
     while(true)
     {
-        size_t const site = distribution(generator);
+        SiteId const site = distribution(generator);
         Label const l = labels.atSite(site);
         if(l < m_energy.unaryFile().classes())
         {
             m_clusters.emplace_back(&m_energy);
             m_clusters.back().label = l;
-            m_clusters.back().mean = Feature(color, site);
+            m_clusters.back().mean = m_features[site];
             break;
         }
     }
     // Compute the distance between each object and the newly created cluster center
-    for(size_t i = 0; i < color.pixels(); ++i)
+    for(SiteId i = 0; i < labels.pixels(); ++i)
     {
-        float const dist = m_energy.pixelToClusterDistance(Feature(color, i), labels.atSite(i), m_clusters, 0);
+        Cost const dist = m_energy.pixelToClusterDistance(m_features[i], labels.atSite(i), m_clusters, 0);
         clAlloc.emplace_back(0, dist);
     }
 
     // Pick a new object as the next cluster proportional to the squared distance
-    std::vector<float> weights(color.pixels(), 0.f);
-    for(size_t c = 1; c < numClusters; ++c)
+    std::vector<Cost> weights(labels.pixels(), 0.f);
+    for(ClusterId c = 1; c < numClusters; ++c)
     {
-        size_t n = 0;
-        std::generate(weights.begin(), weights.end(), [&] { float const d = clAlloc[n++].distance; return d * d; });
-        std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
+        SiteId n = 0;
+        std::generate(weights.begin(), weights.end(), [&] { Cost const d = clAlloc[n++].distance; return d * d; });
+        std::discrete_distribution<SiteId> distribution(weights.begin(), weights.end());
         while(true)
         {
-            size_t const site = distribution(generator);
+            SiteId const site = distribution(generator);
             Label const l = labels.atSite(site);
             if(l < m_energy.unaryFile().classes())
             {
                 m_clusters.emplace_back(&m_energy);
                 m_clusters.back().label = l;
-                m_clusters.back().mean = Feature(color, site);
+                m_clusters.back().mean = m_features[site];
                 break;
             }
         }
         // Recompute cluster distances
-        for(size_t i = 0; i < color.pixels(); ++i)
+        for(SiteId i = 0; i < labels.pixels(); ++i)
         {
-            float const dist = m_energy.pixelToClusterDistance(Feature(color, i), labels.atSite(i), m_clusters, c);
+            Cost const dist = m_energy.pixelToClusterDistance(m_features[i], labels.atSite(i), m_clusters, c);
             if(dist < clAlloc[i].distance)
             {
                 clAlloc[i].distance = dist;
@@ -232,13 +225,13 @@ void Clusterer<EnergyFun, ClusterId>::initPrototypes(ColorImage<T> const& color,
     }
 
     // Allocate prototypes
-    for (size_t i = 0; i < color.pixels(); ++i)
+    for (SiteId i = 0; i < labels.pixels(); ++i)
     {
-        Feature curFeature(color, i);
+        Feature const& curFeature = m_features[i];
         Label curLabel = labels.atSite(i);
 
         // Compute closest cluster
-        size_t minCluster = clAlloc[i].clusterId;
+        ClusterId minCluster = clAlloc[i].clusterId;
 
         // Assign to cluster
         m_clustership.atSite(i) = minCluster;
@@ -258,8 +251,7 @@ void Clusterer<EnergyFun, ClusterId>::initPrototypes(ColorImage<T> const& color,
 }
 
 template<typename EnergyFun, typename ClusterId>
-template<typename T>
-void Clusterer<EnergyFun, ClusterId>::updatePrototypes(ColorImage<T> const& color, LabelImage const& labels)
+void Clusterer<EnergyFun, ClusterId>::updatePrototypes(LabelImage const& labels)
 {
     // Clear all clusters
     for(auto& c : m_clusters)
@@ -269,10 +261,10 @@ void Clusterer<EnergyFun, ClusterId>::updatePrototypes(ColorImage<T> const& colo
         c.size = 0;
     }
     // Update them
-    for (SiteId i = 0; i < color.pixels(); ++i)
+    for (SiteId i = 0; i < labels.pixels(); ++i)
     {
         ClusterId const cId = m_clustership.atSite(i);
-        Feature curFeature(color, i);
+        Feature const& curFeature = m_features[i];
         Label curLabel = labels.atSite(i);
         m_clusters[cId].size++;
         m_clusters[cId].accumFeature += curFeature;
@@ -287,14 +279,13 @@ void Clusterer<EnergyFun, ClusterId>::updatePrototypes(ColorImage<T> const& colo
 }
 
 template<typename EnergyFun, typename ClusterId>
-template<typename T>
-uint32_t Clusterer<EnergyFun, ClusterId>::updateClustership(ColorImage<T> const& color, LabelImage const& labels)
+uint32_t Clusterer<EnergyFun, ClusterId>::updateClustership(LabelImage const& labels)
 {
     uint32_t moves = 0;
 
-    for(SiteId i = 0; i < color.pixels(); ++i)
+    for(SiteId i = 0; i < labels.pixels(); ++i)
     {
-        Feature curFeature(color, i);
+        Feature const& curFeature = m_features[i];
         Label curLabel = labels.atSite(i);
 
         // Compute closest cluster

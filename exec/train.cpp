@@ -96,8 +96,8 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
 
     // Find superpixels that best explain the ground truth
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    Clusterer<EnergyFunction> clusterer(trainingEnergy);
-    clusterer.run(numClusters, numClasses, cieLabImage, groundTruth);
+    Clusterer<EnergyFunction> clusterer(trainingEnergy, cieLabImage, groundTruth, numClusters);
+    clusterer.run(groundTruth);
     LabelImage const& bestSp = clusterer.clustership();
 
     // Predict with loss-augmented energy
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
-    WeightsVec curWeights(numClasses, 100, 100, 100, 100);
+    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
 

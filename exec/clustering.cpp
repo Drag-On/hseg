@@ -64,8 +64,8 @@ int process(std::string const& imgFile, std::string const& labelFile, Clustering
 
     // Do the clustering
     Timer t(true);
-    Clusterer<EnergyFunction> clusterer(energy);
-    size_t iter = clusterer.run(properties.numClusters, numClasses, cieLab, labeling);
+    Clusterer<EnergyFunction> clusterer(energy, cieLab, labeling, properties.numClusters);
+    size_t iter = clusterer.run(labeling);
     t.pause();
 
     std::cout << "Converged after " << iter << " iterations (" << t.elapsed<Timer::milliseconds>() << ")" << std::endl;

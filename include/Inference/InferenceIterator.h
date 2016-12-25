@@ -63,19 +63,21 @@ template<typename EnergyFun, template<typename> class Optimizer>
 InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
 {
     InferenceResult result;
-    Clusterer<EnergyFun> clusterer(m_energy);
-    Optimizer<EnergyFun> optimizer(m_energy);
 
     Cost energy = std::numeric_limits<Cost>::max();
     Cost lastEnergy = energy;
     //result.labeling = m_energy.unaryFile().maxLabeling();
     result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
+
+    Clusterer<EnergyFun> clusterer(m_energy, m_color, result.labeling, m_numClusters);
+    Optimizer<EnergyFun> optimizer(m_energy);
+
     for (uint32_t iter = 0; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
     {
         lastEnergy = energy;
 
         // Update superpixels using the latest class labeling
-        clusterer.run(m_numClusters, m_numClasses, m_color, result.labeling);
+        clusterer.run(result.labeling);
         result.superpixels = clusterer.clustership();
 
         // Update class labeling using the latest superpixels
@@ -92,9 +94,6 @@ InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
 template<typename EnergyFun, template<typename> class Optimizer>
 InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(uint32_t numIter)
 {
-    Clusterer<EnergyFun> clusterer(m_energy);
-    Optimizer<EnergyFun> optimizer(m_energy);
-
     InferenceResultDetails result;
 
     //LabelImage maxLabeling = m_energy.unaryFile().maxLabeling();
@@ -104,6 +103,9 @@ InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(uint
     Cost energy = initialEnergy;
     result.energy.push_back(initialEnergy);
 
+    Clusterer<EnergyFun> clusterer(m_energy, m_color, maxLabeling, m_numClusters);
+    Optimizer<EnergyFun> optimizer(m_energy);
+
     LabelImage spLabeling;
     LabelImage classLabeling = maxLabeling;
     uint32_t iter = 0;
@@ -112,7 +114,7 @@ InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(uint
         lastEnergy = energy;
 
         // Update superpixels using the latest class labeling
-        clusterer.run(m_numClusters, m_numClasses, m_color, classLabeling);
+        clusterer.run(classLabeling);
         spLabeling = clusterer.clustership();
 
         // Update class labeling using the latest superpixels

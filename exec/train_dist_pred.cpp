@@ -114,8 +114,8 @@ int main(int argc, char* argv[])
 
     // Predict superpixels that best explain the ground truth
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    Clusterer<EnergyFunction> clusterer(trainingEnergy);
-    clusterer.run(numClusters, numClasses, cieLabImage, groundTruth);
+    Clusterer<EnergyFunction> clusterer(trainingEnergy, cieLabImage, groundTruth, numClusters);
+    clusterer.run(groundTruth);
     LabelImage const& bestSp = clusterer.clustership();
 
     // Predict with loss-augmented energy
