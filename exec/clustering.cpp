@@ -32,8 +32,7 @@ PROPERTIES_DEFINE(Clustering,
 )
 
 int process(std::string const& imgFile, std::string const& labelFile, ClusteringProperties const& properties,
-            helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, EnergyFunction const& energy,
-            size_t numClasses)
+            helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, EnergyFunction const& energy)
 {
     std::cout << "Processing image " << imgFile << std::endl;
 
@@ -145,11 +144,11 @@ int main()
         {
             std::string imgFile = properties.batch.imgPath + colorFileNames[i] + properties.batch.imgExtension;
             std::string labelFile = properties.batch.labelPath + labelFileNames[i] + properties.batch.labelExtension;
-            process(imgFile, labelFile, properties, cmap, cmap2, energyFun, numClasses);
+            process(imgFile, labelFile, properties, cmap, cmap2, energyFun);
         }
     }
     else
     {
-        return process(properties.image, properties.labeling, properties, cmap, cmap2, energyFun, numClasses);
+        return process(properties.image, properties.labeling, properties, cmap, cmap2, energyFun);
     }
 }
