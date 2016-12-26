@@ -206,6 +206,18 @@ public:
      */
     Image& scaleColorSpace(T min, T max);
 
+    /**
+     * Access the base data
+     * @return Data vector
+     */
+    std::vector<T> const& data() const;
+
+    /**
+     * Access the base data
+     * @return Data vector
+     */
+    std::vector<T>& data();
+
 private:
     Coord m_width = 0;
     Coord m_height = 0;
@@ -456,6 +468,18 @@ void Image<T, C>::rescale(float factor, bool interpolate)
                 at(x, y, c) = color[c];
         }
     }
+}
+
+template<typename T, size_t C>
+std::vector<T> const& Image<T, C>::data() const
+{
+    return m_data;
+}
+
+template<typename T, size_t C>
+std::vector<T>& Image<T, C>::data()
+{
+    return m_data;
 }
 
 #endif //HSEG_IMAGE_H
