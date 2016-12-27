@@ -33,7 +33,7 @@ public:
      *          initialize it with the previous result.
      */
     template<typename T>
-    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP);
+    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP, std::vector<Cluster> const& clusters);
 
     /**
      * @return The computed labeling
@@ -53,7 +53,7 @@ TRW_S_Optimizer<EnergyFun>::TRW_S_Optimizer(EnergyFun const& energy) noexcept
 
 template<typename EnergyFun>
 template<typename T>
-void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP)
+void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP, std::vector<Cluster> const& clusters)
 {
     SiteId numPx = img.pixels();
     SiteId numNodes = numPx + numSP;
@@ -73,7 +73,7 @@ void TRW_S_Optimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const&
         std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
         if (i < numPx) // Only nodes that represent pixels have unaries.
             for (Label l = 0; l < numClasses; ++l)
-                confidences[l] = m_energy.unaryCost(i, l);
+                confidences[l] = m_energy.unaryCost(i, l) + m_energy.classData(i, clusters[sp.atSite(i)].label);
         auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
         nodeIds.push_back(id);
     }
