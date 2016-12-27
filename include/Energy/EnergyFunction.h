@@ -180,7 +180,8 @@ public:
      */
     inline Cost pixelToClusterDistance(Feature const& fPx, Label lPx, std::vector<Cluster> const& cl, Label clusterId) const
     {
-        return featureDistance(fPx, cl[clusterId].mean) + classDistance(lPx, cl[clusterId].label);
+        SiteId s = helper::coord::coordinateToSite(fPx.x(), fPx.y(), m_unaryScores.width());
+        return featureDistance(fPx, cl[clusterId].mean) + classDistance(lPx, cl[clusterId].label) + classData(s, cl[clusterId].label);
     }
 
     /**
