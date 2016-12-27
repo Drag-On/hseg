@@ -4,11 +4,20 @@
 ; List of files to consider
 fileList "imageList.txt"
 
-; Directory containing the predictions
+; Directory containing the predicted labelings
 predDir "/home/jan/Dokumente/Git/hseg/out/labeling/"
+
+; Directory containing the predicted superpixels
+spDir "/home/jan/Dokumente/Git/hseg/out/sp/"
 
 ; Directory containing the ground truth
 gtDir "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
 
+; Weights file to compute loss with
+weightsFile "/home/jan/Dokumente/Git/hseg/out/weights.dat"
+
 ; Training constant
 C 0.1
+
+; Amount of clusters on the predicted superpixels
+numClusters 200

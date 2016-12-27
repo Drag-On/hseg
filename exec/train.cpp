@@ -123,7 +123,8 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
 
     // Compute loss
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(groundTruth, numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, groundTruth, lossFactor, numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.superpixels, groundTruth, lossFactor,
+                                                          numClasses, clusters);
     sampleResult.trainingEnergy += loss;
 
     if(sampleResult.trainingEnergy <= 0)

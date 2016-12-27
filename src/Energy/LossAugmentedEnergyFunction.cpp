@@ -19,13 +19,22 @@ Cost LossAugmentedEnergyFunction::lossFactor()
 }
 
 Cost
-LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor,
-                                         Label numClasses)
+LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& superpixels,
+                                        LabelImage const& groundTruth, Cost lossFactor, Label numClasses,
+                                        std::vector<Cluster> const& clustering)
 {
     Cost loss = 0;
     for (SiteId i = 0; i < labeling.pixels(); ++i)
-        if (groundTruth.atSite(i) != labeling.atSite(i) && groundTruth.atSite(i) < numClasses)
-            loss += lossFactor;
+    {
+        if(groundTruth.atSite(i) < numClasses)
+        {
+            if (groundTruth.atSite(i) != labeling.atSite(i))
+                loss += lossFactor;
+            if (groundTruth.atSite(i) != clustering[superpixels.atSite(i)].label)
+                loss += lossFactor;
+        }
+    }
+
     return loss;
 }
 

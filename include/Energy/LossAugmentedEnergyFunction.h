@@ -32,6 +32,14 @@ public:
         return EnergyFunction::unaryCost(i, l) - loss;
     }
 
+    inline Cost classData(SiteId s, Label l) const
+    {
+        if(m_groundTruth.atSite(s) != l && m_groundTruth.atSite(s) < m_unaryScores.classes())
+            return -m_lossFactor;
+        else
+            return 0;
+    }
+
     /**
      * @return Loss of a single misclassified pixel on this image
      */
@@ -46,7 +54,9 @@ public:
      * @return The loss
      */
     static Cost
-    computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor, Label numClasses);
+    computeLoss(LabelImage const& labeling, LabelImage const& superpixels,
+                LabelImage const& groundTruth, Cost lossFactor, Label numClasses,
+                std::vector<Cluster> const& clustering);
 
     /**
      * Computes the loss factor on an image

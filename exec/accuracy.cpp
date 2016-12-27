@@ -7,13 +7,17 @@
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/path.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
+#include <Inference/k-prototypes/Clusterer.h>
 
 PROPERTIES_DEFINE(Accuracy,
                   PROP_DEFINE_A(std::string, fileList, "", -l)
                   PROP_DEFINE_A(std::string, predDir, "", -p)
+                  PROP_DEFINE_A(std::string, spDir, "", -s)
                   PROP_DEFINE_A(std::string, gtDir, "", -g)
                   PROP_DEFINE_A(std::string, outDir, "./", -o)
+                  PROP_DEFINE_A(std::string, weightsFile, "", -w)
                   PROP_DEFINE_A(float, C, 0.1f, -C)
+                  PROP_DEFINE_A(Label, numClusters, 200, -c)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -36,6 +40,7 @@ enum ErrorCode
     ERR_EMPTY_FILE_LIST,
     ERR_IMAGE_LOAD,
     ERR_IMAGE_MISMATCH,
+    ERR_CANT_READ_WEIGHTS,
 };
 
 struct ImageAccuracyData
@@ -63,8 +68,16 @@ int main(int argc, char** argv)
         return ERR_EMPTY_FILE_LIST;
     }
 
+    WeightsVec weights(true);
+    if(!weights.read(properties.weightsFile))
+    {
+        std::cerr << "Couldn't read weights file \"" << properties.weightsFile << "\"" << std::endl;
+        return ERR_CANT_READ_WEIGHTS;
+    }
+
     size_t const numClasses = 21ul;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
+    helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
     ConfusionMatrix accuracy(numClasses);
     float loss = 0;
     size_t rawPxCorrect = 0;
@@ -76,17 +89,28 @@ int main(int argc, char** argv)
     for(auto const& f : fileNames)
     {
         std::string const& predFilename = properties.predDir + f + ".png";
+        std::string const& spFilename = properties.spDir + f + ".png";
         std::string const& gtFilename = properties.gtDir + f + ".png";
 
         // Load images
-        RGBImage predRGB;
+        RGBImage predRGB, spRGB;
         predRGB.read(predFilename);
         if (predRGB.pixels() == 0)
         {
             std::cerr << "Couldn't load image " << predFilename << std::endl;
             return ERR_IMAGE_LOAD;
         }
+        spRGB.read(spFilename);
+        if (spRGB.pixels() == 0)
+        {
+            std::cerr << "Couldn't load image " << spFilename << std::endl;
+            return ERR_IMAGE_LOAD;
+        }
         LabelImage pred = helper::image::decolorize(predRGB, cmap);
+        LabelImage sp = helper::image::decolorize(spRGB, cmap2);
+
+        EnergyFunction fakeEnergy(UnaryFile{}, weights, 0.f, Matrix5::Identity());
+        auto clusters = Clusterer<EnergyFunction>::computeClusters(sp, predRGB, pred, properties.numClusters, fakeEnergy);
 
         RGBImage gtRGB;
         gtRGB.read(gtFilename);
@@ -110,7 +134,7 @@ int main(int argc, char** argv)
 
         // Compute loss
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses);
-        loss += LossAugmentedEnergyFunction::computeLoss(pred, gt, lossFactor, numClasses);
+        loss += LossAugmentedEnergyFunction::computeLoss(pred, sp, gt, lossFactor, numClasses, clusters);
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) < numClasses)
             {
