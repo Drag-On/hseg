@@ -113,11 +113,11 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::waitKey();*/
 
     auto clusters = Clusterer<EnergyFunction>::computeClusters(result.superpixels, cieLabImage, result.labeling,
-                                                               numClusters, numClasses, trainingEnergy);
+                                                               numClusters, trainingEnergy);
     auto predEnergyCur = trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
     sampleResult.trainingEnergy -= predEnergyCur;
     auto gtClusters = Clusterer<EnergyFunction>::computeClusters(bestSp, cieLabImage, groundTruth, numClusters,
-                                                                 numClasses, trainingEnergy);
+                                                                 trainingEnergy);
     auto gtEnergyCur = trainingEnergy.giveEnergy(groundTruth, cieLabImage, bestSp, gtClusters);
     sampleResult.trainingEnergy += gtEnergyCur;
 

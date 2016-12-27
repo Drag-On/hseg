@@ -386,7 +386,7 @@ bool estimateSpDistance(UtilProperties const& properties)
 
         CieLabImage cielab = image.getCieLabImg();
         auto clusters = Clusterer<EnergyFunction>::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
-                                                                   properties.Constants.numClasses, energy);
+                                                                   energy);
 
         for (size_t i = 0; i < gtSp.pixels(); ++i)
         {
@@ -434,7 +434,7 @@ bool estimateSpDistance(UtilProperties const& properties)
 
         CieLabImage cielab = image.getCieLabImg();
         auto clusters = Clusterer<EnergyFunction>::computeClusters(gtSp, cielab, gt, properties.Constants.numClusters,
-                                                                   properties.Constants.numClasses, energy);
+                                                                   energy);
 
         // Compute sum
         for (size_t i = 0; i < gtSp.pixels(); ++i)

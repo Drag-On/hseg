@@ -3,29 +3,29 @@
 //
 
 #include "Inference/k-prototypes/Cluster.h"
-#include <Energy/EnergyFunction.h>
 
-void Cluster::updateMean()
+void Cluster::update(std::vector<Feature> const& features, LabelImage const& labeling)
 {
-    mean = accumFeature / size;
-}
-
-void Cluster::updateLabel()
-{
-    std::vector<Cost> cost(numClasses, 0.f);
-    Label i = 0;
-    auto computeDist = [&]()
+    mean = Feature();
+    std::vector<Cost> labelCosts(numClasses, 0.f);
+    for (SiteId s : allocated)
     {
-        Cost dist = 0;
-        for (Label l = 0; l < numClasses; ++l)
+        // Sum up features of all allocated sites
+        mean += features[s];
+
+        // Compute cost for picking the cluster label
+        Label const l1 = labeling.atSite(s);
+        if (l1 < numClasses)
         {
-            if (l != i)
-                dist += labelFrequencies[l] * classDistance(l, i);
+            for (Label l2 = 0; l2 < numClasses; ++l2)
+            {
+                Cost localLabelCost = classDistance(l1, l2) + classData(s, l2);
+                labelCosts[l2] += localLabelCost;
+            }
         }
-        ++i;
-        return dist;
-    };
-    std::generate(cost.begin(), cost.end(), computeDist);
-    label = std::distance(cost.begin(), std::min_element(cost.begin(), cost.end()));
+    }
+    if (!allocated.empty())
+        mean /= allocated.size();
+    label = std::distance(labelCosts.begin(), std::min_element(labelCosts.begin(), labelCosts.end()));
 }
 

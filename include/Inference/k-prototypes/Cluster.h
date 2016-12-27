@@ -20,30 +20,24 @@ struct Cluster
     explicit Cluster(EnergyFun const* energy);
 
     Feature mean; //< Mean feature
-    Feature accumFeature; //< Accumulated feature. Divide by size to get the current mean!
-    Label label = 0; //< Dominant class label
-    std::vector<Label> labelFrequencies; //< Label frequencies inside the cluster
-    uint32_t size = 0; //< Amount of attached pixels
+    Label label = 0; //< Assigned class label
+    std::vector<SiteId> allocated; //< Sites allocated to this cluster
     Label numClasses = 0;
     std::function<float(Label,Label)> classDistance;
+    std::function<float(SiteId,Label)> classData;
 
     /**
      * Recomputes the mean feature based on accumulated features and cluster size
      */
-    void updateMean();
-
-    /**
-     * Updates the dominant label based on the label frequencies
-     */
-    void updateLabel();
+    void update(std::vector<Feature> const& features, LabelImage const& labeling);
 };
 
 template<typename EnergyFun>
 Cluster::Cluster(EnergyFun const* energy)
 {
     numClasses = energy->numClasses();
-    labelFrequencies.resize(energy->numClasses(), 0);
     classDistance = [energy](Label l1, Label l2) -> float {return energy->classDistance(l1, l2);};
+    classData = [energy](SiteId s, Label l) -> float {return energy->classData(s, l);};
 }
 
 #endif //HSEG_CLUSTER_H

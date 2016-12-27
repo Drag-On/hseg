@@ -197,6 +197,7 @@ int main()
     featureWeights = featureWeights.inverse();
     EnergyFunction energy(unary, weights, 0.5f, featureWeights);
     auto cmap = helper::image::generateColorMapVOC(numLabels);
+    auto cmap2 = helper::image::generateColorMap(numClusters);
 
     RGBImage rgb, gtRgb;
     rgb.read("data/2007_000129.jpg");
@@ -204,6 +205,37 @@ int main()
     gtRgb.read("data/2007_000129.png");
     LabelImage gt;
     gt = helper::image::decolorize(gtRgb, cmap);
+
+    LabelImage unaryLabeling = unary.maxLabeling();
+
+    Clusterer<EnergyFunction> clusterer(energy, cieLab, unaryLabeling, numClusters);
+    Timer t(true);
+    uint32_t iter1 = clusterer.run(unaryLabeling);
+    t.pause();
+    std::cout << "Finished in " << t.elapsed() << std::endl;
+    LabelImage first = clusterer.clustership();
+    t.reset(true);
+    uint32_t iter2 = clusterer.run(unaryLabeling);
+    t.pause();
+    std::cout << "Finished in " << t.elapsed() << std::endl;
+    LabelImage second = clusterer.clustership();
+
+    std::cout << "first: " << iter1 << ", second: " << iter2 << std::endl;
+    std::cout << "diff: " << first.diff(second) << " / " << first.pixels() << " (" << (float)first.diff(second) / first.pixels() * 100 << "%)" << std::endl;
+
+    RGBImage unaryRgb = helper::image::colorize(unaryLabeling, cmap);
+    RGBImage firstRgb = helper::image::colorize(first, cmap2);
+    RGBImage secondRgb = helper::image::colorize(second, cmap2);
+
+    cv::imshow("RGB", (cv::Mat)rgb);
+    cv::imshow("Unary", (cv::Mat)unaryRgb);
+    cv::imshow("First", (cv::Mat)firstRgb);
+    cv::imshow("Second", (cv::Mat)secondRgb);
+
+    cv::waitKey();
+
+    return 0;
+
 
     size_t const numIter = 10;
     Timer::milliseconds alpha_beta_ms = Timer::milliseconds::zero();

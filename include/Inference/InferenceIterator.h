@@ -135,15 +135,16 @@ template<typename EnergyFun, template<typename> class Optimizer>
 Cost InferenceIterator<EnergyFun, Optimizer>::computeInitialEnergy(LabelImage const& labeling) const
 {
     LabelImage fakeSpLabeling(m_color.width(), m_color.height());
+    std::vector<Feature> features;
     Cluster c(&m_energy);
-    for (SiteId i = 0; i < m_color.pixels(); ++i)
+    features.reserve(m_color.pixels());
+    c.allocated.reserve(m_color.pixels());
+    for(SiteId s = 0; s < m_color.pixels(); ++s)
     {
-        c.accumFeature += Feature(m_color, i);
-        c.labelFrequencies[labeling.atSite(i)]++;
+        c.allocated.emplace_back(s);
+        features.emplace_back(m_color, s);
     }
-    c.size = m_color.pixels();
-    c.updateMean();
-    c.updateLabel();
+    c.update(features, labeling);
     std::vector<Cluster> fakeClusters(1, c);
 
     Cost energy = m_energy.giveEnergy(labeling, m_color, fakeSpLabeling, fakeClusters);

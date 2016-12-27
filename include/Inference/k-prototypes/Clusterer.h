@@ -59,8 +59,9 @@ public:
 
     template<typename T>
     static std::vector<Cluster>
-    computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling, ClusterId numClusters,
-                    Label numClasses, EnergyFun const& energy);
+    computeClusters(LabelImage const& sp, ColorImage<T> const& color,
+                        LabelImage const& labeling, ClusterId numClusters,
+                        EnergyFun const& energy);
 
 private:
     EnergyFun m_energy;
@@ -227,27 +228,15 @@ void Clusterer<EnergyFun, ClusterId>::initPrototypes(LabelImage const& labels, C
     // Allocate prototypes
     for (SiteId i = 0; i < labels.pixels(); ++i)
     {
-        Feature const& curFeature = m_features[i];
-        Label curLabel = labels.atSite(i);
-
         // Compute closest cluster
         ClusterId minCluster = clAlloc[i].clusterId;
 
         // Assign to cluster
         m_clustership.atSite(i) = minCluster;
-        m_clusters[minCluster].size++;
-        m_clusters[minCluster].accumFeature += curFeature;
-        if(curLabel < m_energy.unaryFile().classes())
-        {
-            // Only update for valid labels
-            m_clusters[minCluster].labelFrequencies[curLabel]++;
-        }
+        m_clusters[minCluster].allocated.push_back(i);
     }
     for(auto& cl : m_clusters)
-    {
-        cl.updateMean();
-        cl.updateLabel();
-    }
+        cl.update(m_features, labels);
 }
 
 template<typename EnergyFun, typename ClusterId>
@@ -255,27 +244,15 @@ void Clusterer<EnergyFun, ClusterId>::updatePrototypes(LabelImage const& labels)
 {
     // Clear all clusters
     for(auto& c : m_clusters)
-    {
-        c.accumFeature = Feature();
-        std::fill(c.labelFrequencies.begin(), c.labelFrequencies.end(), 0);
-        c.size = 0;
-    }
+        c.allocated.clear();
     // Update them
     for (SiteId i = 0; i < labels.pixels(); ++i)
     {
         ClusterId const cId = m_clustership.atSite(i);
-        Feature const& curFeature = m_features[i];
-        Label curLabel = labels.atSite(i);
-        m_clusters[cId].size++;
-        m_clusters[cId].accumFeature += curFeature;
-        if(curLabel < m_energy.unaryFile().classes())
-            m_clusters[cId].labelFrequencies[curLabel]++;
+        m_clusters[cId].allocated.push_back(i);
     }
-    for(auto& c : m_clusters)
-    {
-        c.updateMean();
-        c.updateLabel();
-    }
+    for(auto& cl : m_clusters)
+        cl.update(m_features, labels);
 }
 
 template<typename EnergyFun, typename ClusterId>
@@ -305,23 +282,22 @@ uint32_t Clusterer<EnergyFun, ClusterId>::updateClustership(LabelImage const& la
 template<typename EnergyFun, typename ClusterId>
 template<typename T>
 std::vector<Cluster>
-Clusterer<EnergyFun, ClusterId>::computeClusters(LabelImage const& sp, ColorImage<T> const& color, LabelImage const& labeling,
-                                                 ClusterId numClusters, Label numClasses, EnergyFun const& energy)
+Clusterer<EnergyFun, ClusterId>::computeClusters(LabelImage const& sp, ColorImage<T> const& color,
+                                                 LabelImage const& labeling, ClusterId numClusters,
+                                                 EnergyFun const& energy)
 {
+    std::vector<Feature> features;
+    features.reserve(color.pixels());
+    for(SiteId s = 0; s < color.pixels(); ++s)
+        features.emplace_back(color, s);
     std::vector<Cluster> clusters(numClusters, Cluster(&energy));
     for (SiteId i = 0; i < sp.pixels(); ++i)
     {
         assert(sp.atSite(i) < numClusters);
-        clusters[sp.atSite(i)].accumFeature += Feature(color, i);
-        clusters[sp.atSite(i)].size++;
-        if (labeling.atSite(i) < numClasses)
-            clusters[sp.atSite(i)].labelFrequencies[labeling.atSite(i)]++;
+        clusters[sp.atSite(i)].allocated.push_back(i);
     }
-    for (auto& c : clusters)
-    {
-        c.updateMean();
-        c.updateLabel();
-    }
+    for(auto& cl : clusters)
+        cl.update(features, labeling);
     return clusters;
 }
 

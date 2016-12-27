@@ -160,6 +160,17 @@ public:
     }
 
     /**
+     * Additional superpixel data term
+     * @param s Site on the image
+     * @param l Label of the associated cluster
+     * @return The additional data cost
+     */
+    inline Cost classData(SiteId /* s */, Label /* l */) const
+    {
+        return 0;
+    }
+
+    /**
      * Computes the pixel-to-cluster distance
      * @param fPx Feature of the pixel
      * @param lPx Class label of the pixel

@@ -100,10 +100,10 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
 
     EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
     auto clusters = Clusterer<EnergyFunction>::computeClusters(predictionSp, cieLabImage, prediction, numClusters,
-                                                               numClasses, trainingEnergy);
+                                                               trainingEnergy);
     sampleResult.energy -= trainingEnergy.giveEnergy(prediction, cieLabImage, predictionSp, clusters);
     auto gtClusters = Clusterer<EnergyFunction>::computeClusters(groundTruthSp, cieLabImage, groundTruth, numClusters,
-                                                                 numClasses, trainingEnergy);
+                                                                 trainingEnergy);
     sampleResult.energy += trainingEnergy.giveEnergy(groundTruth, cieLabImage, groundTruthSp, gtClusters);
 
     // Compute loss
