@@ -35,7 +35,8 @@ public:
      *          initialize it with the previous result.
      */
     template<typename T>
-    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP);
+    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP,
+             std::vector<Cluster> const& clusters);
 
     /**
      * @return The computed labeling
@@ -80,7 +81,8 @@ inline LabelImage const& GraphOptimizer<EnergyFun>::labeling() const
 
 template<typename EnergyFun>
 template<typename T>
-void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP)
+void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP,
+                                    std::vector<Cluster> const& clusters)
 {
     SiteId numPx = img.pixels();
     SiteId numNodes = numPx + numSP;
@@ -114,7 +116,10 @@ void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& 
 
         // Set up unary cost
         for (Label l = 0; l < m_energy.numClasses(); ++l)
-            graph.setDataCost(i, l, static_cast<GCoptimization::EnergyTermType>(std::round(m_energy.unaryCost(i, l) * s_constFactor)));
+        {
+            Cost cost = m_energy.unaryCost(i, l) + m_energy.classData(i, clusters[sp.atSite(i)].label);
+            graph.setDataCost(i, l, static_cast<GCoptimization::EnergyTermType>(std::round(cost * s_constFactor)));
+        }
     }
 
     // Set up pairwise cost
