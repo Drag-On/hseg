@@ -141,9 +141,17 @@ public:
     inline Cost featureDistance(Feature const& feature, Feature const& feature2) const
     {
         Vector5 f = feature.vec() - feature2.vec();
-        Cost dist = f.transpose() * m_featureWeights * f;
-        return m_weights.feature() * dist;
+        Cost dist = f.transpose() * m_weights.feature() * f;
+        return dist;
     }
+
+    /**
+     * Computes the feature distance by weight vector
+     * @param feature The first feature
+     * @param feature2 The second feature
+     * @param weights Weights vector to write to
+     */
+    void featureDistanceByWeight(Feature const& feature, Feature const& feature2, WeightsVec& weights) const;
 
     /**
      * Computes the class label distance between two class labels
@@ -284,7 +292,7 @@ void EnergyFunction::computeSpEnergyByWeight(LabelImage const& labeling, ColorIm
             auto const& cluster = clusters[sp.atSite(i)];
             if (labeling.atSite(i) != cluster.label)
                 energyW.classWeight(labeling.atSite(i), clusters[sp.atSite(i)].label)++;
-            energyW.m_featureWeight += featureDistance(Feature(img, i), cluster.mean);
+            featureDistanceByWeight(Feature(img, i), cluster.mean, energyW);
         }
     }
 }

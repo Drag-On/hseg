@@ -9,8 +9,10 @@
 #include <vector>
 #include <Image/Image.h>
 #include <typedefs.h>
+#include <Eigen/Dense>
 
 using Weight = Cost;
+using Matrix5 = Eigen::Matrix<Cost, 5, 5>;
 
 /**
  * Contains all (trainable) weights needed by the energy function
@@ -19,9 +21,10 @@ class WeightsVec
 {
 private:
     Label m_numLabels;
+    uint16_t m_numFeatures = 5;
     std::vector<float> m_unaryWeights;
     std::vector<float> m_pairwiseWeights;
-    float m_featureWeight;
+    std::vector<float> m_featureWeights;
     std::vector<float> m_classWeights;
 
     friend class EnergyFunction;
@@ -42,12 +45,12 @@ public:
     /**
      * Initialize some basic weights
      * @param numLabels Amount of class labels
-     * @param unaryWeight Weight of the unary term
-     * @param pairwiseWeight Weight of the pairwise term
-     * @param featureWeight Weight of the feature term
-     * @param labelWeight Label weight
+     * @param unary Weight of the unary term
+     * @param pairwise Weight of the pairwise term
+     * @param feature Weight of the feature term
+     * @param label Label weight
      */
-    WeightsVec(Label numLabels, Weight unaryWeight, Weight pairwiseWeight, Weight featureWeight, Weight labelWeight);
+    WeightsVec(Label numLabels, Weight unary, Weight pairwise, Weight feature, Weight label);
 
     /**
      * Weight of the unary term
@@ -77,9 +80,32 @@ public:
      * Weight of the feature term
      * @return Feature weight
      */
-    inline Weight feature() const
+    inline Matrix5 feature() const
     {
-        return std::max<Weight>(0.f, m_featureWeight);
+        Matrix5 featureWeights;
+        for (uint16_t i = 0; i < m_numFeatures; ++i)
+        {
+            for(uint16_t j = i; j < m_numFeatures; ++j)
+            {
+                assert(i + (j + 1) * j / 2 < m_featureWeights.size());
+                featureWeights(i, j) = featureWeights(j, i) = m_featureWeights[i + (j + 1) * j / 2];
+            }
+        }
+        return featureWeights;
+    }
+
+    /**
+     * Grant access to a single feature weight
+     * @param i First index
+     * @param j Second index
+     * @return Reference to the appropriate entry
+     */
+    inline float& featureWeight(uint16_t i, uint16_t j)
+    {
+        assert(i < m_featureWeights.size() && j < m_featureWeights.size());
+        if(i > j)
+            std::swap(i, j);
+        return m_featureWeights[i + (j + 1) * j / 2];
     }
 
     /**

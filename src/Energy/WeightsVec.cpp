@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <Eigen/Eigenvalues>
 #include "Energy/WeightsVec.h"
 
 WeightsVec::WeightsVec(Label numLabels, bool defaultInit)
@@ -12,25 +13,29 @@ WeightsVec::WeightsVec(Label numLabels, bool defaultInit)
     {
         m_unaryWeights.resize(numLabels, 5.f);
         m_pairwiseWeights.resize((numLabels * numLabels) / 2, 300.f);
-        m_featureWeight = 1.f;
+        m_featureWeights.resize((m_numFeatures + 1) * m_numFeatures / 2, 0.f);
         m_classWeights.resize((numLabels * numLabels) / 2, 30.f);
+        featureWeight(0, 0) = featureWeight(1, 1) = featureWeight(2, 2) = 0.85f;
+        featureWeight(3, 3) = featureWeight(4, 4) = 0.15f;
     }
     else
     {
         m_unaryWeights.resize(numLabels, 0.f);
         m_pairwiseWeights.resize((numLabels * numLabels) / 2, 0.f);
-        m_featureWeight = 0.f;
+        m_featureWeights.resize((m_numFeatures + 1) * m_numFeatures / 2, 0.f);
         m_classWeights.resize((numLabels * numLabels) / 2, 0.f);
+        featureWeight(0, 0) = featureWeight(1, 1) = featureWeight(2, 2) = featureWeight(3, 3) = featureWeight(4, 4) = 1.f;
     }
 }
 
-WeightsVec::WeightsVec(Label numLabels, Weight unaryWeight, Weight pairwiseWeight, Weight featureWeight, Weight labelWeight)
+WeightsVec::WeightsVec(Label numLabels, Weight unary, Weight pairwise, Weight feature, Weight label)
         : m_numLabels(numLabels)
 {
-    m_unaryWeights.resize(numLabels, unaryWeight);
-    m_pairwiseWeights.resize((numLabels * numLabels) / 2, pairwiseWeight);
-    m_featureWeight = featureWeight;
-    m_classWeights.resize((numLabels * numLabels) / 2, labelWeight);
+    m_unaryWeights.resize(numLabels, unary);
+    m_pairwiseWeights.resize((numLabels * numLabels) / 2, pairwise);
+    m_featureWeights.resize((m_numFeatures + 1) * m_numFeatures / 2, 0.f);
+    m_classWeights.resize((numLabels * numLabels) / 2, label);
+    featureWeight(0, 0) = featureWeight(1, 1) = featureWeight(2, 2) = featureWeight(3, 3) = featureWeight(4, 4) = feature;
 }
 
 Weight WeightsVec::pairwise(Label l1, Label l2) const
@@ -103,7 +108,8 @@ WeightsVec& WeightsVec::operator+=(WeightsVec const& other)
         m_unaryWeights[i] += other.m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] += other.m_pairwiseWeights[i];
-    m_featureWeight += other.m_featureWeight;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        m_featureWeights[i] += other.m_featureWeights[i];
     for (size_t i = 0; i < m_classWeights.size(); ++i)
         m_classWeights[i] += other.m_classWeights[i];
 
@@ -118,7 +124,8 @@ WeightsVec& WeightsVec::operator-=(WeightsVec const& other)
         m_unaryWeights[i] -= other.m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] -= other.m_pairwiseWeights[i];
-    m_featureWeight -= other.m_featureWeight;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        m_featureWeights[i] -= other.m_featureWeights[i];
     for (size_t i = 0; i < m_classWeights.size(); ++i)
         m_classWeights[i] -= other.m_classWeights[i];
 
@@ -131,7 +138,8 @@ WeightsVec& WeightsVec::operator*=(float factor)
         m_unaryWeights[i] *= factor;
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] *= factor;
-    m_featureWeight *= factor;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        m_featureWeights[i] *= factor;
     for (size_t i = 0; i < m_classWeights.size(); ++i)
         m_classWeights[i] *= factor;
 
@@ -146,7 +154,8 @@ WeightsVec& WeightsVec::operator*=(WeightsVec const& other)
         m_unaryWeights[i] *= other.m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         m_pairwiseWeights[i] *= other.m_pairwiseWeights[i];
-    m_featureWeight *= other.m_featureWeight;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        m_featureWeights[i] *= other.m_featureWeights[i];
     for (size_t i = 0; i < m_classWeights.size(); ++i)
         m_classWeights[i] *= other.m_classWeights[i];
 
@@ -174,7 +183,8 @@ Weight WeightsVec::sumSuperpixel() const
     Weight result = 0;
     for (size_t i = 0; i < m_classWeights.size(); ++i)
         result += m_classWeights[i];
-    result += m_featureWeight;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        result += m_featureWeights[i];
     return result;
 }
 
@@ -186,7 +196,8 @@ Weight WeightsVec::sqNorm() const
         sqNorm += m_unaryWeights[i] * m_unaryWeights[i];
     for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
         sqNorm += m_pairwiseWeights[i] * m_pairwiseWeights[i];
-    sqNorm += m_featureWeight * m_featureWeight;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        sqNorm += m_featureWeights[i] * m_featureWeights[i];
     for (size_t i = 0; i < m_classWeights.size(); ++i)
         sqNorm += m_classWeights[i] * m_classWeights[i];
 
@@ -205,7 +216,11 @@ std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights)
         stream << weights.m_pairwiseWeights[i] << ", ";
     if (!weights.m_pairwiseWeights.empty())
         stream << weights.m_pairwiseWeights.back() << std::endl;
-    stream << "feature: " << weights.m_featureWeight << std::endl;
+    stream << "feature: ";
+    for (size_t i = 0; i < weights.m_featureWeights.size() - 1; ++i)
+        stream << weights.m_featureWeights[i] << ", ";
+    if(!weights.m_featureWeights.empty())
+        stream << weights.m_featureWeights.back() << std::endl;
     stream << "class: ";
     for (size_t i = 0; i < weights.m_classWeights.size() - 1; ++i)
         stream << weights.m_classWeights[i] << ", ";
@@ -226,7 +241,9 @@ bool WeightsVec::write(std::string const& filename) const
         size_t noPairwise = m_pairwiseWeights.size();
         out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
         out.write(reinterpret_cast<const char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
-        out.write(reinterpret_cast<const char*>(&m_featureWeight), sizeof(m_featureWeight));
+        size_t noFeature = m_featureWeights.size();
+        out.write(reinterpret_cast<const char*>(&noFeature), sizeof(noFeature));
+        out.write(reinterpret_cast<const char*>(m_featureWeights.data()), sizeof(m_featureWeights[0]) * noFeature);
         size_t noClass = m_classWeights.size();
         out.write(reinterpret_cast<const char*>(&noClass), sizeof(noClass));
         out.write(reinterpret_cast<const char*>(m_classWeights.data()), sizeof(m_classWeights[0]) * noClass);
@@ -256,7 +273,10 @@ bool WeightsVec::read(std::string const& filename)
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
         m_pairwiseWeights.resize(noPairwise);
         in.read(reinterpret_cast<char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
-        in.read(reinterpret_cast<char*>(&m_featureWeight), sizeof(m_featureWeight));
+        size_t noFeature;
+        in.read(reinterpret_cast<char*>(&noFeature), sizeof(noFeature));
+        m_featureWeights.resize(noFeature);
+        in.read(reinterpret_cast<char*>(m_featureWeights.data()), sizeof(m_featureWeights[0]) * noFeature);
         size_t noClass;
         in.read(reinterpret_cast<char*>(&noClass), sizeof(noClass));
         m_classWeights.resize(noClass);
@@ -302,6 +322,21 @@ void WeightsVec::clampToFeasible()
     // Class weights must be positive
     for(auto& e : m_classWeights)
         e = std::max<Weight>(0.f, e);
-    // Feature weights must be at least 1
-    m_featureWeight = std::max<Weight>(1.f, m_featureWeight);
+    // Feature weights must be positive semi-definite
+    Matrix5 featureWeights = feature();
+    Eigen::SelfAdjointEigenSolver<Matrix5> es(featureWeights);
+    Matrix5 D = es.eigenvalues().cast<float>().asDiagonal();
+    Matrix5 V = es.eigenvectors().cast<float>();
+    for(uint16_t i = 0; i < es.eigenvalues().size(); ++i)
+        if(D(i, i) < 0)
+            D(0, 0) = 0;
+    Matrix5 fixedFeatureWeights = V * D * V.inverse();
+    for (uint16_t i = 0; i < m_numFeatures; ++i)
+    {
+        for(uint16_t j = i; j < m_numFeatures; ++j)
+        {
+            assert(i + (j + 1) * j / 2 < m_featureWeights.size());
+            m_featureWeights[i + (j + 1) * j / 2] = fixedFeatureWeights(i, j);
+        }
+    }
 }
