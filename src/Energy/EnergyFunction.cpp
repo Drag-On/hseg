@@ -25,9 +25,8 @@ void EnergyFunction::computeUnaryEnergyByWeight(LabelImage const& labeling, Weig
 
 void EnergyFunction::featureDistanceByWeight(Feature const& feature, Feature const& feature2, WeightsVec& weights) const
 {
-    auto f1 = feature.vec();
-    auto f2 = feature2.vec();
-    auto factors = f1 * f2.transpose();
+    Vector5 f = feature.vec() - feature2.vec();
+    Matrix5 factors = f * f.transpose();
     for (uint16_t i = 0; i < 5; ++i)
     {
         for (uint16_t j = 0; j < 5; ++j)
