@@ -69,6 +69,7 @@ private:
     LabelImage m_clustership;
     std::vector<Feature> m_features;
     float const m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
+    uint32_t const m_maxIter = 100;
 
     /**
      * Initializes both clusters and clustership.

@@ -72,7 +72,7 @@ InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
     Clusterer<EnergyFun> clusterer(m_energy, m_color, result.labeling, m_numClusters);
     Optimizer<EnergyFun> optimizer(m_energy);
 
-    for (uint32_t iter = 0; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    for (result.numIter = 0; (numIter > 0) ? (result.numIter < numIter) : (lastEnergy - energy >= m_eps || result.numIter == 0); ++result.numIter)
     {
         lastEnergy = energy;
 
@@ -85,7 +85,10 @@ InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
         result.labeling = optimizer.labeling();
 
         if(numIter == 0)
+        {
             energy = m_energy.giveEnergy(result.labeling, m_color, result.superpixels, clusterer.clusters());
+            // std::cout <<  result.numIter << ": " << energy << " | " << lastEnergy - energy << " >= " << m_eps << std::endl;
+        }
     }
 
     return result;
