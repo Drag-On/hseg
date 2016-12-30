@@ -69,6 +69,7 @@ private:
     LabelImage m_clustership;
     std::vector<Feature> m_features;
     float const m_conv = 0.001f; // Percentage of pixels that may change in one iteration for the algorithm to terminate
+    uint32_t const m_maxIter = 100;
 
     /**
      * Initializes both clusters and clustership.
@@ -152,7 +153,7 @@ uint32_t Clusterer<EnergyFun, ClusterId>::run(LabelImage const& labels)
         moves = updateClustership(labels);
 
         //std::cout << iter << ": moves: " << moves << ", threshold: " << color.pixels() * m_conv << std::endl;
-    } while (moves > labels.pixels() * m_conv);
+    } while (moves > labels.pixels() * m_conv && iter < m_maxIter);
 
     return iter;
 }
