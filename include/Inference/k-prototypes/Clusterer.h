@@ -153,7 +153,7 @@ uint32_t Clusterer<EnergyFun, ClusterId>::run(LabelImage const& labels)
         moves = updateClustership(labels);
 
         //std::cout << iter << ": moves: " << moves << ", threshold: " << color.pixels() * m_conv << std::endl;
-    } while (moves > labels.pixels() * m_conv);
+    } while (moves > labels.pixels() * m_conv && iter < m_maxIter);
 
     return iter;
 }
