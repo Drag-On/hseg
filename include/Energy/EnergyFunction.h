@@ -10,11 +10,7 @@
 #include <Inference/k-prototypes/Feature.h>
 #include <Inference/k-prototypes/Cluster.h>
 #include "WeightsVec.h"
-#include <Eigen/Dense>
 #include "typedefs.h"
-
-using Matrix5 = Eigen::Matrix<Cost, 5, 5>;
-using Vector5 = Eigen::Matrix<Cost, 5, 1>;
 
 /**
  * Provides functionality to compute (partial) energies of the target energy function.
