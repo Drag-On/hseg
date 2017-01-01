@@ -35,8 +35,7 @@ public:
      *          initialize it with the previous result.
      */
     template<typename T>
-    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP,
-             std::vector<Cluster> const& clusters);
+    void run(ColorImage<T> const& img, LabelImage const& sp, Label numSP);
 
     /**
      * @return The computed labeling
@@ -81,14 +80,14 @@ inline LabelImage const& GraphOptimizer<EnergyFun>::labeling() const
 
 template<typename EnergyFun>
 template<typename T>
-void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP,
-                                    std::vector<Cluster> const& clusters)
+void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& sp, Label numSP)
 {
     SiteId numPx = img.pixels();
     SiteId numNodes = numPx + numSP;
 
     // Setup graph
     GCoptimizationGeneralGraph graph(numNodes, m_energy.numClasses());
+    std::vector<std::vector<SiteId>> clusterAssociation(numSP);
     for (SiteId i = 0; i < numPx; ++i)
     {
         auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
@@ -117,8 +116,21 @@ void GraphOptimizer<EnergyFun>::run(ColorImage<T> const& img, LabelImage const& 
         // Set up unary cost
         for (Label l = 0; l < m_energy.numClasses(); ++l)
         {
-            Cost cost = m_energy.unaryCost(i, l) + m_energy.classData(i, clusters[sp.atSite(i)].label);
+            Cost cost = m_energy.unaryCost(i, l);
             graph.setDataCost(i, l, static_cast<GCoptimization::EnergyTermType>(std::round(cost * s_constFactor)));
+        }
+        // Remember the cluster this pixel is assigned to
+        clusterAssociation[sp.atSite(i)].push_back(i);
+    }
+    // Set up unary cost for the superpixel nodes
+    for(Label sp = 0; sp < numSP; ++sp)
+    {
+        for(Label l = 0; l < m_energy.numClasses(); ++l)
+        {
+            Cost cost = 0.f;
+            for(auto const& i : clusterAssociation[sp])
+                cost += m_energy.classData(i, l);
+            graph.setDataCost(numPx + sp, l, static_cast<GCoptimization::EnergyTermType>(std::round(cost * s_constFactor)));
         }
     }
 

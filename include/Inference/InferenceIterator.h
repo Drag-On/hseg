@@ -81,7 +81,7 @@ InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
         result.superpixels = clusterer.clustership();
 
         // Update class labeling using the latest superpixels
-        optimizer.run(m_color, result.superpixels, m_numClusters, clusterer.clusters());
+        optimizer.run(m_color, result.superpixels, m_numClusters);
         result.labeling = optimizer.labeling();
 
         if(numIter == 0)
@@ -121,7 +121,7 @@ InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(uint
         spLabeling = clusterer.clustership();
 
         // Update class labeling using the latest superpixels
-        optimizer.run(m_color, spLabeling, m_numClusters, clusterer.clusters());
+        optimizer.run(m_color, spLabeling, m_numClusters);
         classLabeling = optimizer.labeling();
 
         energy = m_energy.giveEnergy(classLabeling, m_color, spLabeling, clusterer.clusters());
