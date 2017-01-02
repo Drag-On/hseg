@@ -112,12 +112,11 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
     cv::waitKey();*/
 
-    auto clusters = Clusterer<EnergyFunction>::computeClusters(result.superpixels, cieLabImage, result.labeling,
-                                                               numClusters, trainingEnergy);
+    auto clusters = Clusterer<LossAugmentedEnergyFunction>::computeClusters(result.superpixels, cieLabImage,
+                                                                            result.labeling, numClusters, energy);
     auto predEnergyCur = trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
     sampleResult.trainingEnergy -= predEnergyCur;
-    auto gtClusters = Clusterer<EnergyFunction>::computeClusters(bestSp, cieLabImage, groundTruth, numClusters,
-                                                                 trainingEnergy);
+    auto gtClusters = clusterer.clusters();
     auto gtEnergyCur = trainingEnergy.giveEnergy(groundTruth, cieLabImage, bestSp, gtClusters);
     sampleResult.trainingEnergy += gtEnergyCur;
 
