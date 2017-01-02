@@ -17,6 +17,7 @@ struct InferenceResult
 public:
     LabelImage labeling; //< Class labeling
     LabelImage superpixels; //< Superpixel segmentation
+    std::vector<Cluster> clusters; //< Cluster representatives
     uint32_t numIter = 0; //< Amount of iterations until convergence
 };
 
