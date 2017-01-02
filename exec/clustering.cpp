@@ -11,20 +11,20 @@
 #include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(Clustering,
-                  PROP_DEFINE(size_t, numClusters, 300)
+                  PROP_DEFINE_A(size_t, numClusters, 300, -c)
                   PROP_DEFINE(std::string, image, "")
                   PROP_DEFINE(std::string, labeling, "")
                   GROUP_DEFINE(batch,
-                               PROP_DEFINE(std::string, imgListFile, "")
+                               PROP_DEFINE_A(std::string, listFile, "", -l)
                                PROP_DEFINE(std::string, imgPath, "")
                                PROP_DEFINE(std::string, imgExtension, ".jpg")
-                               PROP_DEFINE(std::string, labelListFile, "")
                                PROP_DEFINE(std::string, labelPath, "")
                                PROP_DEFINE(std::string, labelExtension, ".png")
                   )
-                  PROP_DEFINE(std::string, out, "out.png")
+                  PROP_DEFINE_A(std::string, out, "out.png", -o)
                   PROP_DEFINE(bool, showResult, true)
                   GROUP_DEFINE(weights,
+                               PROP_DEFINE_A(std::string, weightsFile, "", -w)
                                PROP_DEFINE(std::string, featureWeightFile, "")
                                PROP_DEFINE(float, feature, 1.f)
                                PROP_DEFINE(float, label, 30.f)
@@ -119,6 +119,9 @@ int main()
     size_t const numClasses = 21;
 
     WeightsVec weights(numClasses, 1, 1, properties.weights.feature, properties.weights.label);
+    weights.read(properties.weights.weightsFile);
+    std::cout << "Used weights:" << std::endl;
+    std::cout << weights << std::endl;
     UnaryFile fakeUnary;
     Matrix5 featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
     featureWeights = featureWeights.inverse();
@@ -133,17 +136,11 @@ int main()
     if(properties.image.empty())
     {
         // Batch process
-        auto colorFileNames = readFileNames(properties.batch.imgListFile);
-        auto labelFileNames = readFileNames(properties.batch.labelListFile);
-        if(colorFileNames.size() != labelFileNames.size())
+        auto fileNames = readFileNames(properties.batch.listFile);
+        for(size_t i = 0; i < fileNames.size(); ++i)
         {
-            std::cerr << "Amount of images and labelings doesn't match up!" << std::endl;
-            return -5;
-        }
-        for(size_t i = 0; i < colorFileNames.size(); ++i)
-        {
-            std::string imgFile = properties.batch.imgPath + colorFileNames[i] + properties.batch.imgExtension;
-            std::string labelFile = properties.batch.labelPath + labelFileNames[i] + properties.batch.labelExtension;
+            std::string imgFile = properties.batch.imgPath + fileNames[i] + properties.batch.imgExtension;
+            std::string labelFile = properties.batch.labelPath + fileNames[i] + properties.batch.labelExtension;
             process(imgFile, labelFile, properties, cmap, cmap2, energyFun);
         }
     }
