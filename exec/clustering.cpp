@@ -106,11 +106,12 @@ std::vector<std::string> readFileNames(std::string const& listFile)
     return list;
 }
 
-int main()
+int main(int argc, char** argv)
 {
     // Read properties
     ClusteringProperties properties;
     properties.read("properties/clustering.info");
+    properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
