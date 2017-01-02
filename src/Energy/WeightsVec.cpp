@@ -2,8 +2,9 @@
 // Created by jan on 23.08.16.
 //
 
-#include <fstream>
 #include <Eigen/Eigenvalues>
+#include <iomanip>
+#include <fstream>
 #include "Energy/WeightsVec.h"
 
 WeightsVec::WeightsVec(Label numLabels, bool defaultInit)
@@ -206,26 +207,54 @@ Weight WeightsVec::sqNorm() const
 
 std::ostream& operator<<(std::ostream& stream, WeightsVec const& weights)
 {
-    stream << "unary: ";
-    for (size_t i = 0; i < weights.m_unaryWeights.size() - 1; ++i)
-        stream << weights.m_unaryWeights[i] << ", ";
-    if (!weights.m_unaryWeights.empty())
-        stream << weights.m_unaryWeights.back() << std::endl;
-    stream << "pairwise: ";
-    for (size_t i = 0; i < weights.m_pairwiseWeights.size() - 1; ++i)
-        stream << weights.m_pairwiseWeights[i] << ", ";
-    if (!weights.m_pairwiseWeights.empty())
-        stream << weights.m_pairwiseWeights.back() << std::endl;
-    stream << "feature: ";
-    for (size_t i = 0; i < weights.m_featureWeights.size() - 1; ++i)
-        stream << weights.m_featureWeights[i] << ", ";
-    if(!weights.m_featureWeights.empty())
-        stream << weights.m_featureWeights.back() << std::endl;
-    stream << "class: ";
-    for (size_t i = 0; i < weights.m_classWeights.size() - 1; ++i)
-        stream << weights.m_classWeights[i] << ", ";
-    if (!weights.m_classWeights.empty())
-        stream << weights.m_classWeights.back() << std::endl;
+    stream.precision(4);
+    stream << std::fixed;
+
+    stream << "unary:" << std::endl;
+    for (size_t i = 0; i < weights.m_numLabels; ++i)
+        stream << std::setw(10) << i << "\t";
+    stream << std::endl;
+    for (size_t i = 0; i < weights.m_numLabels; ++i)
+        stream << std::setw(10) << weights.m_unaryWeights[i] << "\t";
+    stream << std::endl << std::endl;
+
+    stream << "pairwise:" << std::endl << "   ";
+    for (size_t i = 0; i < weights.m_numLabels; ++i)
+        stream << std::setw(10) << i << "\t";
+    stream << std::endl;
+    for (size_t i = 0; i < weights.m_numLabels; ++i)
+    {
+        stream << std::setw(3) << i;
+        for(size_t j = 0; j < weights.m_numLabels; ++j)
+            stream << std::setw(10) << weights.pairwise(i, j) << "\t";
+        stream << std::endl;
+    }
+    stream << std::endl << std::endl;
+
+    stream << "feature:" << std::endl << "   ";
+    for (size_t i = 0; i < 5; ++i)
+        stream << std::setw(10) << i << "\t";
+    stream << std::endl;
+    for (size_t i = 0; i < 5; ++i)
+    {
+        stream << std::setw(3) << i;
+        for(size_t j = 0; j < 5; ++j)
+            stream << std::setw(10) << weights.featureWeight(i, j) << "\t";
+        stream << std::endl;
+    }
+    stream << std::endl << std::endl;
+
+    stream << "class:" << std::endl << "   ";
+    for (size_t i = 0; i < weights.m_numLabels; ++i)
+        stream << std::setw(10) << i << "\t";
+    stream << std::endl;
+    for (size_t i = 0; i < weights.m_numLabels; ++i)
+    {
+        stream << std::setw(3) << i;
+        for(size_t j = 0; j < weights.m_numLabels; ++j)
+            stream << std::setw(10) << weights.classWeight(i, j) << "\t";
+        stream << std::endl;
+    }
     return stream;
 }
 

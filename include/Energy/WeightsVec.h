@@ -109,6 +109,20 @@ public:
     }
 
     /**
+     * Grant access to a single feature weight
+     * @param i First index
+     * @param j Second index
+     * @return Reference to the appropriate entry
+     */
+    inline float featureWeight(uint16_t i, uint16_t j) const
+    {
+        assert(i < m_featureWeights.size() && j < m_featureWeights.size());
+        if(i > j)
+            std::swap(i, j);
+        return m_featureWeights[i + (j + 1) * j / 2];
+    }
+
+    /**
      * @return The class weight
      */
     Weight classWeight(Label l1, Label l2) const;
