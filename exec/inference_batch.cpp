@@ -12,7 +12,7 @@
 #include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
-                  PROP_DEFINE(size_t, numClusters, 300)
+                  PROP_DEFINE_A(size_t, numClusters, 300, -c)
                   PROP_DEFINE(float, pairwiseSigmaSq, 1.00166e-06)
                   PROP_DEFINE_A(std::string, imageList, "", -s)
                   PROP_DEFINE(std::string, imageDir, "")
