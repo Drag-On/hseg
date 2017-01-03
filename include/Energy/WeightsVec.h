@@ -19,7 +19,7 @@ class WeightsVec
 {
 private:
     Label m_numLabels;
-    std::vector<float> m_unaryWeights;
+    float m_unaryWeight;
     std::vector<float> m_pairwiseWeights;
     float m_featureWeight;
     std::vector<float> m_classWeights;
@@ -56,8 +56,8 @@ public:
      */
     inline Weight unary(Label l) const
     {
-        assert(l < m_unaryWeights.size());
-        return m_unaryWeights[l];
+        assert(l < m_numLabels);
+        return m_unaryWeight;
     }
 
     /**
@@ -162,7 +162,7 @@ public:
      */
     WeightsVec& operator*=(WeightsVec const& other);
 
-    std::vector<float>& unaryWeights();
+    float& unaryWeight();
 
     std::vector<float>& pairwiseWeights();
 
