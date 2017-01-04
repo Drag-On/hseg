@@ -31,6 +31,13 @@ PROPERTIES_DEFINE(InferenceBatch,
                   )
 )
 
+enum EXIT_CODE
+{
+    SUCCESS = 0,
+    FILE_LIST_EMPTY,
+
+};
+
 bool process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
              WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
              Matrix5 const& featureWeights)
@@ -116,14 +123,14 @@ int main(int argc, char** argv)
     std::cout << "Used feature weights:" << std::endl;
     std::cout << featureWeights << std::endl;
 
-    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, properties.numClusters));
+    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
 
     // Read in file names to process
     auto filenames = readFileNames(properties.imageList);
     if(filenames.empty())
     {
         std::cerr << "No files specified." << std::endl;
-        return -1;
+        return FILE_LIST_EMPTY;
     }
 
     // Clear output directory
@@ -156,5 +163,5 @@ int main(int argc, char** argv)
             std::cout << "Done with \"" + filenames[i] + "\"" << std::endl;
     }
 
-    return 0;
+    return SUCCESS;
 }
