@@ -187,7 +187,7 @@ GraphOptimizer<EnergyFun>::PairwiseCost<T>::compute(GraphOptimizer<EnergyFun>::P
         std::swap(s1, s2);
 
     // If both sites are normal nodes just compute the normal pairwise
-    if (static_cast<Label>(s1) < m_color.pixels() && static_cast<Label>(s2) < m_color.pixels())
+    if (static_cast<SiteId>(s1) < m_color.pixels() && static_cast<SiteId>(s2) < m_color.pixels())
     {
         std::pair<SiteID, SiteID> pair{s1, s2};
         Cost pxEnergy = m_pEnergy->pairwisePixelWeight(m_color, s1, s2);
