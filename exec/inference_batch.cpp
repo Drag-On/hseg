@@ -40,7 +40,7 @@ enum EXIT_CODE
 
 bool process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
              WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
-             Matrix5 const& featureWeights)
+             Matrix5 const& featureWeights, std::string const& spOutPath, std::string const& labelOutPath)
 {
     // Load images
     RGBImage rgb;
@@ -70,9 +70,9 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
 
     // Write results to disk
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
-    boost::filesystem::path spPath(properties.outDir + "/sp/");
+    boost::filesystem::path spPath(spOutPath);
     boost::filesystem::create_directories(spPath);
-    boost::filesystem::path labelPath(properties.outDir + "/labeling/");
+    boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
     cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(result.labeling, map));
     cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, map));
@@ -133,13 +133,19 @@ int main(int argc, char** argv)
         return FILE_LIST_EMPTY;
     }
 
+    boost::filesystem::path spPath(properties.outDir + "/sp/");
+    boost::filesystem::path labelPath(properties.outDir + "/labeling/");
+
     // Clear output directory
     boost::filesystem::path basePath(properties.outDir);
-    std::cout << "Clear output directory " << basePath << "? (y/N) ";
+    std::cout << "Clear output directories in " << basePath << "? (y/N) ";
     std::string response;
     std::getline(std::cin, response);
     if (response == "y" || response == "Y")
-        boost::filesystem::remove_all(basePath);
+    {
+        boost::filesystem::remove_all(spPath);
+        boost::filesystem::remove_all(labelPath);
+    }
 
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<bool>> futures;
@@ -149,7 +155,13 @@ int main(int argc, char** argv)
     {
         std::string const& imageFilename = properties.imageDir + f + properties.imageExtension;
         std::string const& unaryFilename = properties.unaryDir + f + properties.unaryExtension;
-        auto&& fut = pool.enqueue(process, imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties, featureWeights);
+        std::string filename = boost::filesystem::path(imageFilename).stem().string();
+        if(boost::filesystem::exists(spPath / (filename + ".png")) && boost::filesystem::exists(labelPath / (filename + ".png")))
+        {
+            std::cout << "Skipping " << f << "." << std::endl;
+            continue;
+        }
+        auto&& fut = pool.enqueue(process, imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties, featureWeights, spPath.string(), labelPath.string());
         futures.push_back(std::move(fut));
     }
 
