@@ -38,17 +38,27 @@ enum EXIT_CODE
 
 };
 
-bool process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
+struct Result
+{
+    bool okay = false;
+    std::string filename;
+};
+
+Result process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
              WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
              Matrix5 const& featureWeights, std::string const& spOutPath, std::string const& labelOutPath)
 {
+    std::string filename = boost::filesystem::path(imageFilename).stem().string();
+    Result res;
+    res.filename = filename;
+
     // Load images
     RGBImage rgb;
     rgb.read(imageFilename);
     if (rgb.pixels() == 0)
     {
         std::cerr << "Couldn't load image " << imageFilename << std::endl;
-        return false;
+        return res;
     }
     CieLabImage cieLab = rgb.getCieLabImg();
 
@@ -58,7 +68,7 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
         unaryFile.height() != rgb.height())
     {
         std::cerr << "Unary file is invalid." << std::endl;
-        return false;
+        return res;
     }
 
     // Create energy function
@@ -69,7 +79,6 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
     auto result = inference.run();
 
     // Write results to disk
-    std::string filename = boost::filesystem::path(imageFilename).stem().string();
     boost::filesystem::path spPath(spOutPath);
     boost::filesystem::create_directories(spPath);
     boost::filesystem::path labelPath(labelOutPath);
@@ -79,7 +88,8 @@ bool process(std::string const& imageFilename, std::string const& unaryFilename,
     cv::imwrite(spPath.string() + filename + ".png", spMat);
     cv::imwrite(labelPath.string() + filename + ".png", labelMat);
 
-    return true;
+    res.okay = true;
+    return res;
 }
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -148,7 +158,7 @@ int main(int argc, char** argv)
     }
 
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<bool>> futures;
+    std::vector<std::future<Result>> futures;
 
     // Iterate all files
     for(auto const& f : filenames)
@@ -168,11 +178,11 @@ int main(int argc, char** argv)
     // Wait for all the threads to finish
     for(size_t i = 0; i < futures.size(); ++i)
     {
-        bool ok = futures[i].get();
-        if(!ok)
-            std::cerr << "Couldn't process image \"" + filenames[i] + "\"" << std::endl;
+        Result res = futures[i].get();
+        if(!res.okay)
+            std::cerr << "Couldn't process image \"" + res.filename + "\"" << std::endl;
         else
-            std::cout << "Done with \"" + filenames[i] + "\"" << std::endl;
+            std::cout << "Done with \"" + res.filename + "\"" << std::endl;
     }
 
     return SUCCESS;
