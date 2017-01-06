@@ -1,362 +1,246 @@
 #include <iostream>
-#include <Energy/UnaryFile.h>
-#include <boost/filesystem.hpp>
-#include <Energy/WeightsVec.h>
-#include <map>
-#include <set>
-#include <Energy/EnergyFunction.h>
-#include <Energy/feature_weights.h>
-#include <Inference/k-prototypes/Clusterer.h>
-#include <helper/image_helper.h>
-#include <Inference/GraphOptimizer/GraphOptimizer.h>
-#include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
+#include <array>
+#include <vector>
 #include <Timer.h>
+#include <numeric>
+#include <iomanip>
 
-float loss(int y, int gt)
+using Feature = float;
+using Image = std::array<Feature, 2>;
+using Label = int;
+using Labeling = std::array<Label, 2>;
+using Weight = float;
+using WeightVec = std::array<Weight, 6 + 9 * 2>; // 6 unary weigths + 9 pairwise combinations a 2 weights
+using Cost = float;
+
+WeightVec const zeroWeights = {};
+
+WeightVec operator+(WeightVec w1, WeightVec const& w2)
 {
-    if(y == gt)
-        return 0.f;
-    else
-        return 1.f;
+    for(size_t i = 0; i < w1.size(); ++i)
+        w1[i] += w2[i];
+    return w1;
 }
 
-float energy(float x, int y, float w)
+WeightVec operator-(WeightVec w1, WeightVec const& w2)
 {
-    return (x - y) * (x - y) + w * y * y;
+    for(size_t i = 0; i < w1.size(); ++i)
+        w1[i] -= w2[i];
+    return w1;
 }
 
-int predict(float x, float w, int const maxLabel, int gt = -1)
+WeightVec operator*(WeightVec w, Cost c)
 {
-    float minEnergy = energy(x, 0, w);
-    int minLabel = 0;
-    if (gt > 0)
-        minEnergy -= loss(0, gt);
-    for(int l = 1; l <= maxLabel; ++l)
+    for(size_t i = 0; i < w.size(); ++i)
+        w[i] *= c;
+    return w;
+}
+
+Cost loss(Labeling y, Labeling gt)
+{
+    Cost loss = 0;
+    for (size_t i = 0; i < y.size(); ++i)
     {
-        float e = energy(x, l, w);
-        if (gt >= 0 && l != gt)
-            e -= loss(l, gt);
-        if(e < minEnergy)
+        if (y[i] != gt[i])
+            loss += 1.f;
+    }
+    return loss;
+}
+
+Cost energy(Image x, Labeling y, WeightVec w)
+{
+    // Sum_i (x_i - y_i)^2 + w_{y_i} * y_i^2 + Sum_ij w_{y_i,y_j}^T * x
+    return (x[0] - y[0]) * (x[0] - y[0]) + w[y[0]] * y[0] * y[0] // First unary
+           + (x[1] - y[1]) * (x[1] - y[1]) + w[3 + y[1]] * y[1] * y[1] // Second unary
+           + w[6 + y[0] + y[1] * 3 + 0 * 3 * 2] * x[0] + w[6 + y[0] + y[1] * 3 + 1 * 3 * 2] * x[1]; // Pairwise
+}
+
+WeightVec energy_by_weight(Image x, Labeling y)
+{
+    WeightVec w = zeroWeights;
+    w[y[0]] = y[0] * y[0];
+    w[3 + y[1]] = y[1] * y[1];
+    w[6 + y[0] + y[1] * 3 + 0 * 3 * 2] = x[0];
+    w[6 + y[0] + y[1] * 3 + 1 * 3 * 2] = x[1];
+    return w;
+}
+
+Labeling predict(Image x, WeightVec w, Label const maxLabel)
+{
+    Labeling minLabeling = {0, 0};
+    Cost minEnergy = energy(x, minLabeling, w);
+
+    for (Label l1 = 0; l1 <= maxLabel; ++l1)
+    {
+        for (Label l2 = 0; l2 <= maxLabel; ++l2)
         {
-            minEnergy = e;
-            minLabel = l;
+            Labeling labeling{l1, l2};
+            Cost e = energy(x, labeling, w);
+            if (e < minEnergy)
+            {
+                minEnergy = e;
+                minLabeling = labeling;
+            }
         }
     }
-    return minLabel;
+    return minLabeling;
 }
 
-float
-trainingEnergy(std::vector<float> const& x, std::vector<int> const& gt, std::vector<int> const& pred, float w, float C,
-               float* lossVal = nullptr)
+Labeling predict_loss_augmented(Image x, WeightVec w, Label const maxLabel, Labeling gt)
 {
-    if(lossVal != nullptr)
-        *lossVal = 0;
-    float e = w * w / 2.f;
-    float sum = 0;
-    for(size_t n = 0; n < x.size(); ++n)
+    Labeling minLabeling = {0, 0};
+    Cost minEnergy = energy(x, minLabeling, w);
+    minEnergy -= loss(minLabeling, gt);
+
+    for (Label l1 = 0; l1 <= maxLabel; ++l1)
+    {
+        for (Label l2 = 0; l2 <= maxLabel; ++l2)
+        {
+            Labeling labeling{l1, l2};
+            Cost e = energy(x, labeling, w);
+            e -= loss(labeling, gt);
+            if (e < minEnergy)
+            {
+                minEnergy = e;
+                minLabeling = labeling;
+            }
+        }
+    }
+    return minLabeling;
+}
+
+Cost
+training_energy(std::vector<Image> const& x, std::vector<Labeling> const& gt, std::vector<Labeling> const& pred,
+                WeightVec w, Cost C)
+{
+    // Regularizer cost
+    Cost e = std::accumulate(w.begin(), w.end(), 0, [](Cost w, Cost a) { return w + a * a; });
+
+    // Upper bound
+    Cost sum = 0;
+    for (size_t n = 0; n < x.size(); ++n)
     {
         sum += loss(pred[n], gt[n]) + energy(x[n], gt[n], w) - energy(x[n], pred[n], w);
-        if(lossVal != nullptr)
-        {
-            int y = predict(x[n], w, x.size());
-            *lossVal += loss(y, gt[n]);
-        }
     }
-    e +=  C / x.size() * sum;
-    e += 10;
+    e += C / x.size() * sum;
     return e;
 }
 
-int smoothCostFun(int s1, int s2, int l1, int l2)
+Cost training_loss(std::vector<Image> const& x, std::vector<Labeling> const& gt, WeightVec w, Cost C, Label maxLabel)
 {
-    return l1 != l2 ? 1 : 0;
+    Cost lossVal = 0;
+    for (size_t n = 0; n < x.size(); ++n)
+    {
+        Labeling pred = predict(x[n], w, maxLabel);
+        lossVal += loss(pred, gt[n]);
+    }
+    lossVal *= C / x.size();
+    return lossVal;
 }
-
-LabelImage tryAlphaBeta(Image<float, 3> const& img, UnaryFile const& unary, float lambda)
-{
-    size_t numPx = img.pixels();
-    size_t numNodes = numPx;
-
-    // Setup graph
-    GCoptimizationGeneralGraph graph(numNodes, unary.classes());
-    for (size_t i = 0; i < numPx; ++i)
-    {
-        auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
-
-        // Set up pixel neighbor connections
-        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
-        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
-        if (coordsR.x() < img.width())
-        {
-            size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
-            graph.setNeighbors(i, siteR, lambda);
-        }
-        if (coordsD.y() < img.height())
-        {
-            size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
-            graph.setNeighbors(i, siteD, lambda);
-        }
-        // Set up unary cost
-        for (Label l = 0; l < unary.classes(); ++l)
-            graph.setDataCost(i, l, -unary.at(coords.x(), coords.y(), l));
-    }
-
-    // Set up pairwise cost
-    graph.setSmoothCost(smoothCostFun);
-
-    // Do alpha-beta-swap
-    try
-    {
-        graph.swap();
-    }
-    catch(GCException e)
-    {
-        e.Report();
-    }
-
-    // Copy over result
-    LabelImage labeling(img.width(), img.height());
-    for (size_t i = 0; i < numPx; ++i)
-        labeling.atSite(i) = graph.whatLabel(i);
-
-    return labeling;
-}
-
-LabelImage tryTrwS(Image<float, 3> const& img, UnaryFile const& unary, float lambda)
-{
-    size_t numPx = img.pixels();
-    size_t numNodes = numPx;
-    size_t numClasses = unary.classes();
-
-    // Set up the graph
-    TypePotts::GlobalSize globalSize(numClasses);
-    MRFEnergy<TypePotts> mrfEnergy(globalSize);
-
-    std::vector<MRFEnergy<TypePotts>::NodeId> nodeIds;
-    nodeIds.reserve(numNodes);
-
-    // Unaries
-    for (size_t i = 0; i < numNodes; ++i)
-    {
-        // Unary confidences
-        std::vector<TypePotts::REAL> confidences(numClasses, 0.f);
-        if (i < numPx) // Only nodes that represent pixels have unaries.
-            for (size_t l = 0; l < numClasses; ++l)
-                confidences[l] = -unary.atSite(i, l);
-        auto id = mrfEnergy.AddNode(TypePotts::LocalSize(), TypePotts::NodeData(confidences.data()));
-        nodeIds.push_back(id);
-    }
-
-    // Pairwise
-    for (size_t i = 0; i < numPx; ++i)
-    {
-        auto coords = helper::coord::siteTo2DCoordinate(i, img.width());
-
-        // Set up pixel neighbor connections
-        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
-        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
-        if (coordsR.x() < img.width())
-        {
-            size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), img.width());
-            TypePotts::EdgeData edgeData(lambda);
-            mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteR], edgeData);
-        }
-        if (coordsD.y() < img.height())
-        {
-            size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), img.width());
-            TypePotts::EdgeData edgeData(lambda);
-            mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteD], edgeData);
-        }
-    }
-
-    // Do the actual minimization
-    MRFEnergy<TypePotts>::Options options;
-    options.m_eps = 0.0f;
-    options.m_printIter=1000000;
-    options.m_printMinIter=1000000;
-    MRFEnergy<TypePotts>::REAL lowerBound = 0, energy = 0;
-    mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
-
-    // Copy over result
-    LabelImage labeling(img.width(), img.height());
-    for (size_t i = 0; i < numPx; ++i)
-        labeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
-
-    return labeling;
-}
-
 
 int main()
 {
-    size_t numLabels = 21;
-    size_t numClusters = 200;
-    UnaryFile unary("data/2007_000129_prob.dat");
-    WeightsVec weights(numLabels, 100, 10, 10, 10);
-    weights.read("out/weights_multi_large.dat");
-    Matrix5 featureWeights = readFeatureWeights("out/featureWeights.txt");
-    featureWeights = featureWeights.inverse();
-    EnergyFunction energy(unary, weights, 0.5f, featureWeights);
-    auto cmap = helper::image::generateColorMapVOC(numLabels);
-    auto cmap2 = helper::image::generateColorMap(numClusters);
-
-    RGBImage rgb, gtRgb;
-    rgb.read("data/2007_000129.jpg");
-    auto cieLab = rgb.getCieLabImg();
-    gtRgb.read("data/2007_000129.png");
-    LabelImage gt;
-    gt = helper::image::decolorize(gtRgb, cmap);
-
-    LabelImage unaryLabeling = unary.maxLabeling();
-
-    Clusterer<EnergyFunction> clusterer(energy, cieLab, unaryLabeling, numClusters);
-    Timer t(true);
-    uint32_t iter1 = clusterer.run(unaryLabeling);
-    t.pause();
-    std::cout << "Finished in " << t.elapsed() << std::endl;
-    LabelImage first = clusterer.clustership();
-    t.reset(true);
-    uint32_t iter2 = clusterer.run(unaryLabeling);
-    t.pause();
-    std::cout << "Finished in " << t.elapsed() << std::endl;
-    LabelImage second = clusterer.clustership();
-
-    std::cout << "first: " << iter1 << ", second: " << iter2 << std::endl;
-    std::cout << "diff: " << first.diff(second) << " / " << first.pixels() << " (" << (float)first.diff(second) / first.pixels() * 100 << "%)" << std::endl;
-
-    RGBImage unaryRgb = helper::image::colorize(unaryLabeling, cmap);
-    RGBImage firstRgb = helper::image::colorize(first, cmap2);
-    RGBImage secondRgb = helper::image::colorize(second, cmap2);
-
-    cv::imshow("RGB", (cv::Mat)rgb);
-    cv::imshow("Unary", (cv::Mat)unaryRgb);
-    cv::imshow("First", (cv::Mat)firstRgb);
-    cv::imshow("Second", (cv::Mat)secondRgb);
-
-    cv::waitKey();
-
-    return 0;
-
-
-    size_t const numIter = 10;
-    Timer::milliseconds alpha_beta_ms = Timer::milliseconds::zero();
-    LabelImage labeling_graph;
-    for(size_t i = 0; i < numIter; ++i)
-    {
-        Timer t(true);
-        labeling_graph = tryAlphaBeta(cieLab, unary, 5);
-        t.pause();
-        alpha_beta_ms += t.elapsed();
-    }
-    alpha_beta_ms /= numIter;
-    std::cout << "Alpha-Beta-Swap: " << alpha_beta_ms << std::endl;
-
-    Timer::milliseconds trws_ms = Timer::milliseconds::zero();
-    LabelImage labeling_trws;
-    for(size_t i = 0; i < numIter; ++i)
-    {
-        Timer t(true);
-        labeling_trws = tryTrwS(cieLab, unary, 5);
-        t.pause();
-        trws_ms += t.elapsed();
-    }
-    trws_ms /= numIter;
-    std::cout << "TRW-S: " << trws_ms << std::endl;
-
-    auto labelImg_trws = helper::image::colorize(labeling_trws, cmap);
-    auto labelImg_graph = helper::image::colorize(labeling_graph, cmap);
-    cv::Mat cvLabeling_trws = static_cast<cv::Mat>(labelImg_trws);
-    cv::Mat cvLabeling_graph = static_cast<cv::Mat>(labelImg_graph);
-    cv::imwrite("trws.png", cvLabeling_trws);
-    cv::imwrite("alphabeta.png", cvLabeling_graph);
-    cv::imshow("TRW_S", cvLabeling_trws);
-    cv::imshow("Graph", cvLabeling_graph);
-    cv::waitKey();
-
-#if 0
-    Timer t(true);
-    InferenceIterator<EnergyFunction, TRW_S_Optimizer> inference_trws(energy, numClusters, numLabels, cieLab);
-    auto result = inference_trws.run();
-    auto labeling_trws = result.labeling;
-    t.pause();
-    std::cout << "TRWS took " << t.elapsed<Timer::seconds>() << std::endl;
-
-    t.reset(true);
-    InferenceIterator<EnergyFunction, GraphOptimizer> inference_graph(energy, numClusters, numLabels, cieLab);
-    result = inference_graph.run();
-    auto labeling_graph = result.labeling;
-    t.pause();
-    std::cout << "Alpha-Beta-Swap took " << t.elapsed<Timer::seconds>() << std::endl;
-
-    // Compute accuracy
-    size_t correct_trws = 0, correct_graph = 0;
-    for(size_t i = 0; i < gt.pixels(); ++i)
-    {
-        if(labeling_trws.atSite(i) == gt.atSite(i))
-            correct_trws++;
-        if(labeling_graph.atSite(i) == gt.atSite(i))
-            correct_graph++;
-    }
-    std::cout << "Accuracy TRWS: " << correct_trws / (float) gt.pixels() << std::endl;
-    std::cout << "Accuracy Graph: " << correct_graph / (float) gt.pixels() << std::endl;
-
-    auto labelImg_trws = helper::image::colorize(labeling_trws, cmap);
-    auto labelImg_graph = helper::image::colorize(labeling_graph, cmap);
-    cv::Mat cvLabeling_trws = static_cast<cv::Mat>(labelImg_trws);
-    cv::Mat cvLabeling_graph = static_cast<cv::Mat>(labelImg_graph);
-    cv::imwrite("trws.png", cvLabeling_trws);
-    cv::imwrite("alphabeta.png", cvLabeling_graph);
-    cv::imshow("TRW_S", cvLabeling_trws);
-    cv::imshow("Graph", cvLabeling_graph);
-    cv::waitKey();
-#endif
-
-#if 0
-    std::vector<float> x = {0.f, 1.6f, 0.95f, 1.55f};
-    std::vector<int> gt = {0, 1, 1, 1};
-    std::vector<int> y = {0, 0, 0, 0};
-    std::vector<int> predictions = {0, 0, 0, 0};
+    std::vector<Image> x = {{0.f,   0.2f},
+                            {0.7f,  0.1f},
+                            {0.9f,  1.6f},
+                            {0.45f, 0.95f},
+                            {1.55f, 1.6f}};
+    std::vector<Labeling> gt = {{0, 0},
+                                {1, 0},
+                                {1, 1},
+                                {1, 1},
+                                {1, 1}};
+    std::vector<Labeling> y = {{0, 0},
+                               {0, 0},
+                               {0, 0},
+                               {0, 0},
+                               {0, 0}};
+    std::vector<Labeling> predictions = {{0, 0},
+                                         {0, 0},
+                                         {0, 0},
+                                         {0, 0},
+                                         {0, 0}};
     int const maxLabel = 2;
 
-    size_t const T = 5000;
+    size_t const T = 500;
     size_t const N = x.size();
-    float const C = 1.f;
-    float const eta = 0.3f;
+    Cost const C = 1.f;
+    Cost const eta = 0.01f;
 
-    float wCur = -10.f;
-    std::vector<float> trainingEnergies;
+    WeightVec wCur = zeroWeights;
+    std::vector<Cost> trainingEnergies;
+    std::vector<Cost> trainingLoss;
     for (size_t t = 0; t < T; ++t)
     {
         std::cout << "Iteration " << t << std::endl;
-        float sum = 0;
-        for(size_t n = 0; n < N; ++n)
+        WeightVec sum = zeroWeights;
+        for (size_t n = 0; n < N; ++n)
         {
-            int pred = predict(x[n], wCur, maxLabel, gt[n]);
+            Labeling pred = predict_loss_augmented(x[n], wCur, maxLabel, gt[n]);
             y[n] = pred;
-            float predEnergy = energy(x[n], pred, 1);
-            float gtEnergy = energy(x[n], gt[n], 1);
-            sum += gtEnergy - predEnergy;
+            WeightVec predEnergy = energy_by_weight(x[n], pred);
+            WeightVec gtEnergy = energy_by_weight(x[n], gt[n]);
+            sum = sum + (gtEnergy - predEnergy);
 
             predictions[n] = predict(x[n], wCur, maxLabel);
-            std::cout << n << ": " << predictions[n] << "/" << gt[n] << " | ";
+            std::cout << n << ": " << predictions[n][0] << "," << predictions[n][1] << "/" << gt[n][0] << "," << gt[n][1] << " | ";
         }
         std::cout << std::endl;
 
-        float loss = 0;
-        float e = trainingEnergy(x, gt, y, wCur, C, &loss);
+        Cost e = training_energy(x, gt, y, wCur, C);
+        Cost lossValue = training_loss(x, gt, wCur, C, maxLabel);
         trainingEnergies.push_back(e);
-        std::cout << "Training energy = " << e << " | Loss = " << loss << std::endl;
+        trainingLoss.push_back(lossValue);
+        std::cout << "Training energy = " << e << " | Loss = " << lossValue << std::endl;
 
-        float p = wCur + C/N * sum;
-        wCur -= eta / (t+1) * p;
-        std::cout << "New wCur = " << wCur << std::endl;
+        WeightVec p = wCur + sum * (C / N);
+        wCur = wCur - p * (eta / (t + 1));
+        std::cout << "New wCur = ";
+        for (auto w : wCur)
+            std::cout << w << ", ";
+        std::cout << std::endl;
     }
 
     std::cout << "-----------" << std::endl;
-    for(size_t i = 0; i < trainingEnergies.size(); ++i)
+    for (size_t i = 0; i < trainingEnergies.size(); ++i)
     {
-        std::cout << i << "\t" << trainingEnergies[i] << std::endl;
+        std::cout << i << "\t" << trainingEnergies[i] << "\t" << trainingLoss[i] << std::endl;
     }
-#endif
+
+    // Formatted output of the weights
+    std::cout << "-----------" << std::endl;
+    std::cout << std::fixed;
+    std::cout.precision(2);
+
+    // Weight for first pixel
+    std::cout << "w1" << std::endl;
+    for(Label l = 0; l <= maxLabel; ++l)
+        std::cout << std::setw(5) << l << "\t";
+    std::cout << std::endl;
+    for(Label l = 0; l <= maxLabel; ++l)
+        std::cout << std::setw(5) << wCur[l] << "\t";
+    std::cout << std::endl << std::endl;
+
+    // Weight for second pixel
+    std::cout << "w2" << std::endl;
+    for(Label l = 0; l <= maxLabel; ++l)
+        std::cout << std::setw(5) << l << "\t";
+    std::cout << std::endl;
+    for(Label l = 0; l <= maxLabel; ++l)
+        std::cout << std::setw(5) << wCur[3 + l] << "\t";
+    std::cout << std::endl << std::endl;
+
+    // Pairwise weights
+    for(Label l1 = 0; l1 <= maxLabel; ++l1)
+    {
+        for(Label l2 = 0; l2 <= maxLabel; ++l2)
+        {
+            std::cout << "w_{" << l1 << "," << l2 << "}" << std::endl;
+            std::cout << std::setw(5) << wCur[6 + l1 + l2 * 3 + 0 * 3 * 2] << "\t";
+            std::cout << std::setw(5) << wCur[6 + l1 + l2 * 3 + 1 * 3 * 2];
+            std::cout << std::endl << std::endl;
+        }
+    }
 
     return 0;
 }
