@@ -70,6 +70,7 @@ namespace helper
             CantOpenFile,
             InvalidFileFormat,
             CantInitReadStruct,
+            CantInitWriteStruct,
             CantInitInfoStruct,
             Critical,
             NoPalette,
@@ -85,6 +86,15 @@ namespace helper
          * @return Error code
          */
         PNGError readPalettePNG(std::string const& file, LabelImage& outImage, ColorMap* pOutColorMap);
+
+        /**
+         * Writes a label image to png with a color palette
+         * @param file Filename
+         * @param labeling Label image
+         * @param cmap Color map to use
+         * @return Error code
+         */
+        PNGError writePalettePNG(std::string const& file, LabelImage const& labeling, ColorMap const& cmap);
     }
 }
 

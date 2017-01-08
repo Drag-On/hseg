@@ -247,5 +247,93 @@ namespace helper
 
             return PNGError::Okay;
         }
+
+        PNGError writePalettePNG(std::string const& file, LabelImage const& labeling, ColorMap const& cmap)
+        {
+            // Open file
+            FILE* fp = fopen(file.c_str(), "wb");
+            if (!fp)
+                return PNGError::CantOpenFile;
+
+            // Create write struct
+            png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+            if (!png_ptr)
+            {
+                fclose(fp);
+                return PNGError::CantInitWriteStruct;
+            }
+
+            // Create info struct
+            png_infop info_ptr = png_create_info_struct(png_ptr);
+            if (!info_ptr)
+            {
+                png_destroy_write_struct(&png_ptr, nullptr);
+                fclose(fp);
+                return PNGError::CantInitInfoStruct;
+            }
+
+            // Setup return location in case of errors
+            if (setjmp(png_jmpbuf(png_ptr)))
+            {
+                png_destroy_write_struct(&png_ptr, &info_ptr);
+                fclose(fp);
+                return PNGError::Critical;
+            }
+
+            // Init I/O
+            png_init_io(png_ptr, fp);
+
+            // Set basic information
+            png_set_IHDR(png_ptr, info_ptr, labeling.width(), labeling.height(), 8, PNG_COLOR_TYPE_PALETTE,
+                         PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+            // Set color palette information
+            int num_palette = (int) cmap.size();
+            assert(num_palette <= PNG_MAX_PALETTE_LENGTH);
+            png_colorp palette = (png_colorp) png_malloc(png_ptr, num_palette * sizeof(png_color));
+            for (int p = 0; p < num_palette; p++)
+            {
+                png_color* col = &palette[p];
+                col->blue = cmap[p][0]; // cmap is BGR, not RGB
+                col->green = cmap[p][1];
+                col->red = cmap[p][2];
+            }
+            png_set_PLTE(png_ptr, info_ptr, palette, num_palette);
+
+            // Write info
+            png_write_info(png_ptr, info_ptr);
+
+            // Write image data
+            png_bytep* row_pointers = (png_bytepp) png_malloc(png_ptr, sizeof(png_bytep) * labeling.height());
+            if (!row_pointers)
+            {
+                png_destroy_write_struct(&png_ptr, &info_ptr);
+                fclose(fp);
+                return PNGError::OutOfMemory;
+            }
+            for (Coord y = 0; y < labeling.height(); ++y)
+                row_pointers[y] = (png_bytep) png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
+            for (Coord i = 0; i < labeling.height(); ++i)
+            {
+                for (Coord j = 0; j < labeling.width(); ++j)
+                {
+                    Label l = labeling.at(j, i);
+                    row_pointers[i][j] = (png_byte) l;
+                }
+            }
+            png_write_image(png_ptr, row_pointers);
+
+            // Write the end bit
+            png_write_end(png_ptr, info_ptr);
+
+            // Free memory
+            png_free(png_ptr, palette);
+            for (Coord y = 0; y < labeling.height(); ++y)
+                png_free(png_ptr, row_pointers[y]);
+            png_free(png_ptr, row_pointers);
+            png_destroy_write_struct(&png_ptr, &info_ptr);
+
+            return PNGError::Okay;
+        }
     }
 }
