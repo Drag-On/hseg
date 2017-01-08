@@ -4,6 +4,8 @@
 
 #include <boost/unordered_map.hpp>
 #include <typedefs.h>
+#include <png.h>
+#include <iostream>
 #include "helper/image_helper.h"
 
 namespace helper
@@ -44,7 +46,7 @@ namespace helper
             assert(n < sizeof(colors));
 
             ColorMap cmap(n);
-            for(size_t i = 0; i < n; ++i)
+            for (size_t i = 0; i < n; ++i)
                 cmap[i] = {colors[i][2], colors[i][1], colors[i][0]}; // Colors are in rgb
             return cmap;
         }
@@ -92,9 +94,9 @@ namespace helper
             assert(labelImg.width() == colorImg.width() && labelImg.height() == colorImg.height());
 
             RGBImage result = colorImg;
-            for(Coord x = 0; x < labelImg.width() - 1; ++x)
+            for (Coord x = 0; x < labelImg.width() - 1; ++x)
             {
-                for(Coord y = 0; y < labelImg.height() - 1; ++y)
+                for (Coord y = 0; y < labelImg.height() - 1; ++y)
                 {
                     // If label changes
                     if (labelImg.at(x, y) != labelImg.at(x + 1, y) || labelImg.at(x, y) != labelImg.at(x, y + 1))
@@ -107,6 +109,143 @@ namespace helper
             }
 
             return result;
+        }
+
+        PNGError readPalettePNG(std::string const& file, LabelImage& outImage, ColorMap* pOutColorMap)
+        {
+            // Open the file
+            FILE* fp = fopen(file.c_str(), "rb");
+            if (!fp)
+                return PNGError::CantOpenFile;
+
+            // Check, if it actually is a valid PNG
+            uint8_t header[8];
+            size_t read = fread(header, 1, 8, fp);
+            if (read != 8)
+            {
+                fclose(fp);
+                return PNGError::InvalidFileFormat;
+            }
+            bool is_png = !png_sig_cmp(header, 0, 8);
+            if (!is_png)
+            {
+                fclose(fp);
+                return PNGError::InvalidFileFormat;
+            }
+
+            // Setup libPNG
+            png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+            if (!png_ptr)
+            {
+                fclose(fp);
+                return PNGError::CantInitReadStruct;
+            }
+
+            png_infop info_ptr = png_create_info_struct(png_ptr);
+            if (!info_ptr)
+            {
+                png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+                fclose(fp);
+                return PNGError::CantInitInfoStruct;
+            }
+
+            png_infop end_info = png_create_info_struct(png_ptr);
+            if (!end_info)
+            {
+                png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+                fclose(fp);
+                return PNGError::CantInitInfoStruct;
+            }
+
+            // Setup return location in case of errors
+            if (setjmp(png_jmpbuf(png_ptr)))
+            {
+                png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+                fclose(fp);
+                return PNGError::Critical;
+            }
+
+            // Init actual I/O
+            png_init_io(png_ptr, fp);
+            png_set_sig_bytes(png_ptr, 8); // 8 bytes missing due to PNG validity check in the beginning
+
+            // Read all chunks up to the actual image data
+            png_read_info(png_ptr, info_ptr);
+
+            png_uint_32 width, height;
+            int bit_depth, color_type, interlace_type, compression_type, filter_method;
+            png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type,
+                         &compression_type, &filter_method);
+
+            if (color_type != PNG_COLOR_TYPE_PALETTE)
+            {
+                png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+                fclose(fp);
+                return PNGError::NoPalette;
+            }
+            if (interlace_type != PNG_INTERLACE_NONE)
+            {
+                png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+                fclose(fp);
+                return PNGError::UnsupportedInterlaceType;
+            }
+
+            // Read actual image data
+            png_bytep* row_pointers = (png_bytepp) png_malloc(png_ptr, sizeof(png_bytep) * height);
+            if (!row_pointers)
+            {
+                png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+                fclose(fp);
+                return PNGError::OutOfMemory;
+            }
+            for (Coord y = 0; y < height; ++y)
+                row_pointers[y] = (png_bytep) png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
+            png_read_image(png_ptr, row_pointers);
+
+            // End reading
+            png_read_end(png_ptr, end_info);
+
+            // Palette info
+            if (pOutColorMap)
+            {
+                // Read palette info
+                int num_palette;
+                png_colorp palette; // Memory will be allocated internally
+                png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
+
+                pOutColorMap->clear();
+                pOutColorMap->reserve(num_palette);
+                for (size_t i = 0; i < (size_t) num_palette; ++i)
+                {
+                    std::array<unsigned char, 3> color;
+                    color[0] = palette[i].blue; // Color maps use BGR, not RGB
+                    color[1] = palette[i].green;
+                    color[2] = palette[i].red;
+                    pOutColorMap->push_back(color);
+                }
+            }
+
+            // Copy data to actual label image
+            LabelImage labeling(width, height);
+            for (Coord i = 0; i < labeling.height(); ++i)
+            {
+                for (Coord j = 0; j < labeling.width(); ++j)
+                {
+                    Label const l = row_pointers[i][j];
+                    labeling.at(j, i) = l;
+                }
+            }
+            outImage = labeling;
+
+            // Free all the allocated memory
+            for (Coord y = 0; y < height; ++y)
+                png_free(png_ptr, row_pointers[y]);
+            png_free(png_ptr, row_pointers);
+            png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+
+            fclose(fp);
+
+            return PNGError::Okay;
         }
     }
 }

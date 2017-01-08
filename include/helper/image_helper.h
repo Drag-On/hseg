@@ -63,6 +63,28 @@ namespace helper
          * @return Color image with overlayed outlines
          */
         RGBImage outline(LabelImage const& labelImg, RGBImage const& colorImg, std::array<unsigned short, 3> const& color = {255, 255, 255});
+
+        enum class PNGError
+        {
+            Okay = 0,
+            CantOpenFile,
+            InvalidFileFormat,
+            CantInitReadStruct,
+            CantInitInfoStruct,
+            Critical,
+            NoPalette,
+            UnsupportedInterlaceType,
+            OutOfMemory,
+        };
+
+        /**
+         * Reads in a png file which is stored in a palette format
+         * @param file Filename
+         * @param outImage Label image to write the index image to
+         * @param pOutColorMap The color map is stored here. Set to nullptr to ignore.
+         * @return Error code
+         */
+        PNGError readPalettePNG(std::string const& file, LabelImage& outImage, ColorMap* pOutColorMap);
     }
 }
 
