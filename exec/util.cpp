@@ -10,6 +10,7 @@
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Energy/feature_weights.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
+#include <boost/filesystem/operations.hpp>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -23,6 +24,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, maxLoss, "", -ml)
                                PROP_DEFINE_A(std::string, outline, "", -ol)
                                PROP_DEFINE_A(std::string, rescale, "", -rs)
+                               PROP_DEFINE_A(std::string, copyFixPNG, "", -cf)
                   )
                   GROUP_DEFINE(Constants,
                                PROP_DEFINE(size_t, numClasses, 21u)
@@ -668,6 +670,40 @@ bool rescale(UtilProperties const& properties)
     return true;
 }
 
+bool copyFixPNG(UtilProperties const& properties)
+{
+    boost::filesystem::path inPath = properties.job.copyFixPNG;
+    boost::filesystem::path outPath = properties.Paths.out;
+
+    if(!boost::filesystem::is_directory(inPath))
+        return false;
+
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    for(auto iter : boost::filesystem::directory_iterator(inPath))
+    {
+        boost::filesystem::path file = iter;
+        if(boost::filesystem::is_regular_file(file) && file.extension() == ".png")
+        {
+            std::string filename = file.stem().string();
+            RGBImage inRGB;
+            inRGB.read(file.string());
+
+            LabelImage labeling = helper::image::decolorize(inRGB, cmap);
+
+            std::string outFile = (outPath / (filename + ".png")).string();
+            auto result = helper::image::writePalettePNG(outFile, labeling, cmap);
+            if(result != helper::image::PNGError::Okay)
+                std::cerr << "Couldn't write \"" << outFile << "\". Error code: " << (int) result << std::endl;
+            else
+                std::cout << "File \"" << outFile << "\" successfully written." << std::endl;
+
+        }
+    }
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -707,6 +743,9 @@ int main(int argc, char** argv)
 
     if (!properties.job.rescale.empty())
         rescale(properties);
+
+    if(!properties.job.copyFixPNG.empty())
+        copyFixPNG(properties);
 
     return 0;
 }
