@@ -116,7 +116,10 @@ namespace helper
             // Open the file
             FILE* fp = fopen(file.c_str(), "rb");
             if (!fp)
+            {
+                std::cerr << std::strerror(errno) << std::endl;
                 return PNGError::CantOpenFile;
+            }
 
             // Check, if it actually is a valid PNG
             uint8_t header[8];
@@ -253,7 +256,10 @@ namespace helper
             // Open file
             FILE* fp = fopen(file.c_str(), "wb");
             if (!fp)
+            {
+                std::cerr << std::strerror(errno) << std::endl;
                 return PNGError::CantOpenFile;
+            }
 
             // Create write struct
             png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
