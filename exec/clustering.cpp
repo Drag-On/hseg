@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/WeightsVec.h>
+#include <Energy/Weights.h>
 #include <helper/image_helper.h>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <Timer.h>
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 
     size_t const numClasses = 21;
 
-    WeightsVec weights(numClasses, 1, 1, properties.weights.feature, properties.weights.label);
+    Weights weights(numClasses, 1, 1, properties.weights.feature, properties.weights.label);
     weights.read(properties.weights.weightsFile);
     std::cout << "Used weights:" << std::endl;
     std::cout << weights << std::endl;

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include <typedefs.h>
-#include "Feature_.h"
+#include "Feature.h"
 
 class FeatureImage
 {
@@ -23,17 +23,21 @@ public:
 
     Coord height() const;
 
+    /**
+     * Provides the feature dimensionality
+     * @return
+     */
     Coord dim() const;
 
-    Feature_ const& at(Coord x, Coord y) const;
+    Feature const& at(Coord x, Coord y) const;
 
-    Feature_ const& atSite(SiteId i) const;
+    Feature const& atSite(SiteId i) const;
 
 private:
     Coord m_width;
     Coord m_height;
     Coord m_dim;
-    std::vector<Feature_> m_features;
+    std::vector<Feature> m_features;
 };
 
 

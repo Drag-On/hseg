@@ -68,7 +68,7 @@ int main(int argc, char** argv)
         return ERR_EMPTY_FILE_LIST;
     }
 
-    WeightsVec weights(true);
+    Weights weights(true);
     if(!weights.read(properties.weightsFile))
     {
         std::cerr << "Couldn't read weights file \"" << properties.weightsFile << "\"" << std::endl;

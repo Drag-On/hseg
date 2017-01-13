@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/WeightsVec.h>
+#include <Energy/Weights.h>
 #include <Energy/UnaryFile.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     Label const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max<Label>(256, numClasses));
     helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
+    Weights curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.weightFile))
     {
         std::cout << "Couldn't read current weights from " << properties.weightFile << std::endl;

@@ -4,7 +4,7 @@
 
 #include "Energy/LossAugmentedEnergyFunction.h"
 
-LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unaries, WeightsVec const& weights,
+LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unaries, Weights const& weights,
                                                          Cost pairwiseSigmaSq, Matrix5 const& featureWeights,
                                                          LabelImage const& groundTruth)
         : EnergyFunction(unaries, weights, pairwiseSigmaSq, featureWeights),

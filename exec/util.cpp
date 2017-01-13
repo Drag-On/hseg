@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/WeightsVec.h>
+#include <Energy/Weights.h>
 #include <helper/image_helper.h>
 #include <helper/coordinate_helper.h>
 #include <boost/filesystem/path.hpp>
@@ -51,7 +51,7 @@ PROPERTIES_DEFINE(Util,
 
 bool showWeight(std::string const& weightFile)
 {
-    WeightsVec w(21ul);
+    Weights w(21ul);
     if (!w.read(weightFile))
     {
         std::cerr << "Couldn't read weight file \"" << weightFile << "\"" << std::endl;
@@ -80,20 +80,20 @@ bool writeWeight(std::string const& weightFile)
     float l = 0;
     std::cin >> l;
     std::cout << "==========" << std::endl;
-    WeightsVec w(21ul, u, p, f, l);
+    Weights w(21ul, u, p, f, l);
     return w.write(weightFile);
 }
 
 bool writeWeightFileText(UtilProperties const& properties)
 {
     size_t const numClasses = properties.Constants.numClasses;
-    WeightsVec weightsVec(numClasses);
+    Weights weightsVec(numClasses);
     if (!weightsVec.read(properties.job.writeWeightFileText))
     {
         std::cerr << "Couldn't read weight file \"" << properties.job.writeWeightFileText << "\"" << std::endl;
         return false;
     }
-    WeightsVec const& w = weightsVec;
+    Weights const& w = weightsVec;
 
     std::ofstream unaryOut(properties.Paths.out + "weights.unary.csv");
     if (unaryOut.is_open())
@@ -355,7 +355,7 @@ bool estimateSpDistance(UtilProperties const& properties)
     auto cmap2 = helper::image::generateColorMap(properties.Constants.numClusters);
 
     UnaryFile fakeUnary;
-    WeightsVec fakeWeights(properties.Constants.numClasses);
+    Weights fakeWeights(properties.Constants.numClasses);
     Matrix5 fakeFeatureWeights;
     EnergyFunction energy(fakeUnary, fakeWeights, 0, fakeFeatureWeights);
 

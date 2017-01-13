@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/WeightsVec.h>
+#include <Energy/Weights.h>
 #include <Inference/k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
@@ -45,7 +45,7 @@ struct Result
 };
 
 Result process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
-             WeightsVec const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
+             Weights const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
              Matrix5 const& featureWeights, std::string const& spOutPath, std::string const& labelOutPath)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
 
-    WeightsVec weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature,
+    Weights weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature,
                        properties.weights.label);
     if(!weights.read(properties.weights.file))
         std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;

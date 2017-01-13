@@ -6,24 +6,24 @@
 #define HSEG_INFERENCEITERATOR_H
 
 #include <Energy/EnergyFunction.h>
-#include <Inference/InferenceResult.h>
+#include <Image/FeatureImage.h>
+#include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
+#include "InferenceResult.h"
 #include "InferenceResultDetails.h"
 
 /**
  * Infers both class labels and superpixels on an image
  */
-template<typename EnergyFun, template<typename> class Optimizer = GraphOptimizer>
+template<typename EnergyFun>
 class InferenceIterator
 {
 public:
     /**
      * Constructor
      * @param e Energy function
-     * @param numClusters Amount of clusters
-     * @param numClasses Amount of classes
-     * @param color Color image
+     * @param pImg Color image
      */
-    InferenceIterator(EnergyFun e, Label numClusters, Label numClasses, CieLabImage const& color);
+    InferenceIterator(EnergyFun const* e, FeatureImage const* pImg);
 
     /**
      * Does the actual inference
@@ -40,118 +40,113 @@ public:
     InferenceResultDetails runDetailed(uint32_t numIter = 0);
 
 private:
-    EnergyFun m_energy;
-    Label m_numClusters;
-    Label m_numClasses;
-    CieLabImage const& m_color;
+    EnergyFun const* m_pEnergy;
+    FeatureImage const* m_pImg;
     float const m_eps = 1e3f;
 
     Cost computeInitialEnergy(LabelImage const& labeling) const;
 };
 
-template<typename EnergyFun, template<typename> class Optimizer>
-InferenceIterator<EnergyFun, Optimizer>::InferenceIterator(EnergyFun e, Label numClusters, Label numClasses,
-                                                CieLabImage const& color)
-        : m_energy(e),
-          m_numClusters(numClusters),
-          m_numClasses(numClasses),
-          m_color(color)
+template<typename EnergyFun>
+InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg)
+        : m_pEnergy(e),
+          m_pImg(pImg)
 {
 }
 
-template<typename EnergyFun, template<typename> class Optimizer>
-InferenceResult InferenceIterator<EnergyFun, Optimizer>::run(uint32_t numIter)
+template<typename EnergyFun>
+InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
 {
     InferenceResult result;
 
     Cost energy = std::numeric_limits<Cost>::max();
     Cost lastEnergy = energy;
     //result.labeling = m_energy.unaryFile().maxLabeling();
-    result.labeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
+    result.labeling = LabelImage(m_pImg->width(), m_pImg->height()); // The labeling will be empty (all zeros)
 
-    Clusterer<EnergyFun> clusterer(m_energy, m_color, result.labeling, m_numClusters);
-    Optimizer<EnergyFun> optimizer(m_energy);
+    TRW_S_Optimizer<EnergyFun> optimizer(m_pEnergy);
+    optimizer.run(*m_pImg);
+    result.labeling = optimizer.labeling();
 
-    for (result.numIter = 0; (numIter > 0) ? (result.numIter < numIter) : (lastEnergy - energy >= m_eps || result.numIter == 0); ++result.numIter)
-    {
-        lastEnergy = energy;
+    // TODO: Optimize
 
-        // Update superpixels using the latest class labeling
-        clusterer.run(result.labeling);
-        result.superpixels = clusterer.clustership();
-        result.clusters = clusterer.clusters();
-
-        // Update class labeling using the latest superpixels
-        optimizer.run(m_color, result.superpixels, m_numClusters);
-        result.labeling = optimizer.labeling();
-
-        if(numIter == 0)
-        {
-            energy = m_energy.giveEnergy(result.labeling, m_color, result.superpixels, clusterer.clusters());
-            // std::cout <<  result.numIter << ": " << energy << " | " << lastEnergy - energy << " >= " << m_eps << std::endl;
-        }
-    }
+//    for (result.numIter = 0; (numIter > 0) ? (result.numIter < numIter) : (lastEnergy - energy >= m_eps || result.numIter == 0); ++result.numIter)
+//    {
+//        lastEnergy = energy;
+//
+//        // Update superpixels using the latest class labeling
+//        clusterer.run(result.labeling);
+//        result.superpixels = clusterer.clustership();
+//        result.clusters = clusterer.clusters();
+//
+//        // Update class labeling using the latest superpixels
+//        optimizer.run(m_color, result.superpixels, m_numClusters);
+//        result.labeling = optimizer.labeling();
+//
+//        if(numIter == 0)
+//        {
+//            energy = m_energy.giveEnergy(result.labeling, m_color, result.superpixels, clusterer.clusters());
+//            // std::cout <<  result.numIter << ": " << energy << " | " << lastEnergy - energy << " >= " << m_eps << std::endl;
+//        }
+//    }
 
     return result;
 }
 
-template<typename EnergyFun, template<typename> class Optimizer>
-InferenceResultDetails InferenceIterator<EnergyFun, Optimizer>::runDetailed(uint32_t numIter)
+template<typename EnergyFun>
+InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIter)
 {
     InferenceResultDetails result;
 
     //LabelImage maxLabeling = m_energy.unaryFile().maxLabeling();
-    LabelImage maxLabeling = LabelImage(m_color.width(), m_color.height()); // The labeling will be empty (all zeros)
+    LabelImage maxLabeling = LabelImage(m_pImg->width(), m_pImg->height()); // The labeling will be empty (all zeros)
     Cost initialEnergy = computeInitialEnergy(maxLabeling);
     Cost lastEnergy = initialEnergy;
     Cost energy = initialEnergy;
     result.energy.push_back(initialEnergy);
 
-    Clusterer<EnergyFun> clusterer(m_energy, m_color, maxLabeling, m_numClusters);
-    Optimizer<EnergyFun> optimizer(m_energy);
+    TRW_S_Optimizer<EnergyFun> optimizer(m_pEnergy);
+    optimizer.run(*m_pImg);
+    result.labelings.push_back(optimizer.labeling());
+    energy = m_pEnergy->giveEnergy(*m_pImg, optimizer.labeling());
+    result.energy.push_back(energy);
+    result.numIter = 1;
 
-    LabelImage spLabeling;
-    LabelImage classLabeling = maxLabeling;
-    uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
-    {
-        lastEnergy = energy;
-
-        // Update superpixels using the latest class labeling
-        clusterer.run(classLabeling);
-        spLabeling = clusterer.clustership();
-
-        // Update class labeling using the latest superpixels
-        optimizer.run(m_color, spLabeling, m_numClusters);
-        classLabeling = optimizer.labeling();
-
-        energy = m_energy.giveEnergy(classLabeling, m_color, spLabeling, clusterer.clusters());
-        result.energy.push_back(energy);
-        result.labelings.push_back(classLabeling);
-        result.superpixels.push_back(spLabeling);
-    }
-    result.numIter = iter;
+//    LabelImage spLabeling;
+//    LabelImage classLabeling = maxLabeling;
+//    uint32_t iter = 0;
+//
+//
+//
+//    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+//    {
+//        lastEnergy = energy;
+//
+//        // Update superpixels using the latest class labeling
+//        clusterer.run(classLabeling);
+//        spLabeling = clusterer.clustership();
+//
+//        // Update class labeling using the latest superpixels
+//        optimizer.run(m_color, spLabeling, m_numClusters);
+//        classLabeling = optimizer.labeling();
+//
+//        energy = m_energy.giveEnergy(classLabeling, m_color, spLabeling, clusterer.clusters());
+//        result.energy.push_back(energy);
+//        result.labelings.push_back(classLabeling);
+//        result.superpixels.push_back(spLabeling);
+//    }
+//    result.numIter = iter;
 
     return result;
 }
 
-template<typename EnergyFun, template<typename> class Optimizer>
-Cost InferenceIterator<EnergyFun, Optimizer>::computeInitialEnergy(LabelImage const& labeling) const
+template<typename EnergyFun>
+Cost InferenceIterator<EnergyFun>::computeInitialEnergy(LabelImage const& labeling) const
 {
-    LabelImage fakeSpLabeling(m_color.width(), m_color.height());
+    LabelImage fakeSpLabeling(m_pImg->width(), m_pImg->height());
     std::vector<Feature> features;
-    Cluster c(&m_energy);
-    features.reserve(m_color.pixels());
-    c.allocated.reserve(m_color.pixels());
-    for(SiteId s = 0; s < m_color.pixels(); ++s)
-    {
-        c.allocated.emplace_back(s);
-        features.emplace_back(m_color, s);
-    }
-    c.update(features, labeling);
-    std::vector<Cluster> fakeClusters(1, c);
 
-    Cost energy = m_energy.giveEnergy(labeling, m_color, fakeSpLabeling, fakeClusters);
+    Cost energy = m_pEnergy->giveEnergy(*m_pImg, labeling);
     return energy;
 }
 

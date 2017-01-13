@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/WeightsVec.h>
+#include <Energy/Weights.h>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <helper/image_helper.h>
@@ -59,13 +59,13 @@ std::vector<std::string> readFileNames(std::string const& listFile)
 struct SampleResult
 {
     float energy = 0;
-    WeightsVec diff{21ul, false};
+    Weights diff{21ul, false};
     bool valid = false;
 };
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename,
                            helper::image::ColorMap const& cmap, helper::image::ColorMap const& cmap2, Label numClasses,
-                           WeightsVec const& curWeights, Matrix5 const& featureWeights)
+                           Weights const& curWeights, Matrix5 const& featureWeights)
 {
     SampleResult sampleResult;
     Label numClusters = properties.numClusters;
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
         return INVALID_FEATURE_WEIGHTS;
     }
 
-    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
+    Weights curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.weightFile) && properties.t != 0)
     {
         std::cerr << "Couldn't read current weights from " << properties.weightFile << std::endl;
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
     // Iterate over all predictions
     size_t N = list.size();
     size_t t = properties.t;
-    WeightsVec sum(numClasses, false);
+    Weights sum(numClasses, false);
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<SampleResult>> futures;
     // Iterate over all images

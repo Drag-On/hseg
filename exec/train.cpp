@@ -3,7 +3,7 @@
 //
 
 #include <BaseProperties.h>
-#include <Energy/WeightsVec.h>
+#include <Energy/Weights.h>
 #include <Energy/UnaryFile.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
@@ -63,7 +63,7 @@ std::vector<std::string> readFileNames(std::string const& listFile)
 
 struct SampleResult
 {
-    WeightsVec energyDiff{21ul, false};
+    Weights energyDiff{21ul, false};
     float trainingEnergy = 0;
     bool valid = false;
 };
@@ -71,7 +71,7 @@ struct SampleResult
 SampleResult processSample(std::string const& colorImgFilename, std::string const& gtImageFilename,
                            std::string const& unaryFilename, TrainProperties const& properties,
                            helper::image::ColorMap const& cmap, size_t numClasses, size_t numClusters,
-                           WeightsVec const& curWeights, Matrix5 const& featureWeights)
+                           Weights const& curWeights, Matrix5 const& featureWeights)
 {
     SampleResult sampleResult;
 
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
     size_t const numClasses = 21;
     size_t const numClusters = properties.numClusters;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
-    WeightsVec curWeights(numClasses, 0, 0, 1, 0);
+    Weights curWeights(numClasses, 0, 0, 1, 0);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
 
@@ -204,8 +204,8 @@ int main(int argc, char** argv)
     float learningRate = properties.FixedLearningRate.rate;
     if(properties.learningRate == "BoldDriver")
         learningRate = properties.BoldDriverLearningRate.base;
-    WeightsVec lastWeights = curWeights;
-    WeightsVec lastGradient = curWeights;
+    Weights lastWeights = curWeights;
+    Weights lastGradient = curWeights;
 
     std::ofstream log(properties.log);
     if(!log.is_open())
@@ -217,7 +217,7 @@ int main(int argc, char** argv)
     // Iterate T times
     for(size_t t = properties.startIter; t < T; ++t)
     {
-        WeightsVec sum(numClasses, 0, 0, 0, 0); // All zeros
+        Weights sum(numClasses, 0, 0, 0, 0); // All zeros
         float iterationEnergy = 0;
         futures.clear();
 

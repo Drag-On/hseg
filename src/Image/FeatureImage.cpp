@@ -50,12 +50,11 @@ bool FeatureImage::read(std::string const& filename)
         {
             for(size_t x = 0; x < m_width; ++x)
             {
-                Feature_ f;
-                f.m_features.reserve(m_dim);
+                Feature f = Feature::Zero(m_dim);
                 for(size_t c = 0; c < m_dim; ++c)
                 {
                     float data = ((float*)matvar->data)[y + x * m_height + c * m_height* m_width];
-                    f.m_features.push_back(data);
+                    f(c) = data;
                 }
                 m_features.push_back(f);
             }
@@ -83,13 +82,13 @@ Coord FeatureImage::dim() const
     return m_dim;
 }
 
-Feature_ const& FeatureImage::at(Coord x, Coord y) const
+Feature const& FeatureImage::at(Coord x, Coord y) const
 {
     assert(x + y * m_width < m_features.size());
     return m_features[x + y * m_width];
 }
 
-Feature_ const& FeatureImage::atSite(SiteId i) const
+Feature const& FeatureImage::atSite(SiteId i) const
 {
     assert(i < m_features.size());
     return m_features[i];
