@@ -15,29 +15,18 @@ class LossAugmentedEnergyFunction : public EnergyFunction
 public:
     /**
      * Constructor
-     * @param unaries Unary scores. The reference must stay valid as long as this object persists.
-     * @param weights Weights to use. The reference must stay valid as long as this object persists.
-     * @param pairwiseSigmaSq Sigma-Square inside of the exponential
-     * @param groundTruth Ground truth image. The reference must stay valid as long as this object persists.
+     * @param weights Weights to use. The pointer must stay valid as long as this object persists.
+     * @param groundTruth Ground truth image. The pointer must stay valid as long as this object persists.
      */
-    LossAugmentedEnergyFunction(UnaryFile const& unaries, Weights const& weights, Cost pairwiseSigmaSq,
-                                Matrix5 const& featureWeights, LabelImage const& groundTruth);
+    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth);
 
-    inline Cost unaryCost(size_t i, Label l) const
+    inline Cost unaryCost(SiteId i, Feature const& f, Label l) const
     {
         Cost loss = 0;
-        if (m_groundTruth.atSite(i) != l && m_groundTruth.atSite(i) < m_unaryScores.classes())
+        if (m_pGroundTruth->atSite(i) != l && m_pGroundTruth->atSite(i) < numClasses())
             loss = m_lossFactor;
 
-        return EnergyFunction::unaryCost(i, l) - loss;
-    }
-
-    inline Cost classData(SiteId s, Label l) const
-    {
-        if(m_groundTruth.atSite(s) != l && m_groundTruth.atSite(s) < m_unaryScores.classes())
-            return -m_lossFactor;
-        else
-            return 0;
+        return EnergyFunction::unaryCost(i, f, l) - loss;
     }
 
     /**
@@ -54,9 +43,7 @@ public:
      * @return The loss
      */
     static Cost
-    computeLoss(LabelImage const& labeling, LabelImage const& superpixels,
-                LabelImage const& groundTruth, Cost lossFactor, Label numClasses,
-                std::vector<Cluster> const& clustering);
+    computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor, Label numClasses);
 
     /**
      * Computes the loss factor on an image
@@ -67,7 +54,7 @@ public:
     static Cost computeLossFactor(LabelImage const& groundTruth, Label numClasses);
 
 private:
-    LabelImage const& m_groundTruth;
+    LabelImage const* m_pGroundTruth;
     Cost m_lossFactor;
 };
 

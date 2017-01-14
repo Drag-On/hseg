@@ -69,7 +69,7 @@ void TRW_S_Optimizer<EnergyFun>::run(FeatureImage const& img)
         Feature const& f = img.atSite(i);
         std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
         for (Label l = 0; l < numClasses; ++l)
-            confidences[l] = m_pEnergy->unaryCost(f, l);
+            confidences[l] = m_pEnergy->unaryCost(i, f, l);
         auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
         nodeIds.push_back(id);
     }
@@ -92,7 +92,7 @@ void TRW_S_Optimizer<EnergyFun>::run(FeatureImage const& img)
             {
                 for(Label l2 = 0; l2 < l1; ++l2)
                 {
-                    Cost cost = m_pEnergy->pairwise(f, fR, l1, l2);
+                    Cost cost = m_pEnergy->pairwiseCost(f, fR, l1, l2);
                     costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = cost;
                 }
             }
@@ -108,7 +108,7 @@ void TRW_S_Optimizer<EnergyFun>::run(FeatureImage const& img)
             {
                 for(Label l2 = 0; l2 < l1; ++l2)
                 {
-                    Cost cost = m_pEnergy->pairwise(f, fD, l1, l2);
+                    Cost cost = m_pEnergy->pairwiseCost(f, fD, l1, l2);
                     costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = cost;
                 }
             }

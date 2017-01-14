@@ -4,13 +4,11 @@
 
 #include "Energy/LossAugmentedEnergyFunction.h"
 
-LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(UnaryFile const& unaries, Weights const& weights,
-                                                         Cost pairwiseSigmaSq, Matrix5 const& featureWeights,
-                                                         LabelImage const& groundTruth)
-        : EnergyFunction(unaries, weights, pairwiseSigmaSq, featureWeights),
-          m_groundTruth(groundTruth)
+LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth)
+        : EnergyFunction(weights),
+          m_pGroundTruth(groundTruth)
 {
-    m_lossFactor = computeLossFactor(groundTruth, unaries.classes());
+    m_lossFactor = computeLossFactor(*groundTruth, weights->numClasses());
 }
 
 Cost LossAugmentedEnergyFunction::lossFactor()
@@ -19,9 +17,7 @@ Cost LossAugmentedEnergyFunction::lossFactor()
 }
 
 Cost
-LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& superpixels,
-                                        LabelImage const& groundTruth, Cost lossFactor, Label numClasses,
-                                        std::vector<Cluster> const& clustering)
+LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor, Label numClasses)
 {
     Cost loss = 0;
     for (SiteId i = 0; i < labeling.pixels(); ++i)
@@ -29,8 +25,6 @@ LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage 
         if(groundTruth.atSite(i) < numClasses)
         {
             if (groundTruth.atSite(i) != labeling.atSite(i))
-                loss += lossFactor;
-            if (groundTruth.atSite(i) != clustering[superpixels.atSite(i)].label)
                 loss += lossFactor;
         }
     }

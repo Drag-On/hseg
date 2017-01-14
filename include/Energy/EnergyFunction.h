@@ -68,11 +68,12 @@ public:
 
     /**
      * Computes the cost of a unary-class label combination
+     * @param i Site
      * @param f Feature to consider
      * @param l Class label to compute score for
      * @return The cost of assigning class label \p l to pixel \p i
      */
-    inline Cost unaryCost(Feature const& f, Label l) const
+    inline Cost unaryCost(SiteId /*i*/, Feature const& f, Label l) const
     {
         assert(l < numClasses());
 
@@ -89,7 +90,7 @@ public:
      * @param l2 Second label
      * @return The partial cost
      */
-    inline Cost pairwise(Feature const& f1, Feature const& f2, Label l1, Label l2) const
+    inline Cost pairwiseCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
     {
         assert(l1 < numClasses() && l2 < numClasses());
 
