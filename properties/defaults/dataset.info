@@ -1,0 +1,23 @@
+; Configure the dataset
+;
+
+dataset
+{
+	list "" ; File that contains filenames
+	path
+	{
+		img ""	; Path to feature image files
+		gt ""	; Path to ground truth labelings
+	}
+	extension
+	{
+		img ".mat"	; File extension of feature image files
+		gt ".png"	; File extension of ground truth labelings
+	}
+	constants
+	{
+		numClasses 21	; Amount of classes
+		featDim 512		; Feature dimension
+	}
+
+}

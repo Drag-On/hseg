@@ -7,17 +7,29 @@
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/path.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
-#include <Inference/k-prototypes/Clusterer.h>
 
 PROPERTIES_DEFINE(Accuracy,
-                  PROP_DEFINE_A(std::string, fileList, "", -l)
-                  PROP_DEFINE_A(std::string, predDir, "", -p)
-                  PROP_DEFINE_A(std::string, spDir, "", -s)
-                  PROP_DEFINE_A(std::string, gtDir, "", -g)
-                  PROP_DEFINE_A(std::string, outDir, "./", -o)
-                  PROP_DEFINE_A(std::string, weightsFile, "", -w)
-                  PROP_DEFINE_A(float, C, 0.1f, -C)
-                  PROP_DEFINE_A(Label, numClusters, 200, -c)
+                  GROUP_DEFINE(dataset,
+                               PROP_DEFINE_A(std::string, list, "", -l)
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
+                  )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(std::string, weights, "", -w)
+                  )
+                  GROUP_DEFINE(train,
+                               PROP_DEFINE_A(float, C, 0.1, -C)
+                  )
+                  PROP_DEFINE_A(std::string, inDir, "", --in)
+                  PROP_DEFINE_A(std::string, outDir, "./", --out)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -60,25 +72,23 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    std::string fileListName = boost::filesystem::path(properties.fileList).stem().string();
-    auto fileNames = readFileNames(properties.fileList);
+    std::string fileListName = boost::filesystem::path(properties.dataset.list).stem().string();
+    auto fileNames = readFileNames(properties.dataset.list);
     if(fileNames.empty())
     {
         std::cerr << "Empty file list." << std::endl;
         return ERR_EMPTY_FILE_LIST;
     }
 
-    Weights weights(true);
-    if(!weights.read(properties.weightsFile))
+    Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    if(!weights.read(properties.param.weights))
     {
-        std::cerr << "Couldn't read weights file \"" << properties.weightsFile << "\"" << std::endl;
+        std::cerr << "Couldn't read weights file \"" << properties.param.weights << "\"" << std::endl;
         return ERR_CANT_READ_WEIGHTS;
     }
 
-    size_t const numClasses = 21ul;
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
-    helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    ConfusionMatrix accuracy(numClasses);
+    ConfusionMatrix accuracy(properties.dataset.constants.numClasses);
     float loss = 0;
     size_t rawPxCorrect = 0;
     size_t rawPixelCount = 0;
@@ -88,38 +98,21 @@ int main(int argc, char** argv)
 
     for(auto const& f : fileNames)
     {
-        std::string const& predFilename = properties.predDir + f + ".png";
-        std::string const& spFilename = properties.spDir + f + ".png";
-        std::string const& gtFilename = properties.gtDir + f + ".png";
+        std::string const& predFilename = properties.inDir + f + properties.dataset.extension.gt;
+        std::string const& gtFilename = properties.dataset.path.gt + f + properties.dataset.extension.gt;
 
         // Load images
-        RGBImage predRGB, spRGB;
-        predRGB.read(predFilename);
-        if (predRGB.pixels() == 0)
+        LabelImage pred;
+        auto errCode = helper::image::readPalettePNG(predFilename, pred, nullptr);
+        if(errCode != helper::image::PNGError::Okay)
         {
-            std::cerr << "Couldn't load image " << predFilename << std::endl;
+            std::cerr << "Couldn't load image \"" << predFilename << "\". Error Code: " << (int) errCode << std::endl;
             return ERR_IMAGE_LOAD;
         }
-        spRGB.read(spFilename);
-        if (spRGB.pixels() == 0)
-        {
-            std::cerr << "Couldn't load image " << spFilename << std::endl;
-            return ERR_IMAGE_LOAD;
-        }
-        LabelImage pred = helper::image::decolorize(predRGB, cmap);
-        LabelImage sp = helper::image::decolorize(spRGB, cmap2);
 
-        EnergyFunction fakeEnergy(UnaryFile{}, weights, 0.f, Matrix5::Identity());
-        auto clusters = Clusterer<EnergyFunction>::computeClusters(sp, predRGB, pred, properties.numClusters, fakeEnergy);
-
-        RGBImage gtRGB;
-        gtRGB.read(gtFilename);
-        if (gtRGB.pixels() == 0)
-        {
-            std::cerr << "Couldn't load image " << gtFilename << std::endl;
-            return ERR_IMAGE_LOAD;
-        }
-        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
+        
+        LabelImage gt;
+        errCode = helper::image::readPalettePNG(gtFilename, gt, nullptr);
 
         if(pred.width() != gt.width() || pred.height() != gt.height() || pred.pixels() == 0)
         {
@@ -133,10 +126,10 @@ int main(int argc, char** argv)
         size_t imgRawPxCount = 0;
 
         // Compute loss
-        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses);
-        loss += LossAugmentedEnergyFunction::computeLoss(pred, sp, gt, lossFactor, numClasses, clusters);
+        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+        loss += LossAugmentedEnergyFunction::computeLoss(pred, gt, lossFactor, properties.dataset.constants.numClasses);
         for (size_t i = 0; i < gt.pixels(); ++i)
-            if (gt.atSite(i) < numClasses)
+            if (gt.atSite(i) < properties.dataset.constants.numClasses)
             {
                 imgRawPxCount++;
                 if(gt.atSite(i) == pred.atSite(i))
@@ -154,7 +147,7 @@ int main(int argc, char** argv)
         rawPxCorrect += imgRawPxCorrect;
     }
 
-    loss *= properties.C / fileNames.size();
+    loss *= properties.train.C / fileNames.size();
 
     std::cout << accuracy << std::endl;
     std::cout << "Loss: " << loss << std::endl;

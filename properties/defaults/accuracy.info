@@ -1,23 +1,15 @@
-; Properties for hseg_cluster
+; Properties for hseg_accy
 ;
 
-; List of files to consider
-fileList "imageList.txt"
+; dataset configuration
+#include "properties/dataset.info"
+; model parametrization
+#include "properties/param.info"
+; training configuration
+#include "properties/training.info"
 
 ; Directory containing the predicted labelings
-predDir "/home/jan/Dokumente/Git/hseg/out/labeling/"
+inDir ""
 
-; Directory containing the predicted superpixels
-spDir "/home/jan/Dokumente/Git/hseg/out/sp/"
-
-; Directory containing the ground truth
-gtDir "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"
-
-; Weights file to compute loss with
-weightsFile "/home/jan/Dokumente/Git/hseg/out/weights.dat"
-
-; Training constant
-C 0.1
-
-; Amount of clusters on the predicted superpixels
-numClusters 200
+; Directory to write results to
+outDir ""

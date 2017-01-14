@@ -1,0 +1,8 @@
+; Model parametrization
+;
+
+param
+{
+	weights ""		; Weight file
+	numClusters 200	; Amount of clusters
+}

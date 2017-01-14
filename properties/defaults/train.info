@@ -1,0 +1,7 @@
+; Training configuration
+;
+
+train
+{
+	C 0.1	; Regularization factor
+}
