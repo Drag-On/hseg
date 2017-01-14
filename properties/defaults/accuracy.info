@@ -6,7 +6,7 @@
 ; model parametrization
 #include "properties/param.info"
 ; training configuration
-#include "properties/training.info"
+#include "properties/train.info"
 
 ; Directory containing the predicted labelings
 inDir ""

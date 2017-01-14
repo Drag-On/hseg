@@ -1,37 +1,15 @@
 ; Properties for hseg_train
 ;
 
-numClusters 300         ; Amount of clusters
-numIter 10000             ; Amount of iterations
-startIter 0
-learningRate BoldDriver      ; Learning method
-FixedLearningRate
-{
-    rate 0.0001
-}
-DiminishingLearningRate
-{
-    base 0.0001
-    T 1
-}
-BoldDriverLearningRate
-{
-    base 0.001
-    increase 10.5
-    decrease 0.5
-    margin 1e-10
-}
-C 1                    ; Constant factor 3e-4
-pairwiseSigmaSq 1.00166e-06    ; Value of sigma square
-featureWeightFile "out/featureWeights.txt"
-imagesPerIter 0
-imageListFile "imageList.txt"        ; List of color images
-imageBasePath "data/"        ; Directory that contains all the color images
-groundTruthBasePath "/home/jan/Downloads/Pascal VOC/data/VOC2012/SegmentationClass/"  ; Directory that contains all the ground truth images
-unaryBasePath "data/"        ; Directory that contains all the unary score files
-imageExtension .jpg
-gtExtension .png
-out "out/weights_test.dat"           ; Directory to write results to
-in "out/weights_test.dat"
-log "out/training.log"
-numThreads 4
+; dataset configuration
+#include "properties/dataset.info"
+; model parametrization
+#include "properties/param.info"
+; training configuration
+#include "properties/train.info"
+
+in ""					; Initial weights
+out "out/weights.dat"	; Directory to write results to
+outDir "out/iterations/"; Directory to save all results in
+log "out/training.log"	; Log file
+numThreads 4			; Amount of threads

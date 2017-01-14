@@ -11,38 +11,37 @@
 
 
 PROPERTIES_DEFINE(Train,
-                  PROP_DEFINE(size_t, numClusters, 300)
-                  PROP_DEFINE(size_t, numIter, 100)
-                  PROP_DEFINE_A(size_t, startIter, 0, -t)
-                  PROP_DEFINE(std::string, learningRate, "Fixed")
-                  GROUP_DEFINE(FixedLearningRate,
-                      PROP_DEFINE(float, rate, 0.0001f)
+                  GROUP_DEFINE(dataset,
+                               PROP_DEFINE_A(std::string, list, "", -l)
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, img, "", --img)
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
+                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
                   )
-                  GROUP_DEFINE(DiminishingLearningRate,
-                      PROP_DEFINE(float, base, 0.0001f)
-                      PROP_DEFINE(float, T, 1)
+                  GROUP_DEFINE(train,
+                               PROP_DEFINE_A(float, C, 0.1, -C)
+                               GROUP_DEFINE(iter,
+                                            PROP_DEFINE_A(uint32_t, start, 0, --start)
+                                            PROP_DEFINE_A(uint32_t, end, 1000, --end)
+                               )
+                               GROUP_DEFINE(rate,
+                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
+                                            PROP_DEFINE_A(float, T, 200, -T)
+                               )
                   )
-                  GROUP_DEFINE(BoldDriverLearningRate,
-                      PROP_DEFINE(float, base, 0.0001f)
-                      PROP_DEFINE(float, increase, 1.05f)
-                      PROP_DEFINE(float, decrease, 0.5f)
-                      PROP_DEFINE(float, margin, 1e-10f)
-                  )
-                  PROP_DEFINE(float, C, 1.f)
-                  PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
-                  PROP_DEFINE(std::string, featureWeightFile, "")
-                  PROP_DEFINE(size_t, imagesPerIter, 0)
-                  PROP_DEFINE(std::string, imageListFile, "")
-                  PROP_DEFINE(std::string, imageBasePath, "")
-                  PROP_DEFINE(std::string, groundTruthBasePath, "")
-                  PROP_DEFINE(std::string, unaryBasePath, "")
-                  PROP_DEFINE(std::string, imageExtension, ".jpg")
-                  PROP_DEFINE(std::string, gtExtension, ".png")
-                  PROP_DEFINE(std::string, in, "")
-                  PROP_DEFINE(std::string, outDir, "out/")
-                  PROP_DEFINE(std::string, outFile, "weights.dat")
-                  PROP_DEFINE(std::string, log, "train.log")
-                  PROP_DEFINE(size_t, numThreads, 4)
+                  PROP_DEFINE_A(std::string, in, "", -i)
+                  PROP_DEFINE_A(std::string, out, "", -o)
+                  PROP_DEFINE_A(std::string, outDir, "", --outDir)
+                  PROP_DEFINE_A(std::string, log, "train.log", --log)
+                  PROP_DEFINE_A(uint32_t, numThreads, 4, --numThreads)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -66,41 +65,33 @@ struct SampleResult
     bool valid = false;
 };
 
-SampleResult processSample(std::string const& colorImgFilename, std::string const& gtImageFilename,
-                           std::string const& unaryFilename, TrainProperties const& properties,
-                           helper::image::ColorMap const& cmap, size_t numClasses, size_t numClusters,
-                           Weights const& curWeights, Matrix5 const& featureWeights)
+SampleResult processSample(std::string const& imgFilename, std::string const& gtFilename, Weights const& curWeights,
+                           TrainProperties const& properties)
 {
     SampleResult sampleResult;
 
     // Load images etc...
-    RGBImage rgbImage, groundTruthRGB, groundTruthSpRGB;
-    rgbImage.read(properties.imageBasePath + colorImgFilename + properties.imageExtension);
-    groundTruthRGB.read(properties.groundTruthBasePath + gtImageFilename + properties.gtExtension);
-    if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
+    FeatureImage features;
+    if(!features.read(imgFilename))
     {
-        std::cerr << "Image " << colorImgFilename << " and its ground truth don't match." << std::endl;
-        return sampleResult;
-    }
-    CieLabImage cieLabImage = rgbImage.getCieLabImg();
-    LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
-
-    UnaryFile unary(properties.unaryBasePath + unaryFilename + "_prob.dat");
-    if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
-    {
-        std::cerr << "Invalid unary scores " << unaryFilename << std::endl;
+        std::cerr << "Unable to read features from \"" << imgFilename << "\"" << std::endl;
         return sampleResult;
     }
 
-    // Find superpixels that best explain the ground truth
-    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    Clusterer<EnergyFunction> clusterer(trainingEnergy, cieLabImage, groundTruth, numClusters);
-    clusterer.run(groundTruth);
-    LabelImage const& bestSp = clusterer.clustership();
+    LabelImage gt;
+    auto errCode = helper::image::readPalettePNG(gtFilename, gt, nullptr);
+    if(errCode != helper::image::PNGError::Okay)
+    {
+        std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
+        return sampleResult;
+    }
+
+    // Find latent variables that best explain the ground truth
+    // -- Currently none
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
-    InferenceIterator<LossAugmentedEnergyFunction> inference(energy, properties.numClusters, numClasses, cieLabImage);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt);
+    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
     InferenceResult result = inference.run();
 
     /*cv::imshow("sp", static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2)));
@@ -110,17 +101,17 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
     cv::waitKey();*/
 
-    auto const& clusters = result.clusters;
-    auto predEnergyCur = trainingEnergy.giveEnergy(result.labeling, cieLabImage, result.superpixels, clusters);
+    EnergyFunction energy(&curWeights);
+    //auto const& clusters = result.clusters;
+    auto predEnergyCur = energy.giveEnergy(features, result.labeling);
     sampleResult.trainingEnergy -= predEnergyCur;
-    auto const& gtClusters = clusterer.clusters();
-    auto gtEnergyCur = trainingEnergy.giveEnergy(groundTruth, cieLabImage, bestSp, gtClusters);
+    //auto const& gtClusters = clusterer.clusters();
+    auto gtEnergyCur = energy.giveEnergy(features, gt);
     sampleResult.trainingEnergy += gtEnergyCur;
 
     // Compute loss
-    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(groundTruth, numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.superpixels, groundTruth, lossFactor,
-                                                          numClasses, clusters);
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, gt, lossFactor, properties.dataset.constants.numClasses);
     sampleResult.trainingEnergy += loss;
 
     if(sampleResult.trainingEnergy <= 0)
@@ -130,9 +121,9 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     }
 
     // Compute energy without weights on the ground truth
-    auto gtEnergy = trainingEnergy.giveEnergyByWeight(groundTruth, cieLabImage, bestSp, gtClusters);
+    auto gtEnergy = lossEnergy.giveEnergyByWeight(features, gt);
     // Compute energy without weights on the prediction
-    auto predEnergy = trainingEnergy.giveEnergyByWeight(result.labeling, cieLabImage, result.superpixels, clusters);
+    auto predEnergy = lossEnergy.giveEnergyByWeight(features, result.labeling);
     // Compute energy difference
     gtEnergy -= predEnergy;
 
@@ -140,6 +131,14 @@ SampleResult processSample(std::string const& colorImgFilename, std::string cons
     sampleResult.valid = true;
     return sampleResult;
 }
+
+enum ERROR_CODE
+{
+    SUCCESS=0,
+    FILE_LIST_EMPTY,
+    CANT_WRITE_LOG,
+    INFERRED_INVALID,
+};
 
 int main(int argc, char** argv)
 {
@@ -152,12 +151,11 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    size_t const numClasses = 21;
-    size_t const numClusters = properties.numClusters;
-    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max(256ul, numClasses));
-    Weights curWeights(numClasses, 0, 0, 1, 0);
+//    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
+
+    Weights curWeights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
     if(!curWeights.read(properties.in))
-        std::cout << "Couldn't read in weights to start from. Using default weights." << std::endl;
+        std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
 
     std::cout << "====================" << std::endl;
     std::cout << "Initial weights:" << std::endl;
@@ -167,21 +165,14 @@ int main(int argc, char** argv)
     std::default_random_engine random(rd());
 
     // Load filenames of all images
-    std::vector<std::string> filenames = readFileNames(properties.imageListFile);
+    std::vector<std::string> filenames = readFileNames(properties.dataset.list);
     if (filenames.empty())
     {
-        std::cerr << "File lists is empty!" << std::endl;
-        return 1;
+        std::cerr << "File list is empty!" << std::endl;
+        return FILE_LIST_EMPTY;
     }
-    if (properties.imagesPerIter == 0)
-        properties.imagesPerIter = filenames.size();
-    size_t T = properties.numIter;
-    size_t N = std::min(filenames.size(), properties.imagesPerIter);
-
-    Matrix5 featureWeights = readFeatureWeights(properties.featureWeightFile);
-    featureWeights = featureWeights.inverse();
-    std::cout << "Used feature weights: " << std::endl;
-    std::cout << featureWeights << std::endl;
+    uint32_t T = properties.train.iter.end - properties.train.iter.start;
+    uint32_t N = filenames.size();
 
     // DEBUG //
 
@@ -198,10 +189,8 @@ int main(int argc, char** argv)
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<SampleResult>> futures;
 
-    float lastTrainingEnergy = std::numeric_limits<float>::max();
-    float learningRate = properties.FixedLearningRate.rate;
-    if(properties.learningRate == "BoldDriver")
-        learningRate = properties.BoldDriverLearningRate.base;
+//    Cost lastTrainingEnergy = std::numeric_limits<Cost>::max();
+    Cost learningRate = properties.train.rate.base;
     Weights lastWeights = curWeights;
     Weights lastGradient = curWeights;
 
@@ -209,18 +198,15 @@ int main(int argc, char** argv)
     if(!log.is_open())
     {
         std::cerr << "Cannot write to log file \"" << properties.log << "\"" << std::endl;
-        return 50;
+        return CANT_WRITE_LOG;
     }
 
     // Iterate T times
-    for(size_t t = properties.startIter; t < T; ++t)
+    for(uint32_t t = properties.train.iter.start; t < T; ++t)
     {
-        Weights sum(numClasses, 0, 0, 0, 0); // All zeros
-        float iterationEnergy = 0;
+        Weights sum(properties.dataset.constants.numClasses, properties.dataset.constants.featDim); // All zeros
+        Cost iterationEnergy = 0;
         futures.clear();
-
-        // Shuffle the filenames (so it doesn't always take the same elements)
-        std::shuffle(filenames.begin(), filenames.end(), random);
 
         // Iterate over all images
         for (size_t n = 0; n < N; ++n)
@@ -228,8 +214,7 @@ int main(int argc, char** argv)
             std::string colorImgFilename, gtImageFilename, unaryFilename;
             colorImgFilename = gtImageFilename = unaryFilename = filenames[n];
 
-            auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, unaryFilename, properties, cmap,
-                                      numClasses, numClusters, curWeights, featureWeights);
+            auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, curWeights, properties);
             futures.push_back(std::move(fut));
         }
 
@@ -239,7 +224,7 @@ int main(int argc, char** argv)
             if(!sampleResult.valid)
             {
                 std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
-                return 2;
+                return INFERRED_INVALID;
             }
 
             std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
@@ -249,41 +234,20 @@ int main(int argc, char** argv)
         }
 
         // Show current training energy
-        iterationEnergy *= properties.C / N;
+        iterationEnergy *= properties.train.C / N;
         iterationEnergy += curWeights.sqNorm() / 2.f;
         std::cout << "Current training energy: " << iterationEnergy << std::endl;
 
         // Compute learning rate
-        if(properties.learningRate == "Diminishing")
-            learningRate = properties.DiminishingLearningRate.base / (1 + t / properties.DiminishingLearningRate.T);
-        else if(properties.learningRate == "BoldDriver")
-        {
-            if(t == 0)
-                learningRate = properties.BoldDriverLearningRate.base;
-            else
-            {
-                if(iterationEnergy < lastTrainingEnergy)
-                    learningRate *= properties.BoldDriverLearningRate.increase;
-                else if(iterationEnergy - lastTrainingEnergy > properties.BoldDriverLearningRate.margin)
-                {
-                    learningRate *= properties.BoldDriverLearningRate.decrease;
-                    auto gradient = lastGradient;
-                    gradient *= learningRate;
-                    curWeights = lastWeights;
-                    curWeights -= gradient;
-                    t--;
-                    continue;
-                }
-            }
-        }
+        learningRate = properties.train.rate.base / (1 + t / properties.train.rate.T);
 
         lastWeights = curWeights;
-        lastTrainingEnergy = iterationEnergy;
+//        lastTrainingEnergy = iterationEnergy;
 
         log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << "\t" << std::setw(12) << learningRate << std::endl;
 
         // Update step
-        sum *= properties.C / N;
+        sum *= properties.train.C / N;
         sum += curWeights;
         lastGradient = sum;
         sum *= learningRate;
@@ -292,8 +256,8 @@ int main(int argc, char** argv)
         // Project onto the feasible set
         curWeights.clampToFeasible();
 
-        if (!curWeights.write(properties.outDir + properties.outFile))
-            std::cerr << "Couldn't write weights to file " << properties.outDir + properties.outFile << std::endl;
+        if (!curWeights.write(properties.out))
+            std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
         curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat");
 
         std::cout << "====================" << std::endl;
@@ -303,5 +267,5 @@ int main(int argc, char** argv)
 
     log.close();
 
-    return 0;
+    return SUCCESS;
 }

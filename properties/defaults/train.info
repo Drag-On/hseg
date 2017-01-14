@@ -4,4 +4,14 @@
 train
 {
 	C 0.1	; Regularization factor
+	iter
+	{
+		start 0		; Starting iteration
+		end 1000	; End iteration
+	}
+	rate
+	{
+		base 0.001	; Learning rate base
+		T 200		; Denominator
+	}
 }
