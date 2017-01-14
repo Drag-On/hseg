@@ -1,24 +1,13 @@
+; Properties for hseg_util
+;
 
-Constants
-{
-    numClasses 21
-    numClusters 300
-    rescaleFactor 0.5
-}
+; dataset configuration
+#include "properties/dataset.info"
+; model parametrization
+#include "properties/param.info"
+; training configuration
+#include "properties/train.info"
 
-Paths
-{
-    out "out/fixedGt/"
-    image "/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/"
-    groundTruth "/home/jan/Downloads/Pascal VOC/groundTruthFixed/"
-    groundTruthSp "/home/jan/Dokumente/Git/hseg/spGroundTruth/"
-    unary "/home/jan/Dokumente/Git/hseg/unaries/"
-}
-
-FileExtensions
-{
-    image ".jpg"
-    groundTruth ".png"
-    groundTruthSp ".png"
-    unary "_prob.dat"
-}
+out ""              ; Directory to write results to
+rescaleFactor 0.5   ; Rescale factor for the "rescale" option
+border 255,255,255  ; Border color for the "outline" option
