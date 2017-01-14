@@ -4,14 +4,14 @@
 #include <Timer.h>
 #include <numeric>
 #include <iomanip>
-#include <Image/FeatureImage.h>
+#include <typedefs.h>
 
 using Feature = float;
 using Image = std::array<Feature, 2>;
 //using Label = int;
 using Labeling = std::array<Label, 2>;
 using Weight = float;
-using WeightVec = std::array<Weights, 6 + 9 * 2>; // 6 unary weigths + 9 pairwise combinations a 2 weights
+using WeightVec = std::array<Weight, 6 + 9 * 2>; // 6 unary weigths + 9 pairwise combinations a 2 weights
 using Cost = float;
 
 WeightVec const zeroWeights = {};
@@ -141,18 +141,6 @@ Cost training_loss(std::vector<Image> const& x, std::vector<Labeling> const& gt,
 
 int main()
 {
-    FeatureImage features("/home/jan/Schreibtisch/2008_000006_feat.mat");
-
-    std::cout << features.at(0, 1)(0) << std::endl;
-    std::cout << features.at(0, 1)(1) << std::endl;
-    std::cout << features.at(0, 1)(2) << std::endl;
-    std::cout << features.at(0, 1)(3) << std::endl;
-    std::cout << features.at(0, 1)(4) << std::endl;
-    std::cout << features.at(0, 1)(5) << std::endl;
-
-    std::cout << features.width() << "x" << features.height() << "x" << features.dim() << std::endl;
-
-
     std::vector<Image> x = {{0.f,   0.2f},
                             {0.7f,  0.1f},
                             {0.9f,  1.6f},
