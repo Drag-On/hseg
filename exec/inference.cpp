@@ -11,20 +11,23 @@
 #include <boost/filesystem/operations.hpp>
 
 PROPERTIES_DEFINE(Inference,
-                  PROP_DEFINE(size_t, numClusters, 300)
-                  PROP_DEFINE(float, pairwiseSigmaSq, 0.05f)
-                  PROP_DEFINE(std::string, image, "")
-                  PROP_DEFINE(std::string, groundTruth, "")
-                  PROP_DEFINE(std::string, unary, "")
-                  PROP_DEFINE(std::string, outDir, "")
-                  GROUP_DEFINE(weights,
-                               PROP_DEFINE(std::string, file, "")
-                               PROP_DEFINE(float, unary, 5.f)
-                               PROP_DEFINE(float, pairwise, 500)
-                               PROP_DEFINE(float, feature, 1.f)
-                               PROP_DEFINE(float, label, 30.f)
-                               PROP_DEFINE(std::string, featureWeightFile, "")
+                  GROUP_DEFINE(dataset,
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                               )
+                               GROUP_DEFINE(extension,
+                                       PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
                   )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(std::string, weights, "", -w)
+                  )
+                  PROP_DEFINE_A(std::string, image, "", --img)
+                  PROP_DEFINE_A(std::string, outDir, "", --out)
 )
 
 enum ERRCODE
@@ -44,13 +47,12 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    size_t const numClasses = 21;
-    size_t const featDim = 512;
-
-    Weights weights(numClasses, featDim);
-    weights.randomize();
-//    if(!weights.read(properties.weights.file))
-//        std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;
+    Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    if(!weights.read(properties.param.weights))
+    {
+        std::cerr << "Couldn't read weights from \"" << properties.param.weights << "\". Using random weights instead." << std::endl;
+        weights.randomize();
+    }
     std::cout << "Used weights:" << std::endl;
     std::cout << weights << std::endl;
 

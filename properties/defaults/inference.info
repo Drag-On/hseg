@@ -1,25 +1,10 @@
 ; Properties for hseg_infer
 ;
 
-numClusters 300 ; Amount of clusters
-pairwiseSigmaSq 1.00166e-06 ; Value of sigma square
-image "data/2007_000129.jpg" ; Color image
-groundTruth "data/2007_000129_gt.png" ; Ground Truth image
-unary "data/2007_000129_prob.dat" ; File with unary scores
-outDir "out/" ; Directory to write results to
+; dataset configuration
+#include "properties/dataset.info"
+; model parametrization
+#include "properties/param.info"
 
-; Weights to use
-weights
-{
-    file out/weights.dat
-    unary 5
-    pairwise 500
-    feature
-    {
-        a 0.08
-        b 0.92
-        c 0.92
-        d 0.0
-    }
-    label 230.0
-}
+image ""    ; Image to do inference on
+outDir ""   ; Directory to write result to
