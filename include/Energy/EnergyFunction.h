@@ -5,8 +5,6 @@
 #ifndef HSEG_ENERGYFUNCTION_H
 #define HSEG_ENERGYFUNCTION_H
 
-
-#include <Energy/UnaryFile.h>
 #include <Image/FeatureImage.h>
 #include "Weights.h"
 #include "typedefs.h"

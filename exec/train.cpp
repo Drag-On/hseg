@@ -4,12 +4,10 @@
 
 #include <BaseProperties.h>
 #include <Energy/Weights.h>
-#include <Energy/UnaryFile.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <Threading/ThreadPool.h>
-#include <Energy/feature_weights.h>
 
 
 PROPERTIES_DEFINE(Train,

@@ -5,10 +5,8 @@
 #include <BaseProperties.h>
 #include <Energy/Weights.h>
 #include <helper/image_helper.h>
-#include <Inference/k-prototypes/Clusterer.h>
 #include <Timer.h>
 #include <boost/filesystem/path.hpp>
-#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(Clustering,
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)

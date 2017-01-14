@@ -7,8 +7,6 @@
 #include <helper/image_helper.h>
 #include <helper/coordinate_helper.h>
 #include <boost/filesystem/path.hpp>
-#include <Inference/k-prototypes/Clusterer.h>
-#include <Energy/feature_weights.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <boost/filesystem/operations.hpp>
 

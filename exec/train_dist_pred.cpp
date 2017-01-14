@@ -4,13 +4,11 @@
 
 #include <BaseProperties.h>
 #include <Energy/Weights.h>
-#include <Energy/UnaryFile.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
-#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(TrainDistPred,
                   PROP_DEFINE_A(Label, numClusters, 300, -c)

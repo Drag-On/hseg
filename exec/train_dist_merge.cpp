@@ -8,9 +8,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <helper/image_helper.h>
 #include <Energy/EnergyFunction.h>
-#include <Inference/k-prototypes/Clusterer.h>
 #include <Threading/ThreadPool.h>
-#include <Energy/feature_weights.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 
 PROPERTIES_DEFINE(TrainDistMerge,

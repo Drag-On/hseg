@@ -4,12 +4,10 @@
 
 #include <BaseProperties.h>
 #include <Energy/Weights.h>
-#include <Inference/k-prototypes/Clusterer.h>
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/operations.hpp>
 #include <Threading/ThreadPool.h>
-#include <Energy/feature_weights.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
                   PROP_DEFINE_A(size_t, numClusters, 300, -c)
