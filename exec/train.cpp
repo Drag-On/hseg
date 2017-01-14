@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 {
     // Read properties
     TrainProperties properties;
-    properties.read("properties/training.info");
+    properties.read("properties/hseg_train.info");
     properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;

@@ -401,7 +401,7 @@ bool copyFixPNG(UtilProperties const& properties)
 int main(int argc, char** argv)
 {
     UtilProperties properties;
-    properties.read("properties/util.info");
+    properties.read("properties/hseg_util.info");
     properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;

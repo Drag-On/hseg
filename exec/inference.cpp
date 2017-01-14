@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 {
     // Read properties
     InferenceProperties properties;
-    properties.read("properties/inference.info");
+    properties.read("properties/hseg_infer.info");
     properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;

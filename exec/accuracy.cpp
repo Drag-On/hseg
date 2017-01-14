@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 {
     // Read properties
     AccuracyProperties properties;
-    properties.read("properties/accuracy.info");
+    properties.read("properties/hseg_accy.info");
     properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;

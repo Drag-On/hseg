@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 {
     // Read properties
     InferenceBatchProperties properties;
-    properties.read("properties/inference_batch.info");
+    properties.read("properties/hseg_infer_batch.info");
     properties.fromCmd(argc, argv);
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
