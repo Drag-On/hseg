@@ -87,11 +87,6 @@ if(CMAKE_THREAD_LIBS_INIT)
     target_link_libraries(hseg "${CMAKE_THREAD_LIBS_INIT}")
 endif()
 
-### Compile clustering executable ###
-add_executable(hseg_cluster exec/clustering.cpp)
-target_include_directories(hseg_cluster PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(hseg_cluster ${LIBS} hseg)
-
 ### Compile inference executables ###
 add_executable(hseg_infer exec/inference.cpp)
 target_include_directories(hseg_infer PUBLIC ${INCLUDE_DIRS})
