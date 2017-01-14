@@ -10,30 +10,32 @@
 #include <Threading/ThreadPool.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
-                  PROP_DEFINE_A(size_t, numClusters, 300, -c)
-                  PROP_DEFINE(float, pairwiseSigmaSq, 1.00166e-06)
-                  PROP_DEFINE_A(std::string, imageList, "", -s)
-                  PROP_DEFINE(std::string, imageDir, "")
-                  PROP_DEFINE(std::string, imageExtension, ".jpg")
-                  PROP_DEFINE(std::string, unaryDir, "")
-                  PROP_DEFINE(std::string, unaryExtension, ".dat")
-                  PROP_DEFINE(std::string, outDir, "")
-                  PROP_DEFINE(unsigned short, numThreads, 4)
-                  GROUP_DEFINE(weights,
-                               PROP_DEFINE_A(std::string, file, "", -w)
-                               PROP_DEFINE(float, unary, 5.f)
-                               PROP_DEFINE(float, pairwise, 500)
-                               PROP_DEFINE(float, feature, 1)
-                               PROP_DEFINE(float, label, 30.f)
-                               PROP_DEFINE(std::string, featureWeightFile, "")
+                  GROUP_DEFINE(dataset,
+                               PROP_DEFINE_A(std::string, list, "", -l)
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, img, "", --img)
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
+                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
                   )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(std::string, weights, "", -w)
+                  )
+                  PROP_DEFINE_A(std::string, outDir, "", --out)
+                  PROP_DEFINE_A(uint16_t, numThreads, 4, --numThreads)
 )
 
 enum EXIT_CODE
 {
     SUCCESS = 0,
     FILE_LIST_EMPTY,
-
 };
 
 struct Result
@@ -42,38 +44,26 @@ struct Result
     std::string filename;
 };
 
-Result process(std::string const& imageFilename, std::string const& unaryFilename, size_t classes, size_t clusters,
-             Weights const& weights, helper::image::ColorMap const& map, InferenceBatchProperties const& properties,
-             Matrix5 const& featureWeights, std::string const& spOutPath, std::string const& labelOutPath)
+Result process(std::string const& imageFilename, Weights const& weights, std::string const& spOutPath,
+               std::string const& labelOutPath, helper::image::ColorMap const& cmap)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
     res.filename = filename;
 
-    // Load images
-    RGBImage rgb;
-    rgb.read(imageFilename);
-    if (rgb.pixels() == 0)
+    // Load image
+    FeatureImage features;
+    if(!features.read(imageFilename))
     {
-        std::cerr << "Couldn't load image " << imageFilename << std::endl;
-        return res;
-    }
-    CieLabImage cieLab = rgb.getCieLabImg();
-
-    // Load unary scores
-    UnaryFile unaryFile(unaryFilename);
-    if (!unaryFile.isValid() || unaryFile.classes() != classes || unaryFile.width() != rgb.width() ||
-        unaryFile.height() != rgb.height())
-    {
-        std::cerr << "Unary file is invalid." << std::endl;
+        std::cerr << "Unable to read features from \"" << imageFilename << "\"" << std::endl;
         return res;
     }
 
     // Create energy function
-    EnergyFunction energyFun(unaryFile, weights, properties.pairwiseSigmaSq, featureWeights);
+    EnergyFunction energyFun(&weights);
 
     // Do the inference!
-    InferenceIterator<EnergyFunction> inference(energyFun, clusters, classes, cieLab);
+    InferenceIterator<EnergyFunction> inference(&energyFun, &features);
     auto result = inference.run();
 
     // Write results to disk
@@ -81,10 +71,9 @@ Result process(std::string const& imageFilename, std::string const& unaryFilenam
     boost::filesystem::create_directories(spPath);
     boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
-    cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(result.labeling, map));
-    cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, map));
-    cv::imwrite(spPath.string() + filename + ".png", spMat);
-    cv::imwrite(labelPath.string() + filename + ".png", labelMat);
+    helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
+    //cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, map));
+    //cv::imwrite(spPath.string() + filename + ".png", spMat);
 
     res.okay = true;
     return res;
@@ -115,26 +104,19 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    size_t const numClasses = 21;
-    size_t const numClusters = properties.numClusters;
-
-    Weights weights(numClasses, properties.weights.unary, properties.weights.pairwise, properties.weights.feature,
-                       properties.weights.label);
-    if(!weights.read(properties.weights.file))
-        std::cerr << "Weights not read from file, using values specified in properties file!" << std::endl;
+    Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    if(!weights.read(properties.param.weights))
+    {
+        std::cerr << "Couldn't read weights from \"" << properties.param.weights << "\". Using random weights instead." << std::endl;
+        weights.randomize();
+    }
     std::cout << "Used weights:" << std::endl;
     std::cout << weights << std::endl;
-
-    // Load feature weights
-    Matrix5 featureWeights = readFeatureWeights(properties.weights.featureWeightFile);
-    featureWeights = featureWeights.inverse();
-    std::cout << "Used feature weights:" << std::endl;
-    std::cout << featureWeights << std::endl;
 
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
 
     // Read in file names to process
-    auto filenames = readFileNames(properties.imageList);
+    auto filenames = readFileNames(properties.dataset.list);
     if(filenames.empty())
     {
         std::cerr << "No files specified." << std::endl;
@@ -161,15 +143,14 @@ int main(int argc, char** argv)
     // Iterate all files
     for(auto const& f : filenames)
     {
-        std::string const& imageFilename = properties.imageDir + f + properties.imageExtension;
-        std::string const& unaryFilename = properties.unaryDir + f + properties.unaryExtension;
+        std::string const& imageFilename = properties.dataset.path.img + f + properties.dataset.extension.img;
         std::string filename = boost::filesystem::path(imageFilename).stem().string();
-        if(boost::filesystem::exists(spPath / (filename + ".png")) && boost::filesystem::exists(labelPath / (filename + ".png")))
+        if(/*boost::filesystem::exists(spPath / (filename + ".png")) && */boost::filesystem::exists(labelPath / (filename + ".png")))
         {
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, unaryFilename, numClasses, numClusters, weights, cmap, properties, featureWeights, spPath.string(), labelPath.string());
+        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap);
         futures.push_back(std::move(fut));
     }
 

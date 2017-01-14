@@ -1,22 +1,10 @@
-; Properties for hseg_infer
+; Properties for hseg_infer_batch
 ;
 
-numClusters 300 ; Amount of clusters
-pairwiseSigmaSq 1.00166e-06 ; Value of sigma square
-imageList "imageList.txt" ; List of images to process
-imageDir "data/" ; Color image directory
-imageExtension ".jpg"
-unaryDir "data/" ; Directory with unary scores
-unaryExtension "_prob.dat"
-outDir "out/" ; Directory to write results to
-numThreads 4
+; dataset configuration
+#include "properties/dataset.info"
+; model parametrization
+#include "properties/param.info"
 
-; Weights to use
-weights
-{
-    file out/weights.dat
-    unary 5
-    pairwise 500
-    label 230.0
-    featureWeightFile "out/featureWeights.txt"
-}
+outDir ""       ; Output directory
+numThreads 4    ; Number of threads
