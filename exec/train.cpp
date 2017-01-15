@@ -261,9 +261,10 @@ int main(int argc, char** argv)
             log.close();
             return CANT_WRITE_RESULT;
         }
-        if(!curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat"))
+        std::string weightCopyFilename = properties.outDir + std::to_string(t) + ".dat";
+        if(!curWeights.write(weightCopyFilename))
         {
-            std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
+            std::cerr << "Couldn't write weights to file \"" << weightCopyFilename << "\"" << std::endl;
             log.close();
             return CANT_WRITE_RESULT_BACKUP;
         }
