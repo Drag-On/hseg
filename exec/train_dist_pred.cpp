@@ -11,15 +11,35 @@
 #include <boost/filesystem/operations.hpp>
 
 PROPERTIES_DEFINE(TrainDistPred,
-                  PROP_DEFINE_A(Label, numClusters, 300, -c)
-                  PROP_DEFINE_A(float, pairwiseSigmaSq, 1.00166e-06, -s)
-                  PROP_DEFINE_A(std::string, weightFile, "", -w)
-                  PROP_DEFINE_A(std::string, imageFile, "", -i)
-                  PROP_DEFINE_A(std::string, groundTruthFile, "", -g)
-                  PROP_DEFINE_A(std::string, unaryFile, "", -u)
-                  PROP_DEFINE_A(std::string, featureWeightFile, "", -fw)
+                  GROUP_DEFINE(dataset,
+                               PROP_DEFINE_A(std::string, list, "", -l)
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, img, "", --img)
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
+                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
+                  )
+                  GROUP_DEFINE(train,
+                               PROP_DEFINE_A(float, C, 0.1, -C)
+                               GROUP_DEFINE(iter,
+                                            PROP_DEFINE_A(uint32_t, end, 1000, --end)
+                               )
+                               GROUP_DEFINE(rate,
+                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
+                                            PROP_DEFINE_A(float, T, 200, -T)
+                               )
+                  )
+                  PROP_DEFINE_A(std::string, weights, "", -w)
+                  PROP_DEFINE_A(std::string, img, "", -i)
                   PROP_DEFINE_A(std::string, out, "out/", -o)
-                  PROP_DEFINE_A(std::string, propertiesFile, "properties/training_dist_pred.info", -p)
+                  PROP_DEFINE_A(std::string, propertiesFile, "properties/hseg_train_dist_pred.info", -p)
 )
 
 enum ErrorCode
@@ -28,14 +48,12 @@ enum ErrorCode
     CANT_READ_IMAGE = 1,
     CANT_READ_GT = 2,
     IMAGE_GT_DONT_MATCH = 3,
-    INVALID_UNARY = 4,
-    INVALID_FEATURE_WEIGHTS = 5,
-    INVALID_PRED_LABELING = 6,
-    INVALID_PRED_SP = 7,
-    INVALID_GT_SP = 8,
-    CANT_WRITE_PRED_LABELING = 9,
-    CANT_WRITE_PRED_SP = 10,
-    CANT_WRITE_GT_SP = 11,
+    INVALID_PRED_LABELING = 4,
+    INVALID_PRED_SP = 5,
+    INVALID_GT_SP = 6,
+    CANT_WRITE_PRED_LABELING = 7,
+    CANT_WRITE_PRED_SP = 8,
+    CANT_WRITE_GT_SP = 9,
 };
 
 int main(int argc, char* argv[])
@@ -53,109 +71,70 @@ int main(int argc, char* argv[])
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     // Check if there already is a result file
-    boost::filesystem::path imgNamePath(properties.imageFile);
+    boost::filesystem::path imgNamePath(properties.img);
     std::string imgName = imgNamePath.filename().stem().string();
     std::string labelPath = properties.out + "labeling/" + imgName + ".png";
-    std::string spPath = properties.out + "sp/" + imgName + ".png";
-    std::string bestSpPath = properties.out + "sp_gt/" + imgName + ".png";
-    if(boost::filesystem::exists(labelPath) && boost::filesystem::exists(spPath) && boost::filesystem::exists(bestSpPath))
+    if(boost::filesystem::exists(labelPath))
     {
-        std::cout << "Result for " << properties.imageFile << " already exists in " << labelPath << " and " << spPath << ". Skipping." << std::endl;
+        std::cout << "Result for \"" << properties.img << "\" already exists in \"" << labelPath << "\". Skipping." << std::endl;
         return SUCCESS;
     }
 
-    Label const numClasses = 21;
-    Label const numClusters = properties.numClusters;
-    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(std::max<Label>(256, numClasses));
-    helper::image::ColorMap const cmap2 = helper::image::generateColorMap(properties.numClusters);
-    Weights curWeights(numClasses, 0, 0, 1, 0);
-    if(!curWeights.read(properties.weightFile))
+    Label const numClasses = properties.dataset.constants.numClasses;
+    uint32_t const featDim = properties.dataset.constants.featDim;
+    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256);
+    Weights curWeights(numClasses, featDim);
+    if(!curWeights.read(properties.weights))
     {
-        std::cout << "Couldn't read current weights from " << properties.weightFile << std::endl;
+        std::cout << "Couldn't read current weights from \"" << properties.weights << "\"" << std::endl;
         std::cout << "Using default weights. This is only right if this is the first iteration." << std::endl;
     }
 
     // Load images etc...
-    RGBImage rgbImage, groundTruthRGB;
-    if(!rgbImage.read(properties.imageFile))
+    std::string featFileName = properties.dataset.path.img + properties.img + properties.dataset.extension.img;
+    FeatureImage features;
+    if(!features.read(featFileName))
     {
-        std::cerr << "Couldn't read image \"" << properties.imageFile << "\"" << std::endl;
+        std::cerr << "Unable to read features from \"" << featFileName << "\"" << std::endl;
         return CANT_READ_IMAGE;
     }
-    if(!groundTruthRGB.read(properties.groundTruthFile))
+
+    std::string gtFileName = properties.dataset.path.gt + properties.img + properties.dataset.extension.gt;
+    LabelImage gt;
+    auto errCode = helper::image::readPalettePNG(gtFileName, gt, nullptr);
+    if(errCode != helper::image::PNGError::Okay)
     {
-        std::cerr << "Couldn't read ground truth \"" << properties.groundTruthFile << "\"" << std::endl;
+        std::cerr << "Unable to read ground truth from \"" << gtFileName << "\". Error Code: " << (int) errCode << std::endl;
         return CANT_READ_GT;
     }
-    if (rgbImage.width() != groundTruthRGB.width() || rgbImage.height() != groundTruthRGB.height())
+
+    if(features.width() != gt.width() || features.height() != gt.height() || featDim != properties.dataset.constants.featDim)
     {
-        std::cerr << "Image " << properties.imageFile << " and its ground truth don't match." << std::endl;
+        std::cerr << "Image \"" << properties.img << "\" and its ground truth don't match." << std::endl;
         return IMAGE_GT_DONT_MATCH;
     }
-    CieLabImage cieLabImage = rgbImage.getCieLabImg();
-    LabelImage groundTruth = helper::image::decolorize(groundTruthRGB, cmap);
 
-    UnaryFile unary(properties.unaryFile);
-    if(unary.width() != rgbImage.width() || unary.height() != rgbImage.height() || unary.classes() != numClasses)
-    {
-        std::cerr << "Invalid unary scores " << properties.unaryFile << std::endl;
-        return INVALID_UNARY;
-    }
-
-    Matrix5 featureWeights = readFeatureWeights(properties.featureWeightFile);
-    featureWeights = featureWeights.inverse();
-    if(featureWeights.isIdentity())
-    {
-        std::cerr << "Couldn't read feature weights " << properties.featureWeightFile << "!" << std::endl;
-        return INVALID_FEATURE_WEIGHTS;
-    }
-
-    // Predict superpixels that best explain the ground truth
-    EnergyFunction trainingEnergy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights);
-    Clusterer<EnergyFunction> clusterer(trainingEnergy, cieLabImage, groundTruth, numClusters);
-    clusterer.run(groundTruth);
-    LabelImage const& bestSp = clusterer.clustership();
+    // Find latent variables that best explain the ground truth
+    // -- Currently none
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction energy(unary, curWeights, properties.pairwiseSigmaSq, featureWeights, groundTruth);
-    InferenceIterator<LossAugmentedEnergyFunction> inference(energy, numClusters, numClasses, cieLabImage);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt);
+    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
     InferenceResult result = inference.run();
 
-    // Store predictions
-    cv::Mat labeling = static_cast<cv::Mat>(helper::image::colorize(result.labeling, cmap));
-    cv::Mat sp = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2));
-    cv::Mat bestSpMat = static_cast<cv::Mat>(helper::image::colorize(bestSp, cmap2));
-
-    if(labeling.empty())
+    // Check validity
+    if(result.labeling.width() != features.width() || result.labeling.height() != features.height())
     {
         std::cerr << "Predicted labeling invalid." << std::endl;
         return INVALID_PRED_LABELING;
     }
-    if(sp.empty())
-    {
-        std::cerr << "Predicted superpixels invalid." << std::endl;
-        return INVALID_PRED_SP;
-    }
-    if(bestSpMat.empty())
-    {
-        std::cerr << "Predicted gt superpixels invalid." << std::endl;
-        return INVALID_GT_SP;
-    }
 
-    if(!cv::imwrite(labelPath, labeling))
+    // Store predictions
+    errCode = helper::image::writePalettePNG(labelPath, result.labeling, cmap);
+    if(errCode != helper::image::PNGError::Okay)
     {
-        std::cerr << "Couldn't write predicted labeling to \"" << labelPath << "\"" << std::endl;
+        std::cerr << "Couldn't write predicted labeling to \"" << labelPath << "\". Error Code: " << (int) errCode << std::endl;
         return CANT_WRITE_PRED_LABELING;
-    }
-    if(!cv::imwrite(spPath, sp))
-    {
-        std::cerr << "Couldn't write predicted superpixels to \"" << spPath << "\"" << std::endl;
-        return CANT_WRITE_PRED_SP;
-    }
-    if(!cv::imwrite(bestSpPath, bestSpMat))
-    {
-        std::cerr << "Couldn't write predicted ground truth superpixels to \"" << bestSpPath << "\"" << std::endl;
-        return CANT_WRITE_GT_SP;
     }
 
     return SUCCESS;
