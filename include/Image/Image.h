@@ -194,6 +194,14 @@ public:
     void rescale(float factor, bool interpolate = false);
 
     /**
+     * Rescales the image
+     * @param width New width
+     * @param height New height
+     * @param interpolate Enables or disables interpolation
+     */
+    void rescale(Coord width, Coord height, bool interpolate = false);
+
+    /**
      * @return Minimum and maximum value
      */
     std::pair<T, T> minMax() const;
@@ -454,6 +462,28 @@ void Image<T, C>::rescale(float factor, bool interpolate)
     cv::Mat img = static_cast<cv::Mat>(*this);
     cv::Mat resized;
     cv::resize(img, resized, cv::Size(), factor, factor, interpolate ? cv::INTER_LINEAR : cv::INTER_NEAREST);
+
+    m_width = static_cast<size_t>(resized.cols);
+    m_height = static_cast<size_t>(resized.rows);
+    m_data.resize(m_width * m_height * C, 0);
+
+    for (Coord y = 0; y < m_height; ++y)
+    {
+        for (Coord x = 0; x < m_width; ++x)
+        {
+            auto color = resized.at<cv::Vec<uchar, C>>(y, x);
+            for (Coord c = 0; c < C; ++c)
+                at(x, y, c) = color[c];
+        }
+    }
+}
+
+template<typename T, size_t C>
+void Image<T, C>::rescale(Coord width, Coord height, bool interpolate)
+{
+    cv::Mat img = static_cast<cv::Mat>(*this);
+    cv::Mat resized;
+    cv::resize(img, resized, cv::Size(width, height), 0, 0, interpolate ? cv::INTER_LINEAR : cv::INTER_NEAREST);
 
     m_width = static_cast<size_t>(resized.cols);
     m_height = static_cast<size_t>(resized.rows);

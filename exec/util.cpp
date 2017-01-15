@@ -19,6 +19,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, maxLoss, "", --max_loss)
                                PROP_DEFINE_A(std::string, outline, "", --outline)
                                PROP_DEFINE_A(std::string, rescale, "", --rescale)
+                               PROP_DEFINE_A(std::string, matchGt, "", --match_gt)
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
                   )
                   GROUP_DEFINE(dataset,
@@ -364,6 +365,52 @@ bool rescale(UtilProperties const& properties)
     return true;
 }
 
+bool match_gt(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list = readLines(properties.job.rescale);
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    for (std::string const& file : list)
+    {
+        std::string filenameFeat = file + properties.dataset.extension.img;
+        std::string pathFeat = properties.dataset.path.img + filenameFeat;
+        std::string filenameGt = file + properties.dataset.extension.gt;
+        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string outPathGt = properties.out + "gt/";
+
+        std::cout << outPathGt << filenameGt;
+
+        FeatureImage features;
+        if(!features.read(pathFeat))
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << "Unable to read features from \"" << pathFeat << "\"" << std::endl;
+            return false;
+        }
+
+        // Ground truth image
+        RGBImage gt_rgb;
+        if (!gt_rgb.read(pathGt))
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
+            return false;
+        }
+        LabelImage gt = helper::image::decolorize(gt_rgb, cmap);
+        gt.rescale(features.width(), features.height(), false);
+        auto errCode = helper::image::writePalettePNG(outPathGt + filenameGt, gt, cmap);
+        if(errCode != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't write rescaled ground truth image \"" << outPathGt + filenameGt << "\". Error Code: " << (int) errCode << std::endl;
+            return false;
+        }
+        std::cout << "\tOK" << std::endl;
+    }
+    return true;
+}
+
 bool copyFixPNG(UtilProperties const& properties)
 {
     boost::filesystem::path inPath = properties.job.copyFixPNG;
@@ -428,6 +475,9 @@ int main(int argc, char** argv)
 
     if (!properties.job.rescale.empty())
         rescale(properties);
+
+    if (!properties.job.matchGt.empty())
+        match_gt(properties);
 
     if(!properties.job.copyFixPNG.empty())
         copyFixPNG(properties);
