@@ -161,6 +161,13 @@ int main(int argc, char** argv)
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
 
+    std::string weightCopyFilename = properties.outDir + std::to_string(properties.train.iter.start) + ".dat";
+    if(!curWeights.write(weightCopyFilename))
+    {
+        std::cerr << "Couldn't write initial weights to file \"" << weightCopyFilename << "\"" << std::endl;
+        return CANT_WRITE_RESULT_BACKUP;
+    }
+
     std::random_device rd;
     std::default_random_engine random(rd());
 
@@ -261,7 +268,7 @@ int main(int argc, char** argv)
             log.close();
             return CANT_WRITE_RESULT;
         }
-        std::string weightCopyFilename = properties.outDir + std::to_string(t) + ".dat";
+        std::string weightCopyFilename = properties.outDir + std::to_string(t + 1) + ".dat";
         if(!curWeights.write(weightCopyFilename))
         {
             std::cerr << "Couldn't write weights to file \"" << weightCopyFilename << "\"" << std::endl;
