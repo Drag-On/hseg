@@ -113,8 +113,10 @@ bool Weights::write(std::string const& filename) const
         out.write(reinterpret_cast<const char*>(&featDim), sizeof(featDim));
         out.write(reinterpret_cast<const char*>(&noUnaries), sizeof(noUnaries));
         out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
-        out.write(reinterpret_cast<const char*>(m_unaryWeights.data()), sizeof(m_unaryWeights[0]) * noUnaries);
-        out.write(reinterpret_cast<const char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
+        for(auto const& e : m_unaryWeights)
+            out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * featDim);
+        for(auto const& e : m_pairwiseWeights)
+            out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * featDim);
         out.close();
         return true;
     }
@@ -126,8 +128,8 @@ bool Weights::read(std::string const& filename)
     std::ifstream in(filename, std::ios::in | std::ios::binary);
     if(in.is_open())
     {
-        char id[6];
-        in.read(id, 6);
+        char id[8];
+        in.read(id, 8);
         if(std::strncmp(id, "WEIGHT00", 8) != 0)
         {
             in.close();
@@ -141,8 +143,10 @@ bool Weights::read(std::string const& filename)
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
         m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDim));
         m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDim));
-        in.read(reinterpret_cast<char*>(m_unaryWeights.data()), sizeof(m_unaryWeights[0]) * noUnaries);
-        in.read(reinterpret_cast<char*>(m_pairwiseWeights.data()), sizeof(m_pairwiseWeights[0]) * noPairwise);
+        for(auto& e : m_unaryWeights)
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * featDim);
+        for(auto& e : m_pairwiseWeights)
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * featDim);
         in.close();
         return true;
     }
