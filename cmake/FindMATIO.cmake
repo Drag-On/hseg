@@ -5,11 +5,11 @@
 #  MATIO_FOUND        - True if matio found.
 
 # Look for the header file.
-FIND_PATH(MATIO_INCLUDE_DIR NAMES matio.h)
+FIND_PATH(MATIO_INCLUDE_DIR NAMES matio.h HINTS "$ENV{HOME}/include")
 MARK_AS_ADVANCED(MATIO_INCLUDE_DIR)
 
 # Look for the library.
-FIND_LIBRARY(MATIO_LIBRARY NAMES matio)
+FIND_LIBRARY(MATIO_LIBRARY NAMES matio HINTS "$ENV{HOME}/lib")
 MARK_AS_ADVANCED(MATIO_LIBRARY)
 
 # handle the QUIETLY and REQUIRED arguments and set MATIO_FOUND to TRUE if
