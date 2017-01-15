@@ -397,8 +397,11 @@ bool match_gt(UtilProperties const& properties)
             std::cerr << " Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
             return false;
         }
+        gt_rgb.rescale(features.width(), features.height(), false);
         LabelImage gt = helper::image::decolorize(gt_rgb, cmap);
-        gt.rescale(features.width(), features.height(), false);
+
+        // Note: rescaling the label image doesn't work properly. Apparently opencv has issues rescaling one-channel images?
+
         auto errCode = helper::image::writePalettePNG(outPathGt + filenameGt, gt, cmap);
         if(errCode != helper::image::PNGError::Okay)
         {
