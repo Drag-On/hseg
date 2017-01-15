@@ -140,6 +140,8 @@ enum ERROR_CODE
     FILE_LIST_EMPTY,
     CANT_WRITE_LOG,
     INFERRED_INVALID,
+    CANT_WRITE_RESULT,
+    CANT_WRITE_RESULT_BACKUP,
 };
 
 int main(int argc, char** argv)
@@ -254,8 +256,17 @@ int main(int argc, char** argv)
         curWeights.clampToFeasible();
 
         if (!curWeights.write(properties.out))
+        {
             std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
-        curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat");
+            log.close();
+            return CANT_WRITE_RESULT;
+        }
+        if(!curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat"))
+        {
+            std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
+            log.close();
+            return CANT_WRITE_RESULT_BACKUP;
+        }
     }
 
     log.close();
