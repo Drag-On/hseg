@@ -65,12 +65,14 @@ struct SampleResult
     bool valid = false;
 };
 
-SampleResult processSample(std::string const& imgFilename, std::string const& gtFilename, Weights const& curWeights,
-                           TrainProperties const& properties)
+SampleResult processSample(std::string const& filename, Weights const& curWeights, TrainProperties const& properties)
 {
     SampleResult sampleResult;
 
     // Load images etc...
+    std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
+    std::string gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
+
     FeatureImage features;
     if(!features.read(imgFilename))
     {
@@ -157,10 +159,6 @@ int main(int argc, char** argv)
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
 
-    std::cout << "====================" << std::endl;
-    std::cout << "Initial weights:" << std::endl;
-    std::cout << curWeights << std::endl;
-
     std::random_device rd;
     std::default_random_engine random(rd());
 
@@ -211,10 +209,9 @@ int main(int argc, char** argv)
         // Iterate over all images
         for (size_t n = 0; n < N; ++n)
         {
-            std::string colorImgFilename, gtImageFilename, unaryFilename;
-            colorImgFilename = gtImageFilename = unaryFilename = filenames[n];
+            std::string const filename = filenames[n];
 
-            auto&& fut = pool.enqueue(processSample, colorImgFilename, gtImageFilename, curWeights, properties);
+            auto&& fut = pool.enqueue(processSample, filename, curWeights, properties);
             futures.push_back(std::move(fut));
         }
 
@@ -259,10 +256,6 @@ int main(int argc, char** argv)
         if (!curWeights.write(properties.out))
             std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
         curWeights.write(properties.outDir + "iterations/" + std::to_string(t) + ".dat");
-
-        std::cout << "====================" << std::endl;
-        std::cout << "Current weights:" << std::endl;
-        std::cout << curWeights << std::endl;
     }
 
     log.close();
