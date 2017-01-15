@@ -368,7 +368,7 @@ bool rescale(UtilProperties const& properties)
 bool match_gt(UtilProperties const& properties)
 {
     // Read in file names
-    std::vector<std::string> list = readLines(properties.job.rescale);
+    std::vector<std::string> list = readLines(properties.job.matchGt);
     auto cmap = helper::image::generateColorMapVOC(256);
 
     for (std::string const& file : list)
