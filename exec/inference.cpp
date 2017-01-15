@@ -120,11 +120,13 @@ int main(int argc, char** argv)
 //    }
 //    cv::imshow("rgb", rgbMat);
 
+    std::vector<cv::Mat> coloredLabelings;
     for(size_t i = 0; i < result.numIter; ++i)
     {
-        cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(result.labelings[i], cmap));
+        auto lab = helper::image::colorize(result.labelings[i], cmap);
+        coloredLabelings.push_back(static_cast<cv::Mat>(lab));
 //        cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels[i], cmap));
-        cv::imshow("labeling (" + std::to_string(i) + ")", labelMat);
+        cv::imshow("labeling (" + std::to_string(i) + ")", coloredLabelings.back());
 //        cv::imshow("superpixels (" + std::to_string(i) + ")", spMat);
     }
     cv::waitKey();
