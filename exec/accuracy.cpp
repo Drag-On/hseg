@@ -113,10 +113,16 @@ int main(int argc, char** argv)
         
         LabelImage gt;
         errCode = helper::image::readPalettePNG(gtFilename, gt, nullptr);
+        if(errCode != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Couldn't load image \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
+            return ERR_IMAGE_LOAD;
+        }
 
         if(pred.width() != gt.width() || pred.height() != gt.height() || pred.pixels() == 0)
         {
-            std::cerr << "Prediction and ground truth don't match." << std::endl;
+            std::cerr << "Prediction and ground truth don't match (" << pred.width() << "x" << pred.height()
+                      << " vs. " << gt.width() << "x" << gt.height() << ")" << std::endl;
             return ERR_IMAGE_MISMATCH;
         }
 
