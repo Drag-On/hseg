@@ -110,8 +110,6 @@ int main(int argc, char** argv)
         std::cerr << "Couldn't read weights from \"" << properties.param.weights << "\". Using random weights instead." << std::endl;
         weights.randomize();
     }
-    std::cout << "Used weights:" << std::endl;
-    std::cout << weights << std::endl;
 
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
 

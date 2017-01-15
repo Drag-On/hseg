@@ -158,10 +158,6 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't read current weights from \"" << properties.weights << "\"" << std::endl;
         return CANT_READ_WEIGHTS;
     }
-    std::cout << "====================" << std::endl;
-    std::cout << "Initial weights:" << std::endl;
-    std::cout << curWeights << std::endl;
-    std::cout << "====================" << std::endl;
 
     // Read in list of files
     std::vector<std::string> list = readFileNames(properties.dataset.list);
