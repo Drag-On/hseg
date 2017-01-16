@@ -60,8 +60,8 @@ std::vector<std::string> readFileNames(std::string const& listFile)
 
 struct SampleResult
 {
-    Weights energyDiff{21ul, false};
-    float trainingEnergy = 0;
+    Weights gradient{21ul, 512};
+    Cost upperBound = 0;
     bool valid = false;
 };
 
@@ -88,6 +88,12 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         return sampleResult;
     }
 
+    if(features.height() != gt.height() || features.width() != gt.width())
+    {
+        std::cerr << "Dimensions of \"" << imgFilename << "\" and \"" << gtFilename << "\" don't match." << std::endl;
+        return sampleResult;
+    }
+
     // Find latent variables that best explain the ground truth
     // -- Currently none
 
@@ -96,40 +102,26 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
     InferenceResult result = inference.run();
 
-    /*cv::imshow("sp", static_cast<cv::Mat>(helper::image::colorize(result.superpixels, cmap2)));
-    cv::imshow("prediction", static_cast<cv::Mat>(helper::image::colorize(result.labeling, cmap)));
-    cv::imshow("unary", static_cast<cv::Mat>(helper::image::colorize(unary.maxLabeling(), cmap)));
-    cv::imshow("gt", static_cast<cv::Mat>(groundTruthRGB));
-    cv::imshow("gt sp", static_cast<cv::Mat>(groundTruthSpRGB));
-    cv::waitKey();*/
-
     EnergyFunction energy(&curWeights);
-    //auto const& clusters = result.clusters;
-    auto predEnergyCur = energy.giveEnergy(features, result.labeling);
-    sampleResult.trainingEnergy -= predEnergyCur;
-    //auto const& gtClusters = clusterer.clusters();
-    auto gtEnergyCur = energy.giveEnergy(features, gt);
-    sampleResult.trainingEnergy += gtEnergyCur;
-
-    // Compute loss
-    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, gt, lossFactor, properties.dataset.constants.numClasses);
-    sampleResult.trainingEnergy += loss;
-
-    if(sampleResult.trainingEnergy <= 0)
-    {
-        std::cerr << "Training energy was negative: " << sampleResult.trainingEnergy << " (Loss: " << loss
-                  << ", prediction: " << predEnergyCur << ", ground truth: " << gtEnergyCur << ")" << std::endl;
-    }
 
     // Compute energy without weights on the ground truth
     auto gtEnergy = energy.giveEnergyByWeight(features, gt);
     // Compute energy without weights on the prediction
     auto predEnergy = energy.giveEnergyByWeight(features, result.labeling);
-    // Compute energy difference
-    gtEnergy -= predEnergy;
 
-    sampleResult.energyDiff = gtEnergy;
+    // Compute upper bound on this image
+    auto gtEnergyCur = curWeights * gtEnergy;
+    auto predEnergyCur = curWeights * predEnergy;
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, gt, lossFactor, properties.dataset.constants.numClasses);
+    sampleResult.upperBound = loss - predEnergyCur + gtEnergyCur;
+
+    //std::cout << "Upper bound: " << loss << " - " << predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;
+
+    // Compute gradient for this sample
+    gtEnergy -= predEnergy;
+    sampleResult.gradient = gtEnergy;
+
     sampleResult.valid = true;
     return sampleResult;
 }
@@ -181,17 +173,6 @@ int main(int argc, char** argv)
     uint32_t T = properties.train.iter.end - properties.train.iter.start;
     uint32_t N = filenames.size();
 
-    // DEBUG //
-
-    /*auto e = computeTrainingEnergy(colorImageFilenames, gtImageFilenames, gtSpImageFilenames, unaryFilenames,
-                                   curWeights, properties.pairwiseSigmaSq, numClusters, numClasses, properties.C,
-                                   properties, cmap, cmap2);
-    std::cout << "Total" << std::endl;
-    std::cout << "---> " << e << std::endl;
-
-    return 0;*/
-
-
 
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<SampleResult>> futures;
@@ -233,16 +214,18 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
+            std::cout << "<<< " << std::setw(4) << t << "/" << std::setw(4) << n << " >>>\t" << sampleResult.upperBound << std::endl;
 
-            sum += sampleResult.energyDiff;
-            iterationEnergy += sampleResult.trainingEnergy;
+            sum += sampleResult.gradient;
+            iterationEnergy += sampleResult.upperBound;
         }
 
         // Show current training energy
         iterationEnergy *= properties.train.C / N;
-        iterationEnergy += curWeights.sqNorm() / 2.f;
-        std::cout << "Current training energy: " << iterationEnergy << std::endl;
+        auto upperBoundCost = iterationEnergy;
+        auto regularizerCost = curWeights.sqNorm() / 2.f;
+        iterationEnergy += regularizerCost;
+        std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
         // Compute learning rate
         learningRate = properties.train.rate.base / (1 + t / properties.train.rate.T);

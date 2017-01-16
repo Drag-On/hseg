@@ -34,11 +34,11 @@ LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage 
 
 Cost LossAugmentedEnergyFunction::computeLossFactor(LabelImage const& groundTruth, Label numClasses)
 {
-    Cost lossFactor = 0;
+    SiteId validSites = 0;
     for (SiteId i = 0; i < groundTruth.pixels(); ++i)
         if (groundTruth.atSite(i) < numClasses)
-            lossFactor++;
-    lossFactor = 1e5f / lossFactor;
+            validSites++;
+    Cost lossFactor = 1e6f / validSites;
     return lossFactor;
 }
 

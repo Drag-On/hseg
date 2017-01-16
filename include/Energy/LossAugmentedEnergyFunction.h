@@ -8,7 +8,8 @@
 #include "EnergyFunction.h"
 
 /**
- * Normal energy function, but with an added unary term for the hamming lass
+ * Normal energy function, but with an added unary term for the hamming loss
+ * @warning This class inherits from EnergyFunction, however, it is not meant to be used in polymorphic ways.
  */
 class LossAugmentedEnergyFunction : public EnergyFunction
 {
@@ -56,6 +57,15 @@ public:
 private:
     LabelImage const* m_pGroundTruth;
     Cost m_lossFactor;
+
+    /*
+     * Make some functions private that are not really meant to be used via an object of this type.
+     */
+
+    using EnergyFunction::giveEnergy;
+    using EnergyFunction::giveEnergyByWeight;
+    using EnergyFunction::computeUnaryEnergyByWeight;
+    using EnergyFunction::computePairwiseEnergyByWeight;
 };
 
 
