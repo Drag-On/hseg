@@ -123,9 +123,9 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     }
 
     // Compute energy without weights on the ground truth
-    auto gtEnergy = lossEnergy.giveEnergyByWeight(features, gt);
+    auto gtEnergy = energy.giveEnergyByWeight(features, gt);
     // Compute energy without weights on the prediction
-    auto predEnergy = lossEnergy.giveEnergyByWeight(features, result.labeling);
+    auto predEnergy = energy.giveEnergyByWeight(features, result.labeling);
     // Compute energy difference
     gtEnergy -= predEnergy;
 
