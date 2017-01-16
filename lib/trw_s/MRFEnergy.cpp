@@ -173,7 +173,7 @@ template <class T> void MRFEnergy<T>::CompleteGraphConstruction()
 		m_errorFn("Fatal error in CompleteGraphConstruction");
 	}
 
-	printf("Completing graph construction... ");
+	//printf("Completing graph construction... ");
 
 	if (m_buf)
 	{
@@ -253,7 +253,7 @@ template <class T> void MRFEnergy<T>::CompleteGraphConstruction()
 
 	// ZeroMessages();
 
-	printf("done\n");
+	//printf("done\n");
 }
 
 #include "instances.inc"
