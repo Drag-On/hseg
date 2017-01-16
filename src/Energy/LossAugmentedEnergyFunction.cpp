@@ -38,7 +38,7 @@ Cost LossAugmentedEnergyFunction::computeLossFactor(LabelImage const& groundTrut
     for (SiteId i = 0; i < groundTruth.pixels(); ++i)
         if (groundTruth.atSite(i) < numClasses)
             lossFactor++;
-    lossFactor = 1e8f / lossFactor;
+    lossFactor = 1e5f / lossFactor;
     return lossFactor;
 }
 
