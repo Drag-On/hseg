@@ -72,6 +72,18 @@ Weight Weights::sqNorm() const
     return sqNorm;
 }
 
+Weight Weights::sum() const
+{
+    Weight sum = 0;
+
+    for (size_t i = 0; i < m_unaryWeights.size(); ++i)
+        sum += m_unaryWeights[i].sum();
+    for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        sum += m_pairwiseWeights[i].sum();
+
+    return sum;
+}
+
 std::ostream& operator<<(std::ostream& stream, Weights const& weights)
 {
     stream.precision(4);

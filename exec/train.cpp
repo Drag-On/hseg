@@ -109,14 +109,16 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     // Compute energy without weights on the prediction
     auto predEnergy = energy.giveEnergyByWeight(features, result.labeling);
 
+    //std::cout << gtEnergy.sum() << ", " << predEnergy.sum() << ", " << curWeights.sum() << std::endl;
+
     // Compute upper bound on this image
     auto gtEnergyCur = curWeights * gtEnergy;
     auto predEnergyCur = curWeights * predEnergy;
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
     float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, gt, lossFactor, properties.dataset.constants.numClasses);
-    sampleResult.upperBound = loss - predEnergyCur + gtEnergyCur;
+    sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
 
-    //std::cout << "Upper bound: " << loss << " - " << predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;
+    //std::cout << "Upper bound: (" << loss << " - " << predEnergyCur << ") + " << gtEnergyCur << " = " << loss - predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;
 
     // Compute gradient for this sample
     gtEnergy -= predEnergy;

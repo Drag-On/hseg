@@ -85,6 +85,11 @@ public:
     Weight sqNorm() const;
 
     /**
+     * @return The sum of all vector elements
+     */
+    Weight sum() const;
+
+    /**
      * Clamps all values to the closest feasible value
      */
     void clampToFeasible();
