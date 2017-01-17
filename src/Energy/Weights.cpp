@@ -224,7 +224,14 @@ bool Weights::read(std::string const& filename)
 
 void Weights::clampToFeasible()
 {
-    // For now, all weights are permitted
+    // Feature weights must be positive definite
+    Eigen::SelfAdjointEigenSolver<FeatSimMat> es(m_featureSimMat);
+    FeatSimMat D = es.eigenvalues().cast<float>().asDiagonal();
+    FeatSimMat V = es.eigenvectors().cast<float>();
+    for(uint16_t i = 0; i < es.eigenvalues().size(); ++i)
+        if(D(i, i) < 1e-5f)
+            D(0, 0) = 1e-5f;
+    m_featureSimMat = V * D * V.inverse();
 }
 
 void Weights::randomize()
