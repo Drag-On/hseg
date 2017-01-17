@@ -81,12 +81,12 @@ public:
     }
 
     /**
-     * Computes the partial cost of a pairwise connection as given by the labels of the pixels
+     * Computes the cost of a pairwise connection as given by the labels of the pixels
      * @param f1 First feature
      * @param f2 Second feature
      * @param l1 First label
      * @param l2 Second label
-     * @return The partial cost
+     * @return The cost
      */
     inline Cost pairwiseCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
     {
@@ -97,6 +97,37 @@ public:
         auto const& wTail = w.segment(f1.size(), f2.size());
         auto const& bias = w(w.size() - 1);
         return wHead.dot(f1) + wTail.dot(f2) + bias;
+    }
+
+    /**
+     * Computes the cost of a pairwise connection between a pixel and a cluster
+     * @param f1 Pixel feature
+     * @param f2 Cluster feature
+     * @param l1 Pixel label
+     * @param l2 Cluster label
+     * @return The cost
+     */
+    inline Cost higherOrderCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
+    {
+        assert(l1 < numClasses() && l2 < numClasses());
+
+        auto const& w = m_pWeights->higherOrder(l1, l2);
+        auto const& wHead = w.head(f1.size());
+        auto const& wTail = w.segment(f1.size(), f2.size());
+        auto const& bias = w(w.size() - 1);
+        return wHead.dot(f1) + wTail.dot(f2) + bias;
+    }
+
+    /**
+     * Computes the cost of clustering two features together
+     * @param f1 First feature
+     * @param f2 Second feature
+     * @return The cost
+     */
+    inline Cost featureCost(Feature const& f1, Feature const& f2) const
+    {
+        auto diff = f1 - f2;
+        return diff.transpose() * m_pWeights->featureSimMat() * diff;
     }
 
     /**
