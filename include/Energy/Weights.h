@@ -12,6 +12,7 @@
 
 using Weight = Cost;
 using WeightVec = Eigen::VectorXf;
+using FeatSimMat = Eigen::MatrixXf;
 
 /**
  * Contains all (trainable) weights needed by the energy function
@@ -21,6 +22,8 @@ class Weights
 private:
     std::vector<WeightVec> m_unaryWeights;
     std::vector<WeightVec> m_pairwiseWeights;
+    std::vector<WeightVec> m_higherOrderWeights;
+    FeatSimMat m_featureSimMat;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, Weights const& weights);
@@ -31,6 +34,14 @@ private:
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_pairwiseWeights.size());
         return m_pairwiseWeights[index];
+    }
+
+    inline WeightVec& higherOrder(Label l1, Label l2)
+    {
+        // Pairwise indices are stored as upper triangular matrix
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_higherOrderWeights.size());
+        return m_higherOrderWeights[index];
     }
 
 public:
@@ -77,6 +88,28 @@ public:
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_pairwiseWeights.size());
         return m_pairwiseWeights[index];
+    }
+
+    /**
+     * Weight of the higher order linear classifier
+     * @param l1 First label
+     * @param l2 Second label
+     * @return The approriate weight
+     */
+    inline WeightVec const& higherOrder(Label l1, Label l2) const
+    {
+        // Pairwise indices are stored as upper triangular matrix
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_higherOrderWeights.size());
+        return m_higherOrderWeights[index];
+    }
+
+    /**
+     * @return Feature similarity matrix
+     */
+    inline FeatSimMat const& featureSimMat() const
+    {
+        return m_featureSimMat;
     }
 
     /**
