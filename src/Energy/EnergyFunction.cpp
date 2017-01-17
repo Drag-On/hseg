@@ -5,8 +5,9 @@
 #include <helper/coordinate_helper.h>
 #include "Energy/EnergyFunction.h"
 
-EnergyFunction::EnergyFunction(Weights const* weights)
-        : m_pWeights(weights)
+EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters)
+        : m_pWeights(weights),
+          m_numClusters(numClusters)
 {
 }
 

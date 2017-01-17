@@ -4,8 +4,8 @@
 
 #include "Energy/LossAugmentedEnergyFunction.h"
 
-LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth)
-        : EnergyFunction(weights),
+LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters)
+        : EnergyFunction(weights, numClusters),
           m_pGroundTruth(groundTruth)
 {
     m_lossFactor = computeLossFactor(*groundTruth, weights->numClasses());

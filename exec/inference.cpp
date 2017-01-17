@@ -25,6 +25,7 @@ PROPERTIES_DEFINE(Inference,
                   )
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(std::string, weights, "", -w)
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
                   )
                   PROP_DEFINE_A(std::string, image, "", --img)
                   PROP_DEFINE_A(std::string, outDir, "", --out)
@@ -65,7 +66,7 @@ int main(int argc, char** argv)
     }
 
     // Create energy function
-    EnergyFunction energyFun(&weights);
+    EnergyFunction energyFun(&weights, properties.param.numClusters);
 
     // Do the inference!
     Timer t(true);

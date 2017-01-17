@@ -18,8 +18,9 @@ public:
      * Constructor
      * @param weights Weights to use. The pointer must stay valid as long as this object persists.
      * @param groundTruth Ground truth image. The pointer must stay valid as long as this object persists.
+     * @param numClusters Amount of clusters
      */
-    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth);
+    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters);
 
     inline Cost unaryCost(SiteId i, Feature const& f, Label l) const
     {

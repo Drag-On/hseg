@@ -37,6 +37,9 @@ PROPERTIES_DEFINE(Train,
                                             PROP_DEFINE_A(float, T, 200, -T)
                                )
                   )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                  )
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(std::string, outDir, "", --outDir)
@@ -98,11 +101,11 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     // -- Currently none
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
     InferenceResult result = inference.run();
 
-    EnergyFunction energy(&curWeights);
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
 
     // Compute energy without weights on the ground truth
     auto gtEnergy = energy.giveEnergyByWeight(features, gt);

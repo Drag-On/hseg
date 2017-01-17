@@ -37,6 +37,9 @@ PROPERTIES_DEFINE(TrainDistMerge,
                                             PROP_DEFINE_A(float, T, 200, -T)
                                )
                   )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                  )
                   PROP_DEFINE_A(uint32_t, t, 0, -t)
                   PROP_DEFINE_A(std::string, weights, "", --weights)
                   PROP_DEFINE_A(std::string, in, "", --in)
@@ -107,7 +110,7 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
         return sampleResult;
     }
 
-    EnergyFunction energy(&curWeights);
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
     //auto const& clusters = result.clusters;
     auto predEnergyCur = energy.giveEnergy(features, prediction);
     sampleResult.energy -= predEnergyCur;

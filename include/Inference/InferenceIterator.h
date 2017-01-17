@@ -10,6 +10,7 @@
 #include <Inference/TRW_S_Optimizer/TRW_S_Optimizer.h>
 #include "InferenceResult.h"
 #include "InferenceResultDetails.h"
+#include "Cluster.h"
 
 /**
  * Infers both class labels and superpixels on an image
@@ -42,16 +43,69 @@ public:
 private:
     EnergyFun const* m_pEnergy;
     FeatureImage const* m_pImg;
+    LabelImage m_labeling;
+    LabelImage m_clustering;
+    std::vector<Cluster> m_clusters;
+
     float const m_eps = 1e3f;
 
     Cost computeInitialEnergy(LabelImage const& labeling) const;
+
+    void updateClusterAffiliation();
+
+    void updateLabels();
+
+    void updateClusterFeatures();
+
 };
 
 template<typename EnergyFun>
 InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg)
         : m_pEnergy(e),
-          m_pImg(pImg)
+          m_pImg(pImg),
+          m_clustering(pImg->width(), pImg->height())
 {
+}
+
+template<typename EnergyFun>
+void InferenceIterator<EnergyFun>::updateClusterAffiliation()
+{
+    // Exhaustive search
+    for(SiteId i = 0; i < m_pImg->width() * m_pImg->height(); ++i)
+    {
+        Feature const& f1 = m_pImg->atSite(i);
+        Label const l1 = m_labeling.atSite(i);
+        Feature const& f2 = m_clusters[0].m_feature;
+        Label const l2 = m_clusters[0].m_label;
+
+        Cost minCost = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2);
+        ClusterId minCluster = 0;
+        for(ClusterId k = 1; k < m_clusters.size(); ++k)
+        {
+            Feature const& f2 = m_clusters[k].m_feature;
+            Label const l2 = m_clusters[k].m_label;
+            Cost c = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2);
+            if(c < minCost)
+            {
+                minCost = c;
+                minCluster = k;
+            }
+        }
+
+        m_clustering.atSite(i) = minCluster;
+    }
+}
+
+template<typename EnergyFun>
+void InferenceIterator<EnergyFun>::updateLabels()
+{
+
+}
+
+template<typename EnergyFun>
+void InferenceIterator<EnergyFun>::updateClusterFeatures()
+{
+
 }
 
 template<typename EnergyFun>

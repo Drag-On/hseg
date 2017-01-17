@@ -19,8 +19,9 @@ public:
     /**
      * Constructor
      * @param weights Weights to use. The pointer must stay valid as long as this object persists.
+     * @param numClusters Amount of clusters to use
      */
-    EnergyFunction(Weights const* weights);
+    EnergyFunction(Weights const* weights, ClusterId numClusters);
 
     /**
      * Computes the overall energy
@@ -62,6 +63,14 @@ public:
     inline Label numClasses() const
     {
         return static_cast<Label>(m_pWeights->numClasses());
+    }
+
+    /**
+     * @return Amount of clusters
+     */
+    inline ClusterId numClusters() const
+    {
+        return m_numClusters;
     }
 
     /**
@@ -140,6 +149,7 @@ public:
 
 protected:
     Weights const* m_pWeights;
+    ClusterId m_numClusters;
 };
 
 #endif //HSEG_ENERGYFUNCTION_H

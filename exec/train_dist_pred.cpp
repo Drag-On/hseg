@@ -36,6 +36,9 @@ PROPERTIES_DEFINE(TrainDistPred,
                                             PROP_DEFINE_A(float, T, 200, -T)
                                )
                   )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                  )
                   PROP_DEFINE_A(std::string, weights, "", -w)
                   PROP_DEFINE_A(std::string, img, "", -i)
                   PROP_DEFINE_A(std::string, out, "out/", -o)
@@ -118,7 +121,7 @@ int main(int argc, char* argv[])
     // -- Currently none
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
     InferenceResult result = inference.run();
 
