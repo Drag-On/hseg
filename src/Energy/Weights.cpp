@@ -154,7 +154,7 @@ bool Weights::read(std::string const& filename)
         in.read(reinterpret_cast<char*>(&noUnaries), sizeof(noUnaries));
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
         m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDim + 1));
-        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDim + 1));
+        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(2 * featDim + 1));
         for(auto& e : m_unaryWeights)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim + 1));
         for(auto& e : m_pairwiseWeights)
