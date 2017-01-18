@@ -100,7 +100,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     // Find latent variables that best explain the ground truth
     EnergyFunction energy(&curWeights, properties.param.numClusters);
     InferenceIterator<EnergyFunction> gtInference(&energy, &features);
-    InferenceResult gtResult = gtInference.run();
+    InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
