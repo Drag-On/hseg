@@ -108,6 +108,7 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
     TRW_S_Optimizer<EnergyFun> optimizer(m_pEnergy);
     optimizer.run(*m_pImg);
     result.labelings.push_back(optimizer.labeling());
+    result.marginals.push_back(optimizer.marginals());
     energy = m_pEnergy->giveEnergy(*m_pImg, optimizer.labeling());
     result.energy.push_back(energy);
     result.numIter = 1;

@@ -120,6 +120,41 @@ int main(int argc, char** argv)
 //    }
 //    cv::imshow("rgb", rgbMat);
 
+
+    // Show marginals
+    std::vector<cv::Mat> coloredMarginals;
+    for(Label l = 0; l < properties.dataset.constants.numClasses; ++l)
+    {
+        Image<double, 1> marginalSlice = result.marginals.front()[l];
+        cv::Mat marginalSliceMat = (cv::Mat) marginalSlice;
+        coloredMarginals.push_back(marginalSliceMat);
+        cv::imshow("Marginal " + std::to_string(l), coloredMarginals.back());
+
+        double min, max;
+        cv::minMaxIdx(marginalSliceMat, &min, &max);
+
+        std::cout << "Marginal slice " << l << ": min " << min << ", max " << max << std::endl;
+    }
+
+    LabelImage labelingByMarginals(features.width(), features.height());
+    for(SiteId i = 0; i < features.width() * features.height(); ++i)
+    {
+        Label minLabel = 0;
+        double minMarginal = result.marginals.front()[0].atSite(i);
+        for(Label l = 1; l < properties.dataset.constants.numClasses; ++l)
+        {
+            if(minMarginal > result.marginals.front()[l].atSite(i))
+            {
+                minMarginal = result.marginals.front()[l].atSite(i);
+                minLabel = l;
+            }
+        }
+        labelingByMarginals.atSite(i) = minLabel;
+    }
+    cv::Mat labelingByMarginalsMat = (cv::Mat)helper::image::colorize(labelingByMarginals, cmap);
+    cv::imshow("MarginalLabeling", labelingByMarginalsMat);
+
+
     std::vector<cv::Mat> coloredLabelings;
     for(size_t i = 0; i < result.numIter; ++i)
     {

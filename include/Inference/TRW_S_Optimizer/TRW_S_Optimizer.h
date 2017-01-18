@@ -37,9 +37,15 @@ public:
      */
     LabelImage const& labeling() const;
 
+    /**
+     * @return Confidences for every pixel
+     */
+    std::vector<Image<double, 1>> const& marginals() const;
+
 private:
     EnergyFun const* m_pEnergy;
     LabelImage m_labeling;
+    std::vector<Image<double, 1>> m_marginals;
 };
 
 template<typename EnergyFun>
@@ -139,9 +145,21 @@ void TRW_S_Optimizer<EnergyFun>::run(FeatureImage const& img)
 
     // Copy over result
     m_labeling = LabelImage(img.width(), img.height());
+    m_marginals.resize(numClasses, Image<double, 1>(img.width(), img.height()));
     for (SiteId i = 0; i < numPx; ++i)
-        m_labeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
+    {
+        // Store MAP prediction
+        // m_labeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
+        // NOTE: For some reason mrfEnergy.GetSolution(nodeIds[i]) does not yield the same solution as manually
+        // computing the MAP prediction from the marginals. For consistency, I therefore don't use it here.
+        TypeGeneral::Label minLabel;
+        nodeIds[i]->m_D.ComputeMin(globalSize, nodeIds[i]->m_K, minLabel);
+        m_labeling.atSite(i) = minLabel;
 
+        // Store marginals
+        for(Label l = 0; l < numClasses; ++l)
+            m_marginals[l].atSite(i) = nodeIds[i]->m_D.GetValue(globalSize, nodeIds[i]->m_K, l);
+    }
 }
 
 template<typename EnergyFun>
@@ -149,5 +167,12 @@ LabelImage const& TRW_S_Optimizer<EnergyFun>::labeling() const
 {
     return m_labeling;
 }
+
+template<typename EnergyFun>
+std::vector<Image<double, 1>> const& TRW_S_Optimizer<EnergyFun>::marginals() const
+{
+    return m_marginals;
+}
+
 
 #endif //HSEG_TRW_S_OPTIMIZER_H
