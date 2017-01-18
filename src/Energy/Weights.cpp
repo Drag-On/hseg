@@ -217,6 +217,8 @@ bool Weights::read(std::string const& filename)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
         in.read(reinterpret_cast<char*>(m_featureSimMat.data()), sizeof(m_featureSimMat(0, 0)) * (featDim * featDim));
         in.close();
+
+        updateCachedInverseFeatMat();
         return true;
     }
     return false;
@@ -232,6 +234,8 @@ void Weights::clampToFeasible()
         if(D(i, i) < 1e-5f)
             D(0, 0) = 1e-5f;
     m_featureSimMat = V * D * V.inverse();
+
+    updateCachedInverseFeatMat();
 }
 
 void Weights::randomize()
@@ -243,4 +247,10 @@ void Weights::randomize()
     for(size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = WeightVec::Random(m_higherOrderWeights[i].size());
     m_featureSimMat = FeatSimMat::Random(m_featureSimMat.rows(), m_featureSimMat.cols());
+}
+
+void Weights::updateCachedInverseFeatMat()
+{
+    // Compute inverse of the feature similarity matrix
+    m_featureSimMatInv = m_featureSimMat.inverse();
 }

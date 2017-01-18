@@ -24,6 +24,7 @@ private:
     std::vector<WeightVec> m_pairwiseWeights;
     std::vector<WeightVec> m_higherOrderWeights;
     FeatSimMat m_featureSimMat;
+    FeatSimMat m_featureSimMatInv;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, Weights const& weights);
@@ -43,6 +44,8 @@ private:
         assert(index < m_higherOrderWeights.size());
         return m_higherOrderWeights[index];
     }
+
+    void updateCachedInverseFeatMat();
 
 public:
     /**
@@ -110,6 +113,14 @@ public:
     inline FeatSimMat const& featureSimMat() const
     {
         return m_featureSimMat;
+    }
+
+    /**
+     * @return Onverse feature similarity matrix
+     */
+    inline FeatSimMat const& featureSimMatInv() const
+    {
+        return m_featureSimMatInv;
     }
 
     /**

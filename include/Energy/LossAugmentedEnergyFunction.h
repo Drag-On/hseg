@@ -63,10 +63,10 @@ private:
      * Make some functions private that are not really meant to be used via an object of this type.
      */
 
-    using EnergyFunction::giveEnergy;
-    using EnergyFunction::giveEnergyByWeight;
-    using EnergyFunction::computeUnaryEnergyByWeight;
-    using EnergyFunction::computePairwiseEnergyByWeight;
+//    using EnergyFunction::giveEnergy;
+//    using EnergyFunction::giveEnergyByWeight;
+//    using EnergyFunction::computeUnaryEnergyByWeight;
+//    using EnergyFunction::computePairwiseEnergyByWeight;
 };
 
 
