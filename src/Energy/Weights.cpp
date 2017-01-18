@@ -11,7 +11,7 @@ Weights::Weights(Label numClasses, uint32_t featDim)
     m_unaryWeights.resize(numClasses, WeightVec::Zero(featDim + 1)); // +1 for the bias
     m_pairwiseWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
     m_higherOrderWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
-    m_featureSimMat = FeatSimMat::Zero(featDim, featDim);
+    m_featureSimMat = m_featureSimMatInv = FeatSimMat::Identity(featDim, featDim);
 }
 
 Weights& Weights::operator+=(Weights const& other)
