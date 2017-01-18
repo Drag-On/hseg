@@ -48,8 +48,6 @@ private:
     FeatureImage const* m_pImg;
     float const m_eps = 1e3f;
 
-    Cost computeInitialEnergy(LabelImage const& labeling) const;
-
     void updateClusterAffiliation(LabelImage& outClustering, LabelImage const& labeling, std::vector<Cluster> const& clusters);
 
     void updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering);
