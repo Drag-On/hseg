@@ -9,7 +9,7 @@
 
 /**
  * Normal energy function, but with an added unary term for the hamming loss
- * @warning This class inherits from EnergyFunction, however, it is not meant to be used in polymorphic ways.
+ * @warning This class inherits from EnergyFunction, however, it is not meant to be used in a polymorphic context.
  */
 class LossAugmentedEnergyFunction : public EnergyFunction
 {
@@ -21,6 +21,8 @@ public:
      * @param numClusters Amount of clusters
      */
     LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters);
+
+    Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     inline Cost unaryCost(SiteId i, Feature const& f, Label l) const
     {
@@ -63,10 +65,9 @@ private:
      * Make some functions private that are not really meant to be used via an object of this type.
      */
 
-//    using EnergyFunction::giveEnergy;
-//    using EnergyFunction::giveEnergyByWeight;
-//    using EnergyFunction::computeUnaryEnergyByWeight;
-//    using EnergyFunction::computePairwiseEnergyByWeight;
+    using EnergyFunction::giveEnergyByWeight;
+    using EnergyFunction::computeUnaryEnergyByWeight;
+    using EnergyFunction::computePairwiseEnergyByWeight;
 };
 
 

@@ -6,6 +6,7 @@
 #define HSEG_ENERGYFUNCTION_H
 
 #include <Image/FeatureImage.h>
+#include <Inference/Cluster.h>
 #include "Weights.h"
 #include "typedefs.h"
 
@@ -27,18 +28,22 @@ public:
      * Computes the overall energy
      * @param features Feature image
      * @param labeling Labeling of the image
+     * @param clustering Clustering of the image
+     * @param clusters Cluster data
      * @return The energy of the given configuration
      */
-    Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling) const;
+    Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     /**
      * Computes the overall energy by weights. I.e. to compute the actual energy, the result needs to be multiplied by
      * the weights vector.
      * @param features Feature image
      * @param labeling Labeling of the image
+     * @param clustering Clustering of the image
+     * @param clusters Cluster data
      * @return The energy of the given configuration by weights
      */
-    Weights giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling) const;
+    Weights giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     /**
     * Computes the unary energy by weights
@@ -56,6 +61,16 @@ public:
      * @param[out] energyW The pairwise energy of the given configuration will be stored here by (pairwise) weights
      */
     void computePairwiseEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW) const;
+
+    /**
+     * Computes the higher order energy by weights
+     * @param features Feature image
+     * @param labeling Class labeling
+     * @param clustering Clustering of the image
+     * @param clusters Cluster data
+     * @param[out] energyW The pairwise energy of the given configuration will be stored here by (higher-order) weights
+     */
+    void computeHigherOrderEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, Weights& energyW) const;
 
     /**
      * @return Amount of classes

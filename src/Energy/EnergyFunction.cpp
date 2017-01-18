@@ -11,18 +11,19 @@ EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters)
 {
 }
 
-Cost EnergyFunction::giveEnergy(FeatureImage const& features, LabelImage const& labeling) const
+Cost EnergyFunction::giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
 {
-    Weights energy = giveEnergyByWeight(features, labeling);
+    Weights energy = giveEnergyByWeight(features, labeling, clustering, clusters);
     return (*m_pWeights) * energy;
 }
 
-Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling) const
+Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
 {
     Weights w(numClasses(), features.dim()); // Zero-initialized weights
 
     computeUnaryEnergyByWeight(features, labeling, w);
     computePairwiseEnergyByWeight(features, labeling, w);
+    computeHigherOrderEnergyByWeight(features, labeling, clustering, clusters, w);
 
     return w;
 }
@@ -67,5 +68,29 @@ void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features,
                 energyW.pairwise(l, lD) += combinedFeat;
             }
         }
+    }
+}
+
+void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& features, LabelImage const& labeling,
+                                                      LabelImage const& clustering,
+                                                      std::vector<Cluster> const& clusters, Weights& energyW) const
+{
+    for(SiteId i = 0; i < labeling.pixels(); ++i)
+    {
+        Feature const& f = features.atSite(i);
+        Label const l = labeling.atSite(i);
+        ClusterId const k = clustering.atSite(i);
+
+        Feature const& fClus = clusters[k].m_feature;
+        Label lClus = clusters[k].m_label;
+
+        // Feature similarity
+        auto diff = f - fClus;
+        energyW.m_featureSimMat = diff * diff.transpose();
+
+        // Linear classifier
+        Feature combinedFeat(f.size() + fClus.size() + 1);
+        combinedFeat << f, fClus, 1.f;
+        energyW.higherOrder(l, lClus) += combinedFeat;
     }
 }

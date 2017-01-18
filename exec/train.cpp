@@ -98,19 +98,19 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     }
 
     // Find latent variables that best explain the ground truth
-    // -- Currently none
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
+    InferenceIterator<EnergyFunction> gtInference(&energy, &features);
+    InferenceResult gtResult = gtInference.run();
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
     InferenceResult result = inference.run();
 
-    EnergyFunction energy(&curWeights, properties.param.numClusters);
-
     // Compute energy without weights on the ground truth
-    auto gtEnergy = energy.giveEnergyByWeight(features, gt);
+    auto gtEnergy = energy.giveEnergyByWeight(features, gt, gtResult.clustering, gtResult.clusters);
     // Compute energy without weights on the prediction
-    auto predEnergy = energy.giveEnergyByWeight(features, result.labeling);
+    auto predEnergy = energy.giveEnergyByWeight(features, result.labeling, result.clustering, result.clusters);
 
     //std::cout << gtEnergy.sum() << ", " << predEnergy.sum() << ", " << curWeights.sum() << std::endl;
 

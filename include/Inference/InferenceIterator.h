@@ -43,6 +43,14 @@ public:
      */
     InferenceResultDetails runDetailed(uint32_t numIter = 0);
 
+    /**
+     * Does inference on a fixed labeling, i.e. predicts the latent variables only
+     * @param gt Ground truth labeling
+     * @param numIter Amount of iterations to do. If 0, run until convergence.
+     * @return Ground truth labeling and latent variables that best explain it
+     */
+    InferenceResult runOnGroundTruth(LabelImage const& gt, uint32_t numIter = 0);
+
 private:
     EnergyFun const* m_pEnergy;
     FeatureImage const* m_pImg;
@@ -55,6 +63,8 @@ private:
     void updateClusterFeatures(std::vector<Cluster>& outClusters, LabelImage const& labeling, LabelImage const& clustering);
 
     void initialize(LabelImage& outLabeling, LabelImage& outClustering, std::vector<Cluster>& outClusters);
+
+    void updateLabelsOnGroundTruth(LabelImage const& gt, std::vector<Cluster>& outClusters, LabelImage const& clustering);
 
 };
 
@@ -97,10 +107,10 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
 template<typename EnergyFun>
 void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering)
 {
-    SiteId const numPx = outLabeling.pixels();
-    SiteId const numNodes = numPx + m_pEnergy->numClusters();
-    Label const numClasses = m_pEnergy->numClasses();
     ClusterId const numClusters = m_pEnergy->numClusters();
+    Label const numClasses = m_pEnergy->numClasses();
+    SiteId const numPx = outLabeling.pixels();
+    SiteId const numNodes = numPx + numClusters;
 
     // Set up the graph
     TypeGeneral::GlobalSize globalSize;
@@ -199,7 +209,6 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
         outLabeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
     for (ClusterId k = 0; k < numClusters; ++k)
         outClusters[k].m_label = mrfEnergy.GetSolution(nodeIds[numPx + k]);
-
 }
 
 template<typename EnergyFun>
@@ -300,6 +309,37 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
 }
 
 template<typename EnergyFun>
+void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& gt, std::vector<Cluster>& outClusters,
+                                                             LabelImage const& clustering)
+{
+    ClusterId const numClusters = m_pEnergy->numClusters();
+    Label const numClasses = m_pEnergy->numClasses();
+    SiteId const numPx = gt.pixels();
+    SiteId const numNodes = numClusters;
+
+    std::vector<std::vector<Cost>> clusterCost(numClusters, std::vector<Cost>(numClasses, 0));
+
+    // Every auxiliary node has just unary terms, however they are a sum of all allocated pixels
+    for(SiteId i = 0; i < numPx; ++i)
+    {
+        Label const l = gt.atSite(i);
+        ClusterId const k = clustering.atSite(i);
+        Feature const& f = m_pImg->atSite(i);
+        Feature const& fClus = outClusters[k].m_feature;
+
+        for (Label lClus = 0; lClus < numClasses; ++lClus)
+            clusterCost[k][lClus] += m_pEnergy->higherOrderCost(f, fClus, l, lClus);
+    }
+
+    // Find the best label for every cluster
+    for(ClusterId k = 0; k < numClusters; ++k)
+    {
+        auto minEle = std::min_element(clusterCost[k].begin(), clusterCost[k].end());
+        outClusters[k].m_label = std::distance(clusterCost[k].begin(), minEle);
+    }
+}
+
+template<typename EnergyFun>
 InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
 {
     InferenceResult result;
@@ -325,7 +365,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
         updateLabels(result.labeling, result.clusters, result.clustering);
 
         // Compute current energy to check for convergence
-        energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling);
+        energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
 
         std::cout << iter << ": " << energy << " | " << lastEnergy - energy << " >= " << m_eps << std::endl;
     }
@@ -362,12 +402,49 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
         updateLabels(labeling, clusters, clustering);
 
         // Compute current energy to check for convergence
-        energy = m_pEnergy->giveEnergy(*m_pImg, labeling);
+        energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
 
         // Store intermediate results
         result.clusters.push_back(clusters);
         result.clusterings.push_back(clustering);
         result.labelings.push_back(labeling);
+
+        std::cout << iter << ": " << energy << " | " << lastEnergy - energy << " >= " << m_eps << std::endl;
+    }
+
+    result.numIter = iter;
+    return result;
+}
+
+template<typename EnergyFun>
+InferenceResult InferenceIterator<EnergyFun>::runOnGroundTruth(LabelImage const& gt, uint32_t numIter)
+{
+    InferenceResult result;
+
+    // Initialize variables
+    initialize(result.labeling, result.clustering, result.clusters);
+    assert(gt.width() == result.labeling.width() && gt.height() == result.labeling.height());
+    result.labeling = gt;
+
+    // Iterate until either convergence or the maximum number of iterations has been hit
+    Cost energy = std::numeric_limits<Cost>::max();
+    Cost lastEnergy = energy;
+    uint32_t iter = 0;
+    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    {
+        lastEnergy = energy;
+
+        // Update clustering
+        updateClusterAffiliation(result.clustering, result.labeling, result.clusters);
+
+        // Update custer features
+        updateClusterFeatures(result.clusters, result.labeling, result.clustering);
+
+        // Update labels
+        updateLabelsOnGroundTruth(result.labeling, result.clusters, result.clustering);
+
+        // Compute current energy to check for convergence
+        energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
 
         std::cout << iter << ": " << energy << " | " << lastEnergy - energy << " >= " << m_eps << std::endl;
     }
