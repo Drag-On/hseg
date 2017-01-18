@@ -26,6 +26,7 @@ PROPERTIES_DEFINE(Inference,
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(std::string, weights, "", -w)
                                PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                               PROP_DEFINE_A(float, eps, 0, --eps)
                   )
                   PROP_DEFINE_A(std::string, image, "", --img)
                   PROP_DEFINE_A(std::string, outDir, "", --out)
@@ -70,7 +71,7 @@ int main(int argc, char** argv)
 
     // Do the inference!
     Timer t(true);
-    InferenceIterator<EnergyFunction> inference(&energyFun, &features);
+    InferenceIterator<EnergyFunction> inference(&energyFun, &features, properties.param.eps);
     auto result = inference.runDetailed();
     t.pause();
 

@@ -27,7 +27,7 @@ public:
      * @param e Energy function
      * @param pImg Color image
      */
-    InferenceIterator(EnergyFun const* e, FeatureImage const* pImg);
+    InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps = 0.f);
 
     /**
      * Does the actual inference
@@ -54,7 +54,7 @@ public:
 private:
     EnergyFun const* m_pEnergy;
     FeatureImage const* m_pImg;
-    float const m_eps = 1e3f;
+    float m_eps = 0.f;
 
     void updateClusterAffiliation(LabelImage& outClustering, LabelImage const& labeling, std::vector<Cluster> const& clusters);
 
@@ -69,9 +69,10 @@ private:
 };
 
 template<typename EnergyFun>
-InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg)
+InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps)
         : m_pEnergy(e),
-          m_pImg(pImg)
+          m_pImg(pImg),
+          m_eps(eps)
 {
 }
 
