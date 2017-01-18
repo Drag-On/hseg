@@ -119,16 +119,16 @@ bool Weights::write(std::string const& filename) const
     if(out.is_open())
     {
         out.write("WEIGHT00", 8);
-        uint32_t featDim = m_unaryWeights[0].size();
+        uint32_t featDim = m_unaryWeights[0].size() - 1;
         uint32_t noUnaries = m_unaryWeights.size();
         uint32_t noPairwise = m_pairwiseWeights.size();
         out.write(reinterpret_cast<const char*>(&featDim), sizeof(featDim));
         out.write(reinterpret_cast<const char*>(&noUnaries), sizeof(noUnaries));
         out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
         for(auto const& e : m_unaryWeights)
-            out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * featDim);
+            out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         for(auto const& e : m_pairwiseWeights)
-            out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * featDim);
+            out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         out.close();
         return true;
     }
@@ -153,12 +153,12 @@ bool Weights::read(std::string const& filename)
         in.read(reinterpret_cast<char*>(&featDim), sizeof(featDim));
         in.read(reinterpret_cast<char*>(&noUnaries), sizeof(noUnaries));
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
-        m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDim));
-        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDim));
+        m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDim + 1));
+        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDim + 1));
         for(auto& e : m_unaryWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * featDim);
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim + 1));
         for(auto& e : m_pairwiseWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * featDim);
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (2 * featDim + 1));
         in.close();
         return true;
     }
