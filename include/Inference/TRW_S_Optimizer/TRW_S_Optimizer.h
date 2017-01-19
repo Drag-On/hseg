@@ -156,9 +156,18 @@ void TRW_S_Optimizer<EnergyFun>::run(FeatureImage const& img)
         nodeIds[i]->m_D.ComputeMin(globalSize, nodeIds[i]->m_K, minLabel);
         m_labeling.atSite(i) = minLabel;
 
-        // Store marginals
+        // Compute marginals
+        // This is just a soft max over the message vector
+        double sum = 0;
         for(Label l = 0; l < numClasses; ++l)
-            m_marginals[l].atSite(i) = nodeIds[i]->m_D.GetValue(globalSize, nodeIds[i]->m_K, l);
+        {
+            double marginal = std::exp(-nodeIds[i]->m_D.GetValue(globalSize, nodeIds[i]->m_K, l));
+            m_marginals[l].atSite(i) = marginal;
+            sum += marginal;
+        }
+        // Normalize
+        for(Label l = 0; l < numClasses; ++l)
+            m_marginals[l].atSite(i) /= sum;
     }
 }
 

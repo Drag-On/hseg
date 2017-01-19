@@ -139,17 +139,17 @@ int main(int argc, char** argv)
     LabelImage labelingByMarginals(features.width(), features.height());
     for(SiteId i = 0; i < features.width() * features.height(); ++i)
     {
-        Label minLabel = 0;
-        double minMarginal = result.marginals.front()[0].atSite(i);
+        Label maxLabel = 0;
+        double maxMarginal = result.marginals.front()[0].atSite(i);
         for(Label l = 1; l < properties.dataset.constants.numClasses; ++l)
         {
-            if(minMarginal > result.marginals.front()[l].atSite(i))
+            if(maxMarginal < result.marginals.front()[l].atSite(i))
             {
-                minMarginal = result.marginals.front()[l].atSite(i);
-                minLabel = l;
+                maxMarginal = result.marginals.front()[l].atSite(i);
+                maxLabel = l;
             }
         }
-        labelingByMarginals.atSite(i) = minLabel;
+        labelingByMarginals.atSite(i) = maxLabel;
     }
     cv::Mat labelingByMarginalsMat = (cv::Mat)helper::image::colorize(labelingByMarginals, cmap);
     cv::imshow("MarginalLabeling", labelingByMarginalsMat);
