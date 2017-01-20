@@ -359,13 +359,13 @@ namespace helper
                 m.rescale(width, height, true);
 
             // Store it in a way the dense crf implementation understands
-            Eigen::MatrixXf unary(width * height, numClasses);
+            Eigen::MatrixXf unary(numClasses, width * height);
             for(Coord y = 0; y < height; ++y)
             {
                 for(Coord x = 0; x < width; ++x)
                 {
                     for(Label l = 0; l < numClasses; ++l)
-                        unary(x + y * width, l) = upscaledMarginals[l].at(x, y);
+                        unary(l, x + y * width) = -upscaledMarginals[l].at(x, y);
                 }
             }
 
@@ -395,7 +395,8 @@ namespace helper
             // y_stddev = 60
             // r_stddev = g_stddev = b_stddev = 20
             // weight = 10
-            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 10 ) );
+            //crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 10 ) );
+            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 3 ) );
 
             // Do map inference
             VectorXs map = crf.map(5);
