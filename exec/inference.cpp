@@ -78,94 +78,13 @@ int main(int argc, char** argv)
     for(size_t i = 0; i < result.energy.size(); ++i)
         std::cout << i << "\t" << result.energy[i] << std::endl;
 
-    // Compute accuracy
-//    if (useGroundTruth)
-//    {
-//        ConfusionMatrix unaryAccuracy(numClasses, unaryFile.maxLabeling(), groundTruth);
-//        std::cout << "Accuracy (unary): " << unaryAccuracy << std::endl;
-//        for(size_t i = 0; i < result.numIter; ++i)
-//        {
-//            ConfusionMatrix accuracy(numClasses, result.labelings[i], groundTruth);
-//            std::cout << "Accuracy (iteration " << std::to_string(i) << "): " << accuracy << std::endl;
-//        }
-//    }
-
     // Write results to disk
-//    std::string filename = boost::filesystem::path(properties.image).stem().string();
-//    boost::filesystem::path basePath(properties.outDir + "/" + filename + "/");
-//    boost::filesystem::remove_all(basePath);
-//    boost::filesystem::path spPath(basePath.string() + "/sp/");
-//    boost::filesystem::create_directories(spPath);
-//    boost::filesystem::path labelPath(basePath.string() + "/labeling/");
-//    boost::filesystem::create_directories(labelPath);
-//    for(size_t i = 0; i < result.numIter; ++i)
-//    {
-//        cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(result.labelings[i], cmap));
-//        cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels[i], cmap));
-//        cv::imwrite(spPath.string() + std::to_string(i + 1) + ".png", spMat);
-//        cv::imwrite(labelPath.string() + std::to_string(i + 1) + ".png", labelMat);
-//    }
-//    LabelImage unaryLabeling = unaryFile.maxLabeling();
-//    cv::Mat labelMat = static_cast<cv::Mat>(helper::image::colorize(unaryLabeling, cmap));
-//    cv::imwrite(basePath.string() + "unary.png", labelMat);
-//    cv::Mat rgbMat = static_cast<cv::Mat>(rgb);
-//    cv::imwrite(basePath.string() + "rgb.png", rgbMat);
-
-
-    // Show results
-//    if (useGroundTruth)
-//    {
-//        cv::Mat gtMat = static_cast<cv::Mat>(groundTruthRgb);
-//        cv::imshow("ground truth", gtMat);
-//    }
-//    cv::imshow("rgb", rgbMat);
-
-
-    // Show marginals
-    std::vector<cv::Mat> coloredMarginals;
-    for(Label l = 0; l < properties.dataset.constants.numClasses; ++l)
-    {
-        Image<double, 1> marginalSlice = result.marginals.front()[l];
-        cv::Mat marginalSliceMat = (cv::Mat) marginalSlice;
-        coloredMarginals.push_back(marginalSliceMat);
-        cv::imshow("Marginal " + std::to_string(l), coloredMarginals.back());
-
-        double min, max;
-        cv::minMaxIdx(marginalSliceMat, &min, &max);
-
-        std::cout << "Marginal slice " << l << ": min " << min << ", max " << max << std::endl;
-    }
-
-    LabelImage labelingByMarginals(features.width(), features.height());
-    for(SiteId i = 0; i < features.width() * features.height(); ++i)
-    {
-        Label maxLabel = 0;
-        double maxMarginal = result.marginals.front()[0].atSite(i);
-        for(Label l = 1; l < properties.dataset.constants.numClasses; ++l)
-        {
-            if(maxMarginal < result.marginals.front()[l].atSite(i))
-            {
-                maxMarginal = result.marginals.front()[l].atSite(i);
-                maxLabel = l;
-            }
-        }
-        labelingByMarginals.atSite(i) = maxLabel;
-    }
-    cv::Mat labelingByMarginalsMat = (cv::Mat)helper::image::colorize(labelingByMarginals, cmap);
-    cv::imshow("MarginalLabeling", labelingByMarginalsMat);
-
-
-    std::vector<cv::Mat> coloredLabelings;
-    for(size_t i = 0; i < result.numIter; ++i)
-    {
-        auto lab = helper::image::colorize(result.labelings[i], cmap);
-        coloredLabelings.push_back(static_cast<cv::Mat>(lab));
-//        cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels[i], cmap));
-        cv::imshow("labeling (" + std::to_string(i) + ")", coloredLabelings.back());
-//        cv::imshow("superpixels (" + std::to_string(i) + ")", spMat);
-    }
-    cv::waitKey();
-
+    std::string filename = boost::filesystem::path(properties.image).stem().string();
+    auto errCode = helper::image::writePalettePNG(properties.outDir + filename + ".png", result.labelings.back(), cmap);
+    if(errCode != helper::image::PNGError::Okay)
+        std::cerr << "Couldn't write prediction to \"" << properties.outDir + filename + ".png" << "\". Error Code: " << (int) errCode << std::endl;
+    if(!helper::image::writeMarginals(properties.outDir + filename + ".marginals", result.marginals.back()))
+        std::cerr << "Couldn't write marginals to \"" << properties.outDir + filename + ".marginals" << "\"." << std::endl;
 
     return SUCCESS;
 }

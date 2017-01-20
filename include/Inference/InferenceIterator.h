@@ -67,6 +67,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
     TRW_S_Optimizer<EnergyFun> optimizer(m_pEnergy);
     optimizer.run(*m_pImg);
     result.labeling = optimizer.labeling();
+    result.marginals = optimizer.marginals();
 
     // TODO: Optimize
 

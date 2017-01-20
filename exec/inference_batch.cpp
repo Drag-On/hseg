@@ -75,6 +75,12 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     //cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, map));
     //cv::imwrite(spPath.string() + filename + ".png", spMat);
 
+    auto errCode = helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
+    if(errCode != helper::image::PNGError::Okay)
+        return res;
+    if(!helper::image::writeMarginals(labelPath.string() + filename + ".marginals", result.marginals))
+        return res;
+
     res.okay = true;
     return res;
 }
