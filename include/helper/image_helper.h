@@ -95,6 +95,15 @@ namespace helper
          * @return Error code
          */
         PNGError writePalettePNG(std::string const& file, LabelImage const& labeling, ColorMap const& cmap);
+
+        /**
+         * Provides a MAP prediction in a given size by using the marginals of a different size
+         * @param img Color image
+         * @param marginals Marginals
+         * @returns MAP prediction of the size of \p img
+         */
+        LabelImage
+        rescaleMAP(RGBImage const& img, std::vector<Image<double, 1>> const& marginals);
     }
 }
 

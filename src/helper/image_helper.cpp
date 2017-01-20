@@ -7,6 +7,7 @@
 #include <png.h>
 #include <iostream>
 #include "helper/image_helper.h"
+#include <densecrf.h>
 
 namespace helper
 {
@@ -342,6 +343,70 @@ namespace helper
             fclose(fp);
 
             return PNGError::Okay;
+        }
+
+        LabelImage rescaleMAP(RGBImage const& img, std::vector<Image<double, 1>> const& marginals)
+        {
+            Coord width = img.width();
+            Coord height = img.height();
+            Label numClasses = marginals.size();
+            LabelImage resultMAP(width, height);
+
+            // Compute upscaled version of the marginals
+            std::vector<Image<double, 1>> upscaledMarginals = marginals;
+            for(auto& m : upscaledMarginals)
+                m.rescale(width, height, true);
+
+            // Store it in a way the dense crf implementation understands
+            Eigen::MatrixXf unary(width * height, numClasses);
+            for(Coord y = 0; y < height; ++y)
+            {
+                for(Coord x = 0; x < width; ++x)
+                {
+                    for(Label l = 0; l < numClasses; ++l)
+                        unary(x + y * width, l) = upscaledMarginals[l].at(x, y);
+                }
+            }
+
+            // Store image in a way the dense crf implementation understands
+            std::vector<unsigned char> im(width * height * 3, 0);
+            for(Coord x = 0; x < width; ++x)
+            {
+                for(Coord y = 0; y < height; ++y)
+                {
+                    for(uint32_t c = 0; c < 3; ++c)
+                        im[c + x * 3 + y * 3 * width] = img.at(x, y, c);
+                }
+            }
+
+            // Setup the CRF model
+            DenseCRF2D crf(width, height, numClasses);
+            // Specify the unary potential as an array of size W*H*(#classes)
+            // packing order: x0y0l0 x0y0l1 x0y0l2 .. x1y0l0 x1y0l1 ...
+            crf.setUnaryEnergy( unary );
+            // add a color independent term (feature = pixel location 0..W-1, 0..H-1)
+            // x_stddev = 3
+            // y_stddev = 3
+            // weight = 3
+            crf.addPairwiseGaussian( 3, 3, new PottsCompatibility( 3 ) );
+            // add a color dependent term (feature = xyrgb)
+            // x_stddev = 60
+            // y_stddev = 60
+            // r_stddev = g_stddev = b_stddev = 20
+            // weight = 10
+            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 10 ) );
+
+            // Do map inference
+            VectorXs map = crf.map(5);
+
+            // Copy result to label image
+            for (Coord x = 0; x < width; ++x)
+            {
+                for (Coord y = 0; y < height; ++y)
+                    resultMAP.at(x, y) = map(x + y * width);
+            }
+
+            return resultMAP;
         }
     }
 }
