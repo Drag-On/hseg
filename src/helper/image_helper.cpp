@@ -395,8 +395,7 @@ namespace helper
             // y_stddev = 60
             // r_stddev = g_stddev = b_stddev = 20
             // weight = 10
-            //crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 10 ) );
-            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 3 ) );
+            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 2 ) );
 
             // Do map inference
             VectorXs map = crf.map(5);
