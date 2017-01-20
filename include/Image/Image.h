@@ -293,7 +293,7 @@ Image<T, C>& Image<T, C>::operator=(cv::Mat const& mat) noexcept
 template<typename T, size_t C>
 bool Image<T, C>::read(std::string const& filename)
 {
-    cv::Mat mat = cv::imread(filename, CV_LOAD_IMAGE_COLOR);
+    cv::Mat mat = cv::imread(filename, cv::IMREAD_COLOR);
     if (!mat.data)
         return false;
 
