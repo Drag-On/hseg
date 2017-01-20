@@ -104,6 +104,22 @@ namespace helper
          */
         LabelImage
         rescaleMAP(RGBImage const& img, std::vector<Image<double, 1>> const& marginals);
+
+        /**
+         * Reads a marginal distribution from file
+         * @param file File to read from
+         * @param outMarginals Marginals will be stored here
+         * @return True in case of success, otherwise false
+         */
+        bool readMarginals(std::string const& file, std::vector<Image<double, 1>>& outMarginals);
+
+        /**
+         * Writes a marginal distribution to file
+         * @param file File to write to
+         * @param marginals Marginals to write
+         * @return True in case of success, otherwise false
+         */
+        bool writeMarginals(std::string const& file, std::vector<Image<double, 1>> const& marginals);
     }
 }
 

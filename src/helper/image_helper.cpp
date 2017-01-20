@@ -8,6 +8,7 @@
 #include <iostream>
 #include "helper/image_helper.h"
 #include <densecrf.h>
+#include <fstream>
 
 namespace helper
 {
@@ -407,6 +408,59 @@ namespace helper
             }
 
             return resultMAP;
+        }
+
+        bool readMarginals(std::string const& file, std::vector<Image<double, 1>>& outMarginals)
+        {
+            std::ifstream in(file, std::ios::in | std::ios::binary);
+            if(in.is_open())
+            {
+                char id[8];
+                in.read(id, 8);
+                if (std::strncmp(id, "MARGINAL", 8) != 0)
+                {
+                    in.close();
+                    return false;
+                }
+                uint32_t width, height, numClasses;
+                in.read(reinterpret_cast<char*>(&width), sizeof(width));
+                in.read(reinterpret_cast<char*>(&height), sizeof(height));
+                in.read(reinterpret_cast<char*>(&numClasses), sizeof(numClasses));
+                outMarginals.clear();
+                outMarginals.reserve(numClasses);
+                for(Label l = 0; l < numClasses; ++l)
+                {
+                    Image<double, 1> slice(width, height);
+                    in.read(reinterpret_cast<char*>(slice.data().data()), sizeof(double) * width * height);
+                    outMarginals.push_back(slice);
+                }
+                in.close();
+                return true;
+            }
+            return false;
+        }
+
+        bool writeMarginals(std::string const& file, std::vector<Image<double, 1>> const& marginals)
+        {
+            std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
+            if(out.is_open())
+            {
+                out.write("MARGINAL", 8);
+                uint32_t width = marginals.front().width();
+                uint32_t height = marginals.front().height();
+                uint32_t numClasses = marginals.size();
+                out.write(reinterpret_cast<const char*>(&width), sizeof(width));
+                out.write(reinterpret_cast<const char*>(&height), sizeof(height));
+                out.write(reinterpret_cast<const char*>(&numClasses), sizeof(numClasses));
+                for(Label l = 0; l < numClasses; ++l)
+                {
+                    assert(marginals[l].width() == width && marginals[l].height() == height);
+                    out.write(reinterpret_cast<const char*>(marginals[l].data().data()), sizeof(double) * width * height);
+                }
+                out.close();
+                return true;
+            }
+            return false;
         }
     }
 }
