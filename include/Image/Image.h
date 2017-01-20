@@ -493,7 +493,7 @@ void Image<T, C>::rescale(Coord width, Coord height, bool interpolate)
     {
         for (Coord x = 0; x < m_width; ++x)
         {
-            auto color = resized.at<cv::Vec<uchar, C>>(y, x);
+            auto color = resized.at<cv::Vec<T, C>>(y, x);
             for (Coord c = 0; c < C; ++c)
                 at(x, y, c) = color[c];
         }
