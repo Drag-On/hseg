@@ -3,8 +3,8 @@ project(densecrf)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-set(DENSE_CRF_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories( ${DENSE_CRF_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} )
+set(dense_crf_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE PATH "Include directory for the denseCRF library")
+include_directories( ${dense_crf_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} )
 
 add_subdirectory (src)
 add_subdirectory (examples)
