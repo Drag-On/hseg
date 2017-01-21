@@ -461,6 +461,8 @@ bool upscale(UtilProperties const& properties)
     // Scale all of them up!
     for(auto file : list)
     {
+        std::cout << file << std::endl;
+
         RGBImage rgb;
         if(!rgb.read(properties.dataset.path.clr + file + properties.dataset.extension.clr))
         {
