@@ -469,9 +469,9 @@ bool upscale(UtilProperties const& properties)
         }
 
         std::vector<Image<double, 1>> marginals;
-        if(!helper::image::readMarginals(properties.job.upscale + file + ".marginal", marginals))
+        if(!helper::image::readMarginals(properties.job.upscale + file + ".marginals", marginals))
         {
-            std::cerr << "Couldn't read marginals from \"" << properties.job.upscale + file + ".marginal" << "\"" << std::endl;
+            std::cerr << "Couldn't read marginals from \"" << properties.job.upscale + file + ".marginals" << "\"" << std::endl;
             return false;
         }
 
