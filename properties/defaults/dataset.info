@@ -8,11 +8,13 @@ dataset
 	{
 		img ""	; Path to feature image files
 		gt ""	; Path to ground truth labelings
+		clr ""  ; Path to color image files
 	}
 	extension
 	{
 		img ".mat"	; File extension of feature image files
 		gt ".png"	; File extension of ground truth labelings
+		clr ".jpg"  ; File extension of color images
 	}
 	constants
 	{

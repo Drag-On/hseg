@@ -21,16 +21,19 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, rescale, "", --rescale)
                                PROP_DEFINE_A(std::string, matchGt, "", --match_gt)
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
+                               PROP_DEFINE_A(std::string, upscale, "", --upscale)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
                                GROUP_DEFINE(path,
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
+                                            PROP_DEFINE_A(std::string, clr, "", --clr)
                                )
                                GROUP_DEFINE(extension,
                                             PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
                                             PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                                            PROP_DEFINE_A(std::string, clr, ".jpg", --clr_ext)
                                )
                                GROUP_DEFINE(constants,
                                             PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
@@ -448,6 +451,42 @@ bool copyFixPNG(UtilProperties const& properties)
     return true;
 }
 
+bool upscale(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list = readLines(properties.dataset.list);
+
+    auto cmap = helper::image::generateColorMapVOC(265);
+
+    // Scale all of them up!
+    for(auto file : list)
+    {
+        RGBImage rgb;
+        if(!rgb.read(properties.dataset.path.clr + file + properties.dataset.extension.clr))
+        {
+            std::cerr << "Couldn't read color image \"" << properties.dataset.path.clr + file + properties.dataset.extension.clr << "\"" << std::endl;
+            return false;
+        }
+
+        std::vector<Image<double, 1>> marginals;
+        if(!helper::image::readMarginals(properties.job.upscale + file + ".marginal", marginals))
+        {
+            std::cerr << "Couldn't read marginals from \"" << properties.job.upscale + file + ".marginal" << "\"" << std::endl;
+            return false;
+        }
+
+        LabelImage rescaled = helper::image::rescaleMAP(rgb, marginals);
+
+        auto errCode = helper::image::writePalettePNG(properties.out + file + properties.dataset.extension.gt, rescaled, cmap);
+        if(errCode != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Couldn't write upscaled image to \"" << properties.out + file + properties.dataset.extension.gt << "\"" << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -484,6 +523,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.copyFixPNG.empty())
         copyFixPNG(properties);
+
+    if(!properties.job.upscale.empty())
+        upscale(properties);
 
     return 0;
 }
