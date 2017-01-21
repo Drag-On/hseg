@@ -456,7 +456,7 @@ bool upscale(UtilProperties const& properties)
     // Read in file names
     std::vector<std::string> list = readLines(properties.dataset.list);
 
-    auto cmap = helper::image::generateColorMapVOC(265);
+    auto cmap = helper::image::generateColorMapVOC(256);
 
     // Scale all of them up!
     for(auto file : list)
