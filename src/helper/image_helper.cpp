@@ -389,13 +389,13 @@ namespace helper
             // x_stddev = 3
             // y_stddev = 3
             // weight = 3
-            crf.addPairwiseGaussian( 3, 3, new PottsCompatibility( 3 ) );
+            crf.addPairwiseGaussian( 3, 3, new PottsCompatibility( 0.1 ) );
             // add a color dependent term (feature = xyrgb)
             // x_stddev = 60
             // y_stddev = 60
             // r_stddev = g_stddev = b_stddev = 20
             // weight = 10
-            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 2 ) );
+            crf.addPairwiseBilateral( 80, 80, 13, 13, 13, im.data(), new PottsCompatibility( 0.6 ) );
 
             // Do map inference
             VectorXs map = crf.map(5);
