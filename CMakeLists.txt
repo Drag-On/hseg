@@ -48,6 +48,10 @@ find_package(PNG REQUIRED)
 ### MatIO ###
 find_package(MATIO REQUIRED)
 
+### Cuda ###
+find_package(CUDA REQUIRED)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O3)
+
 ### gco ###
 add_subdirectory(lib/gco-v3.0)
 
@@ -58,7 +62,7 @@ add_subdirectory(lib/trw_s)
 add_subdirectory(lib/properties)
 
 ### Set general gcc flags ###
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra") # -Wpedantic
 
 ### Function to prepend a string to all elements of a list
 FUNCTION(PREPEND var prefix)
@@ -69,15 +73,25 @@ FUNCTION(PREPEND var prefix)
     SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND)
 
-set(SOURCE_FILES include/Image/Image.h include/helper/coordinate_helper.h include/helper/image_helper.h src/helper/image_helper.cpp include/helper/opencv_helper.h src/helper/opencv_helper.cpp src/Energy/EnergyFunction.cpp include/Energy/EnergyFunction.h include/Image/Coordinates.h src/Energy/Weights.cpp include/Energy/Weights.h include/helper/hash_helper.h src/Timer.cpp include/Timer.h src/Accuracy/ConfusionMatrix.cpp include/Accuracy/ConfusionMatrix.h include/Inference/InferenceIterator.h include/Inference/InferenceResult.h include/Inference/InferenceResultDetails.h src/Threading/ThreadPool.cpp include/Threading/ThreadPool.h include/typedefs.h src/Image/FeatureImage.cpp include/Image/FeatureImage.h include/Image/Feature.h src/Energy/LossAugmentedEnergyFunction.cpp include/Energy/LossAugmentedEnergyFunction.h include/Inference/Cluster.h)
-set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include ${gco_INCLUDE_DIRS} ${trw_s_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PNG_INCLUDE_DIRS} ${MATIO_INCLUDE_DIRS})
-set(LIBS gco trw_s properties ${OpenCV_LIBS} ${Boost_LIBRARIES} ${PNG_LIBRARIES} ${MATIO_LIBRARIES} )
+### All the source files and headers
+set(SOURCE_FILES include/Image/Image.h include/helper/coordinate_helper.h include/helper/image_helper.h src/helper/image_helper.cpp include/helper/opencv_helper.h src/helper/opencv_helper.cpp src/Energy/EnergyFunction.cpp include/Energy/EnergyFunction.h include/Image/Coordinates.h src/Energy/Weights.cpp include/Energy/Weights.h include/helper/hash_helper.h src/Timer.cpp include/Timer.h src/Accuracy/ConfusionMatrix.cpp include/Accuracy/ConfusionMatrix.h include/Inference/InferenceIterator.h include/Inference/InferenceResult.h include/Inference/InferenceResultDetails.h src/Threading/ThreadPool.cpp include/Threading/ThreadPool.h include/typedefs.h src/Image/FeatureImage.cpp include/Image/FeatureImage.h include/Image/Feature.h src/Energy/LossAugmentedEnergyFunction.cpp include/Energy/LossAugmentedEnergyFunction.h include/Inference/Cluster.h include/helper/cuda_helper.cuh src/helper/cuda_helper.cu)
+set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include ${gco_INCLUDE_DIRS} ${trw_s_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PNG_INCLUDE_DIRS} ${MATIO_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+set(LIBS gco trw_s properties ${OpenCV_LIBS} ${Boost_LIBRARIES} ${PNG_LIBRARIES} ${MATIO_LIBRARIES} ${CUDA_LIBRARIES} )
 PREPEND(SOURCE_FILES_FULL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${SOURCE_FILES})
 
 add_definitions(${PNG_DEFINITIONS})
 
+#########################
+# Hacks to make CUDA work
+#########################
+### cuda_add_library doesn't recognize the target_include_directories() command
+include_directories(${INCLUDE_DIRS})
+### fix a weird issue with "identifier "__builtin_ia32_mwaitx" is undefined" (from https://github.com/tensorflow/tensorflow/issues/1066)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES")
+
+
 ### Compile main library ###
-add_library(hseg ${SOURCE_FILES})
+cuda_add_library(hseg ${SOURCE_FILES})
 target_include_directories(hseg PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg ${LIBS})
 if(THREADS_HAVE_PTHREAD_ARG)
@@ -123,10 +137,15 @@ add_executable(hseg_mess exec/messy.cpp)
 target_include_directories(hseg_mess PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(hseg_mess ${LIBS} hseg)
 
-### Use any sanitizer? ###
-#add_subdirectory(sanitizer/address)
-#add_subdirectory(sanitizer/leak)
-#add_subdirectory(sanitizer/thread)
-#add_subdirectory(sanitizer/undefined)
-#add_subdirectory(sanitizer/gprof)
-#add_subdirectory(sanitizer/profile)
+### Unit tests ###
+enable_testing()
+find_package(GTest)
+if (GTest_FOUND)
+    set(TEST_SOURCE_FILES test/helper/cuda_helper_test.cu)
+    cuda_add_executable(hseg_test test/gtest.cpp ${TEST_SOURCE_FILES})
+    target_include_directories(hseg_test PUBLIC ${GTEST_INCLUDE_DIRS} test ${INCLUDE_DIRS})
+    target_link_libraries(hseg_test ${GTEST_BOTH_LIBRARIES} ${LIBS} hseg)
+    add_test(AllTests hseg_test)
+else ()
+    message(WARNING "GTest not found, not building unit tests.")
+endif ()

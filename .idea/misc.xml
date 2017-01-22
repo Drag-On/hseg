@@ -6,6 +6,7 @@
       <file path="$PROJECT_DIR$/exec" />
       <file path="$PROJECT_DIR$/include" />
       <file path="$PROJECT_DIR$/src" />
+      <file path="$PROJECT_DIR$/test" />
     </sourceRoots>
     <libraryRoots>
       <file path="$PROJECT_DIR$/lib" />
