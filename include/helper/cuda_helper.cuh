@@ -118,7 +118,6 @@ namespace helper
             dim3 threadsPerBlock1(32);
             dim3 numBlocks1(std::ceil(dim / (float)threadsPerBlock1.x));
             helper::cuda::differenceKernel<<<numBlocks1, threadsPerBlock1>>>(diff, v1, v2, dim);
-            cudaDeviceSynchronize();
 
             // Compute outer product
             T* outer;
@@ -126,13 +125,11 @@ namespace helper
             dim3 threadsPerBlock2(32, 32);
             dim3 numBlocks2(std::ceil(dim / (float)threadsPerBlock2.x), std::ceil(dim / (float)threadsPerBlock2.y));
             helper::cuda::outerProductKernel<<<numBlocks2, threadsPerBlock2>>>(outer, diff, diff, dim);
-            cudaDeviceSynchronize();
 
             // Compute inner product
             dim3 threadsPerBlock3(32);
             dim3 numBlocks3(std::ceil(dim / (float)threadsPerBlock3.x));
             helper::cuda::innerProductKernel<<<numBlocks3, threadsPerBlock3>>>(out, mat, outer, dim * dim);
-            cudaDeviceSynchronize();
 
             cudaFree(diff);
             cudaFree(outer);
