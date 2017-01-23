@@ -7,6 +7,7 @@
 #include <device_launch_parameters.h>
 #include <cstdlib>
 #include <cmath>
+#include <type_traits>
 
 namespace helper
 {
@@ -15,6 +16,7 @@ namespace helper
         /**
          * Cuda kernel that computes the inner product of two vectors, i.e. <v1, v2>.
          * @tparam T Type of the vector elements
+         * @tparam init Initializes \p out with 0 if true, otherwise just adds to it. Defaults to true.
          * @param out The result is stored here
          * @param v1 Pointer to the first element of the first vector
          * @param v2 Pointer to the first element of the second vector
@@ -25,13 +27,37 @@ namespace helper
          *  dim3 numBlocks(std::ceil(dim / (float)threadsPerBlock.x));
          *  innerProductKernel<<<numBlocks, threadsPerBlock>>>(&out, &v1[0], &v2[0], dim);
          */
-        template <typename T>
+        template <typename T, bool init = true, typename std::enable_if<init == true>::type* = nullptr>
         __global__
         void innerProductKernel(T* out, T const* v1, T const* v2, uint32_t dim)
         {
             uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
             *out = 0;
+
+            if(i < dim)
+                atomicAdd(out, v1[i] * v2[i]);
+        }
+
+        /**
+         * Cuda kernel that computes the inner product of two vectors, i.e. <v1, v2>.
+         * @tparam T Type of the vector elements
+         * @tparam init Initializes \p out with 0 if true, otherwise just adds to it. Defaults to true.
+         * @param out The result is stored here
+         * @param v1 Pointer to the first element of the first vector
+         * @param v2 Pointer to the first element of the second vector
+         * @param dim Dimensionality of both vectors
+         *
+         * @example
+         *  dim3 threadsPerBlock(32);
+         *  dim3 numBlocks(std::ceil(dim / (float)threadsPerBlock.x));
+         *  innerProductKernel<<<numBlocks, threadsPerBlock>>>(&out, &v1[0], &v2[0], dim);
+         */
+        template <typename T, bool init = true, typename std::enable_if<init == false>::type* = nullptr>
+        __global__
+        void innerProductKernel(T* out, T const* v1, T const* v2, uint32_t dim)
+        {
+            uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
             if(i < dim)
                 atomicAdd(out, v1[i] * v2[i]);
