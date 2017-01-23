@@ -23,7 +23,4 @@ private:
     uint32_t m_feat_dim;
 };
 
-
-void test();
-
 #endif //UPDATE_CLUSTER_AFFIL_CUDA
