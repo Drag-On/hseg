@@ -1,4 +1,6 @@
 
+#include <Energy/EnergyFunction.h>
+#include <Energy/LossAugmentedEnergyFunction.h>
 #include "Inference/update_cluster_affil_cuda.cuh"
 #include "helper/cuda_helper.cuh"
 
@@ -12,13 +14,13 @@ UpdateClusterAffilCuda<EnergyFun>::UpdateClusterAffilCuda(EnergyFun const& energ
     {
         for(Label l2 = 0; l2 < energyFun.numClasses(); ++l2)
         {
-            auto const& w = energyFun.weights.higherOrder(l1, l2);
+            auto const& w = energyFun.weights().higherOrder(l1, l2);
             ho_weights_host.insert(ho_weights_host.end(), w.data(), w.data() + w.size());
         }
     }
     thrust::host_vector<float> feat_weights_host;
     feat_weights_host.reserve(features->dim() * features->dim());
-    feat_weights_host.insert(feat_weights_host.end(), energyFun.weights.featureSimMat().data(), energyFun.weights.featureSimMat().data() + energyFun.weights.featureSimMat().size());
+    feat_weights_host.insert(feat_weights_host.end(), energyFun.weights().featureSimMat().data(), energyFun.weights().featureSimMat().data() + energyFun.weights().featureSimMat().size());
 
     // Store features in a cuda-friendly way
     thrust::host_vector<float> features_host;
@@ -134,4 +136,7 @@ void UpdateClusterAffilCuda<EnergyFun>::updateClusterAffiliation(LabelImage& out
     outClustering.data().resize(numSites);
     outClustering.data().insert(outClustering.data().end(), clustering.data(), clustering.data() + clustering.size());
 }
+
+template class UpdateClusterAffilCuda<EnergyFunction>;
+template class UpdateClusterAffilCuda<LossAugmentedEnergyFunction>;
 
