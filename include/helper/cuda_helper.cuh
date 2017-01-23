@@ -128,13 +128,14 @@ namespace helper
          * @details This is a host-function that expects pointers to device memory. It does not transfer any memory
          *          between host and device.
          * @tparam T Type of the vector elements
+         * @tparam init Initializes \p out with 0 if true, otherwise just adds to it. Defaults to true.
          * @param out Result will be written here
          * @param v1 Pointer to the first element of the first vector
          * @param v2 Pointer to the first element of the second vector
          * @param mat Pointer to the first element of the inverse covariance matrix
          * @param dim Dimensionality of the vectors
          */
-        template <typename T>
+        template <typename T, bool init=true>
         __host__
         void mahalanobisDistance(T* out, T const* v1, T const* v2, T const* mat, uint32_t dim)
         {
@@ -155,7 +156,7 @@ namespace helper
             // Compute inner product
             dim3 threadsPerBlock3(32);
             dim3 numBlocks3(std::ceil(dim / (float)threadsPerBlock3.x));
-            helper::cuda::innerProductKernel<<<numBlocks3, threadsPerBlock3>>>(out, mat, outer, dim * dim);
+            helper::cuda::innerProductKernel<T, init><<<numBlocks3, threadsPerBlock3>>>(out, mat, outer, dim * dim);
 
             cudaFree(diff);
             cudaFree(outer);
