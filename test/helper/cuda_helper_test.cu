@@ -79,6 +79,36 @@ TEST(cuda_helper,outerProductKernel)
     EXPECT_EQ(eigenResult, result);
 }
 
+TEST(cuda_helper,sumKernel)
+{
+    uint32_t const dim = 3;
+    Eigen::Vector3f v1;
+    v1 << 1.f, 2.f, 3.f;
+    Eigen::Vector3f v2;
+    v2 << 3.f, -3.f, 0.f;
+
+    float* v1_dev, *v2_dev, *result_dev;
+    cudaMallocManaged(&v1_dev, dim * sizeof(float));
+    cudaMallocManaged(&v2_dev, dim * sizeof(float));
+    cudaMallocManaged(&result_dev, dim * sizeof(float));
+    thrust::copy(v1.data(), v1.data() + dim, v1_dev);
+    thrust::copy(v2.data(), v2.data() + dim, v2_dev);
+
+    dim3 threadsPerBlock(32);
+    dim3 numBlocks(std::ceil(dim / (float)threadsPerBlock.x));
+    helper::cuda::sumKernel<<<numBlocks, threadsPerBlock>>>(result_dev, v1_dev, v2_dev, dim);
+
+    Eigen::Vector3f result_host;
+    cudaMemcpy(result_host.data(), result_dev, dim*sizeof(float), cudaMemcpyDeviceToHost);
+
+    cudaFree(v1_dev);
+    cudaFree(v2_dev);
+    cudaFree(result_dev);
+
+    Eigen::Vector3f diff = v1 + v2;
+    EXPECT_EQ(diff, result_host);
+}
+
 TEST(cuda_helper,differenceKernel)
 {
     uint32_t const dim = 3;

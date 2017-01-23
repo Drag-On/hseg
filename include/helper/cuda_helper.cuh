@@ -62,6 +62,24 @@ namespace helper
         }
 
         /**
+         * Cuda kernel that computes the sum of two vectors
+         * @tparam T Type of the vector elements
+         * @param out Result vector, size dim
+         * @param v1 Pointer to the first element of the first vector
+         * @param v2 Pointer to the first element of second first vector
+         * @param dim Dimensionality of both vectors
+         */
+        template <typename T>
+        __global__
+        void sumKernel(T* out, T const* v1, T const* v2, uint32_t dim)
+        {
+            uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if(i < dim)
+                out[i] = v1[i] + v2[i];
+        }
+
+        /**
          * Cuda kernel that computes the difference of two vectors
          * @tparam T Type of the vector elements
          * @param out Result vector, size dim
