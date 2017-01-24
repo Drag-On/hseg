@@ -5,6 +5,7 @@
 #include <BaseProperties.h>
 #include <Energy/Weights.h>
 #include <helper/image_helper.h>
+#include <helper/clustering_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/operations.hpp>
 #include <Threading/ThreadPool.h>
@@ -74,8 +75,8 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
     helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
-    //cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, map));
-    //cv::imwrite(spPath.string() + filename + ".png", spMat);
+    helper::image::writePalettePNG(spPath.string() + filename + ".png", result.clustering, cmap);
+    helper::clustering::write(spPath.string() + filename + ".dat", result.clustering, result.clusters);
 
     res.okay = true;
     return res;
