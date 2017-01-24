@@ -7,6 +7,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <helper/image_helper.h>
+#include <helper/clustering_helper.h>
 #include <Energy/EnergyFunction.h>
 #include <Threading/ThreadPool.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
@@ -73,8 +74,8 @@ std::vector<std::string> readFileNames(std::string const& listFile)
 
 struct SampleResult
 {
-    float energy = 0;
-    Weights diff{21ul, false};
+    float upperBound = 0;
+    Weights gradient{21ul, 512};
     bool valid = false;
 };
 
@@ -83,8 +84,10 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     SampleResult sampleResult;
 
     std::string const imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
-    std::string const predictionFilename = properties.in + filename + properties.dataset.extension.gt;
     std::string const gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
+    std::string const predictionFilename = properties.in + "labeling/" + filename + properties.dataset.extension.gt;
+    std::string const clusteringFilename = properties.in + "clustering/" + filename + ".dat";
+    std::string const clusteringGtFilename = properties.in + "clustering_gt/" + filename + ".dat";
 
     // Load images etc...
     FeatureImage features;
@@ -110,33 +113,37 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
         return sampleResult;
     }
 
-    EnergyFunction energy(&curWeights, properties.param.numClusters);
-    //auto const& clusters = result.clusters;
-    auto predEnergyCur = energy.giveEnergy(features, prediction);
-    sampleResult.energy -= predEnergyCur;
-    //auto const& gtClusters = clusterer.clusters();
-    auto gtEnergyCur = energy.giveEnergy(features, gt);
-    sampleResult.energy += gtEnergyCur;
-
-    // Compute loss
-    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, gt, lossFactor, properties.dataset.constants.numClasses);
-    sampleResult.energy += loss;
-
-    if(sampleResult.energy <= 0)
+    LabelImage clustering, gt_clustering;
+    std::vector<Cluster> clusters, gt_clusters;
+    if(!helper::clustering::read(clusteringFilename, clustering, clusters))
     {
-        std::cerr << "Training energy was negative: " << sampleResult.energy << " (Loss: " << loss
-                  << ", prediction: " << predEnergyCur << ", ground truth: " << gtEnergyCur << ")" << std::endl;
+        std::cerr << "Unable to read clustering from \"" << clusteringFilename << "\"." << std::endl;
+        return sampleResult;
+    }
+    if(!helper::clustering::read(clusteringGtFilename, gt_clustering, gt_clusters))
+    {
+        std::cerr << "Unable to read ground truth clustering from \"" << clusteringGtFilename << "\"." << std::endl;
+        return sampleResult;
     }
 
-    // Compute energy without weights on the ground truth
-    auto gtEnergy = energy.giveEnergyByWeight(features, gt);
-    // Compute energy without weights on the prediction
-    auto predEnergy = energy.giveEnergyByWeight(features, prediction);
-    // Compute energy difference
-    gtEnergy -= predEnergy;
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
 
-    sampleResult.diff = gtEnergy;
+    // Compute energy without weights on the ground truth
+    auto gtEnergy = energy.giveEnergyByWeight(features, gt, gt_clustering, gt_clusters);
+    // Compute energy without weights on the prediction
+    auto predEnergy = energy.giveEnergyByWeight(features, prediction, clustering, clusters);
+
+    // Compute upper bound on this image
+    auto gtEnergyCur = curWeights * gtEnergy;
+    auto predEnergyCur = curWeights * predEnergy;
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, gt, lossFactor, properties.dataset.constants.numClasses);
+    sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
+
+    // Compute gradient for this sample
+    gtEnergy -= predEnergy;
+    sampleResult.gradient = gtEnergy;
+
     sampleResult.valid = true;
     return sampleResult;
 }
@@ -193,10 +200,10 @@ int main(int argc, char* argv[])
             return INVALID_SAMPLE;
         }
 
-        sum += sampleResult.diff;
-        trainingEnergy += sampleResult.energy;
+        sum += sampleResult.gradient;
+        trainingEnergy += sampleResult.upperBound;
 
-        std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
+        std::cout << "<<< " << std::setw(4) << t << "/" << std::setw(4) << n << " >>>\t" << sampleResult.upperBound << std::endl;
     }
 
     // Compute step size
@@ -205,7 +212,7 @@ int main(int argc, char* argv[])
     // Show current training energy
     trainingEnergy *= properties.train.C / N;
     trainingEnergy += curWeights.sqNorm() / 2.f;
-    std::cout << "Current training energy: " << trainingEnergy << std::endl;
+    std::cout << "Current upper bound: " << trainingEnergy << std::endl;
     boost::filesystem::path energyFilePath(properties.out);
     energyFilePath.remove_filename();
     std::ofstream out(energyFilePath.string() + "/training_energy.txt", std::ios::out | std::ios::app);
@@ -223,10 +230,6 @@ int main(int argc, char* argv[])
     // Update step
     sum *= properties.train.C / N;
     sum += curWeights;
-
-    std::cout << "Gradient: " << sum << std::endl;
-    std::cout << "Step size: " << stepSize << std::endl;
-
     sum *= stepSize;
     curWeights -= sum;
 
@@ -238,11 +241,11 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
         return CANT_WRITE_WEIGHTS;
     }
-    std::cout << "====================" << std::endl;
-    std::cout << curWeights << std::endl;
-    std::cout << "====================" << std::endl;
-
-    curWeights.write(energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat");
+    if(!curWeights.write(energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat"))
+    {
+        std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+        return CANT_WRITE_WEIGHTS;
+    }
 
     return SUCCESS;
 }
