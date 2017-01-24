@@ -241,9 +241,10 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
         return CANT_WRITE_WEIGHTS;
     }
-    if(!curWeights.write(energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat"))
+    std::string backupWeightsFile = energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat";
+    if(!curWeights.write(backupWeightsFile))
     {
-        std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
+        std::cerr << "Couldn't write weights to file " << backupWeightsFile << std::endl;
         return CANT_WRITE_WEIGHTS;
     }
 
