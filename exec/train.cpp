@@ -183,10 +183,7 @@ int main(int argc, char** argv)
     ThreadPool pool(properties.numThreads);
     std::vector<std::future<SampleResult>> futures;
 
-//    Cost lastTrainingEnergy = std::numeric_limits<Cost>::max();
     Cost learningRate = properties.train.rate.base;
-    Weights lastWeights = curWeights;
-    Weights lastGradient = curWeights;
 
     std::ofstream log(properties.log);
     if(!log.is_open())
@@ -236,15 +233,12 @@ int main(int argc, char** argv)
         // Compute learning rate
         learningRate = properties.train.rate.base / (1 + t / properties.train.rate.T);
 
-        lastWeights = curWeights;
-//        lastTrainingEnergy = iterationEnergy;
-
+        // Print upper bound of last iteration
         log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << "\t" << std::setw(12) << learningRate << std::endl;
 
         // Update step
         sum *= properties.train.C / N;
         sum += curWeights;
-        lastGradient = sum;
         sum *= learningRate;
         curWeights -= sum;
 
