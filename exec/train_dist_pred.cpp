@@ -13,7 +13,6 @@
 
 PROPERTIES_DEFINE(TrainDistPred,
                   GROUP_DEFINE(dataset,
-                               PROP_DEFINE_A(std::string, list, "", -l)
                                GROUP_DEFINE(path,
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
