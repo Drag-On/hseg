@@ -51,7 +51,7 @@ public:
      */
     InferenceResult runOnGroundTruth(LabelImage const& gt, uint32_t numIter = 0);
 
-private:
+protected:
     EnergyFun const* m_pEnergy;
     FeatureImage const* m_pImg;
     float m_eps = 0.f;
