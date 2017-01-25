@@ -58,6 +58,7 @@ namespace helper
                 for(uint32_t k = 0; k < numClusters; ++k)
                 {
                     Cluster c;
+                    c.m_feature.resize(featDim);
                     in.read(reinterpret_cast<char*>(&c.m_label), sizeof(Label));
                     in.read(reinterpret_cast<char*>(c.m_feature.data()), sizeof(float) * featDim);
                     outClusters.push_back(c);
