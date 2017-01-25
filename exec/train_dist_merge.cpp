@@ -169,6 +169,20 @@ int main(int argc, char* argv[])
         return CANT_READ_WEIGHTS;
     }
 
+    boost::filesystem::path energyFilePath(properties.out);
+    energyFilePath.remove_filename();
+
+    // Write initial weights to file
+    if(properties.t == 0)
+    {
+        std::string backupWeightsFile = energyFilePath.string() + "/weights/0.dat";
+        if(!curWeights.write(backupWeightsFile))
+        {
+            std::cerr << "Couldn't write weights to file " << backupWeightsFile << std::endl;
+            return CANT_WRITE_WEIGHTS;
+        }
+    }
+
     // Read in list of files
     std::vector<std::string> list = readFileNames(properties.dataset.list);
     if(list.empty())
@@ -213,8 +227,6 @@ int main(int argc, char* argv[])
     trainingEnergy *= properties.train.C / N;
     trainingEnergy += curWeights.sqNorm() / 2.f;
     std::cout << "Current upper bound: " << trainingEnergy << std::endl;
-    boost::filesystem::path energyFilePath(properties.out);
-    energyFilePath.remove_filename();
     std::ofstream out(energyFilePath.string() + "/training_energy.txt", std::ios::out | std::ios::app);
     if(out.is_open())
     {
