@@ -30,6 +30,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                           PROP_DEFINE_A(std::string, weights, "", -w)
                           PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
                           PROP_DEFINE_A(float, eps, 0, --eps)
+                          PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(std::string, outDir, "", --out)
                   PROP_DEFINE_A(uint16_t, numThreads, 4, --numThreads)
@@ -48,7 +49,8 @@ struct Result
 };
 
 Result process(std::string const& imageFilename, Weights const& weights, std::string const& spOutPath,
-               std::string const& labelOutPath, helper::image::ColorMap const& cmap, ClusterId numClusters, float eps)
+               std::string const& labelOutPath, helper::image::ColorMap const& cmap, ClusterId numClusters, float eps,
+               uint32_t maxIter)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
@@ -66,7 +68,7 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     EnergyFunction energyFun(&weights, numClusters);
 
     // Do the inference!
-    InferenceIterator<EnergyFunction> inference(&energyFun, &features, eps);
+    InferenceIterator<EnergyFunction> inference(&energyFun, &features, eps, maxIter);
     auto result = inference.run();
 
     // Write results to disk
@@ -151,7 +153,7 @@ int main(int argc, char** argv)
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap, properties.param.numClusters, properties.param.eps);
+        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter);
         futures.push_back(std::move(fut));
     }
 
