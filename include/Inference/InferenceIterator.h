@@ -27,7 +27,7 @@ public:
      * @param e Energy function
      * @param pImg Color image
      */
-    InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps = 0.f);
+    InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps = 1e-5f, uint32_t maxIter = 50);
 
     /**
      * Does the actual inference
@@ -54,7 +54,8 @@ public:
 protected:
     EnergyFun const* m_pEnergy;
     FeatureImage const* m_pImg;
-    float m_eps = 0.f;
+    float m_eps;
+    uint32_t m_maxIter;
 
     void updateClusterAffiliation(LabelImage& outClustering, LabelImage const& labeling, std::vector<Cluster> const& clusters);
 
@@ -69,10 +70,11 @@ protected:
 };
 
 template<typename EnergyFun>
-InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps)
+InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps, uint32_t maxIter)
         : m_pEnergy(e),
           m_pImg(pImg),
-          m_eps(eps)
+          m_eps(eps),
+          m_maxIter(maxIter)
 {
 }
 
@@ -351,7 +353,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
     Cost energy =  m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0) && iter < m_maxIter; ++iter)
     {
         lastEnergy = energy;
 
@@ -387,7 +389,7 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
     result.energy.push_back(energy);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0) && iter < m_maxIter; ++iter)
     {
         lastEnergy = energy;
 
@@ -428,7 +430,7 @@ InferenceResult InferenceIterator<EnergyFun>::runOnGroundTruth(LabelImage const&
     Cost energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0); ++iter)
+    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0) && iter < m_maxIter; ++iter)
     {
         lastEnergy = energy;
 
