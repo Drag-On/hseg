@@ -26,16 +26,6 @@ PROPERTIES_DEFINE(TrainDistPred,
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
                                )
                   )
-                  GROUP_DEFINE(train,
-                               PROP_DEFINE_A(float, C, 0.1, -C)
-                               GROUP_DEFINE(iter,
-                                            PROP_DEFINE_A(uint32_t, end, 1000, --end)
-                               )
-                               GROUP_DEFINE(rate,
-                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
-                                            PROP_DEFINE_A(float, T, 200, -T)
-                               )
-                  )
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
                                PROP_DEFINE_A(float, eps, 0, --eps)
