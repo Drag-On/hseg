@@ -4,6 +4,7 @@
 
 #include <BaseProperties.h>
 #include <helper/image_helper.h>
+#include <helper/clustering_helper.h>
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/path.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
@@ -51,6 +52,7 @@ enum ErrorCode
     ERR_OK = 0,
     ERR_EMPTY_FILE_LIST,
     ERR_IMAGE_LOAD,
+    ERR_CLUSTERING_LOAD,
     ERR_IMAGE_MISMATCH,
     ERR_CANT_READ_WEIGHTS,
 };
@@ -98,7 +100,8 @@ int main(int argc, char** argv)
 
     for(auto const& f : fileNames)
     {
-        std::string const& predFilename = properties.inDir + f + properties.dataset.extension.gt;
+        std::string const& predFilename = properties.inDir + "labeling/" + f + properties.dataset.extension.gt;
+        std::string const& cluFilename = properties.inDir + "clustering/" + f + ".dat";
         std::string const& gtFilename = properties.dataset.path.gt + f + properties.dataset.extension.gt;
 
         // Load images
@@ -109,8 +112,6 @@ int main(int argc, char** argv)
             std::cerr << "Couldn't load image \"" << predFilename << "\". Error Code: " << (int) errCode << std::endl;
             return ERR_IMAGE_LOAD;
         }
-
-        
         LabelImage gt;
         errCode = helper::image::readPalettePNG(gtFilename, gt, nullptr);
         if(errCode != helper::image::PNGError::Okay)
@@ -126,6 +127,14 @@ int main(int argc, char** argv)
             return ERR_IMAGE_MISMATCH;
         }
 
+        LabelImage clustering;
+        std::vector<Cluster> clusters;
+        if(!helper::clustering::read(cluFilename, clustering, clusters))
+        {
+            std::cerr << "Couldn't load clustering from \"" << cluFilename << "\"" << std::endl;
+            return ERR_CLUSTERING_LOAD;
+        }
+
         accuracy.join(pred, gt);
 
         size_t imgRawPxCorrect = 0;
@@ -133,7 +142,8 @@ int main(int argc, char** argv)
 
         // Compute loss
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-        loss += LossAugmentedEnergyFunction::computeLoss(pred, gt, lossFactor, properties.dataset.constants.numClasses);
+        loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
+                                                         properties.dataset.constants.numClasses);
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) < properties.dataset.constants.numClasses)
             {

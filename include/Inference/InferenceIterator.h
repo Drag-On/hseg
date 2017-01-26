@@ -89,13 +89,13 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
         Feature const& f2 = clusters[0].m_feature;
         Label const l2 = clusters[0].m_label;
 
-        Cost minCost = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2);
+        Cost minCost = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
         ClusterId minCluster = 0;
         for(ClusterId k = 1; k < clusters.size(); ++k)
         {
             Feature const& f2 = clusters[k].m_feature;
             Label const l2 = clusters[k].m_label;
-            Cost c = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2);
+            Cost c = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
             if(c < minCost)
             {
                 minCost = c;
@@ -122,22 +122,32 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
     std::vector<MRFEnergy<TypeGeneral>::NodeId> nodeIds;
     nodeIds.reserve(numNodes);
 
-    // Unary term for each pixel and each cluster
-    for (SiteId i = 0; i < numNodes; ++i)
+    // Figure out unary terms for cluster nodes
+    std::vector<std::vector<Cost>> clusterUnary(numClusters, std::vector<Cost>(numClasses, 0));
+    for(SiteId i = 0; i < numPx; ++i)
+    {
+        ClusterId k = clustering.atSite(i);
+        for(Label l_k = 0; l_k < numClasses; ++l_k)
+            clusterUnary[k][l_k] += m_pEnergy->higherOrderSpecialUnaryCost(i, l_k);
+    }
+
+    // Unary term for each pixel
+    for (SiteId i = 0; i < numPx; ++i)
     {
         Feature const& f = m_pImg->atSite(i);
         std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
-        if(i < numPx)
-        {
-            // It's a pixel
-            for (Label l = 0; l < numClasses; ++l)
-                confidences[l] = m_pEnergy->unaryCost(i, f, l);
-        }
-        else
-        {
-            // It's an auxiliary node
-            // Cluster nodes don't currently have unary terms
-        }
+        for (Label l = 0; l < numClasses; ++l)
+            confidences[l] = m_pEnergy->unaryCost(i, f, l);
+        auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
+        nodeIds.push_back(id);
+    }
+
+    // Unary term for each cluster
+    for (SiteId i = numPx; i < numNodes; ++i)
+    {
+        std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
+        for (Label l = 0; l < numClasses; ++l)
+            confidences[l] = clusterUnary[i - numPx][l];
         auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
         nodeIds.push_back(id);
     }
@@ -257,7 +267,6 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
     // Initialize clustering with all zeros as well
     outClustering = LabelImage(m_pImg->width(), m_pImg->height());
 
-    // Pick random pixels and initialize clusters with their features
     struct allocation
     {
         ClusterId clusterId;
@@ -330,7 +339,7 @@ void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& g
         Feature const& fClus = outClusters[k].m_feature;
 
         for (Label lClus = 0; lClus < numClasses; ++lClus)
-            clusterCost[k][lClus] += m_pEnergy->higherOrderCost(f, fClus, l, lClus);
+            clusterCost[k][lClus] += m_pEnergy->higherOrderCost(f, fClus, l, lClus) + m_pEnergy->higherOrderSpecialUnaryCost(i, lClus);
     }
 
     // Find the best label for every cluster

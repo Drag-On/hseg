@@ -120,7 +120,8 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     auto gtEnergyCur = curWeights * gtEnergy;
     auto predEnergyCur = curWeights * predEnergy;
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, gt, lossFactor, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.clustering, gt, result.clusters,
+                                                          lossFactor, properties.dataset.constants.numClasses);
     sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
 
     //std::cout << "Upper bound: (" << loss << " - " << predEnergyCur << ") + " << gtEnergyCur << " = " << loss - predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;

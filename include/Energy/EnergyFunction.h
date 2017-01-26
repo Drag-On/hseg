@@ -155,6 +155,18 @@ public:
     }
 
     /**
+     * Computes a special additive cost that is unary to the cluster nodes. It has the form Sum_i f(i,l_k), where i are
+     * the pixel indices and l_k is the label of cluster k
+     * @param i Site
+     * @param l_k Label of cluster k
+     * @return The cost
+     */
+    inline Cost higherOrderSpecialUnaryCost(SiteId /* i */, Label /* l_k */) const
+    {
+        return 0;
+    }
+
+    /**
      * @return The weights
      */
     inline Weights const& weights() const

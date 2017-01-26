@@ -137,7 +137,8 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     auto gtEnergyCur = curWeights * gtEnergy;
     auto predEnergyCur = curWeights * predEnergy;
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, gt, lossFactor, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, clustering, gt, clusters, lossFactor,
+                                                          properties.dataset.constants.numClasses);
     sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
 
     // Compute gradient for this sample

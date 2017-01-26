@@ -17,6 +17,11 @@ public:
     {
         return std::abs((f1 - f2)(0));
     }
+
+    inline Cost higherOrderSpecialUnaryCost(SiteId /* i */, Label /* l_k */) const
+    {
+        return 0;
+    }
 };
 
 class TestFeatureImage : public FeatureImage
