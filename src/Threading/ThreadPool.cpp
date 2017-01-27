@@ -58,7 +58,12 @@ void ThreadPool::runThread()
     }
 }
 
-unsigned int ThreadPool::size()
+unsigned int ThreadPool::size() const
 {
     return m_threads.size();
+}
+
+size_t ThreadPool::queued() const
+{
+    return m_jobs.size();
 }

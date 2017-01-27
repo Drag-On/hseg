@@ -77,11 +77,13 @@ struct SampleResult
     float upperBound = 0;
     Weights gradient{21ul, 512};
     bool valid = false;
+    std::string filename;
 };
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename, Weights const& curWeights)
 {
     SampleResult sampleResult;
+    sampleResult.filename = filename;
 
     std::string const imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
     std::string const gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
@@ -196,20 +198,37 @@ int main(int argc, char* argv[])
     size_t N = list.size();
     size_t t = properties.t;
     Weights sum(numClasses, featDim);
+    Cost trainingEnergy = 0;
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<SampleResult>> futures;
+    std::deque<std::future<SampleResult>> futures;
     // Iterate over all images
     for (size_t n = 0; n < N; ++n)
     {
         auto&& fut = pool.enqueue(processSample, properties, list[n],curWeights);
         futures.push_back(std::move(fut));
+
+        // Wait for some threads to finish if the queue gets too long
+        while(pool.queued() > properties.numThreads * 4)
+        {
+            auto sampleResult = futures.front().get();
+            if(!sampleResult.valid)
+            {
+                std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
+                return INVALID_SAMPLE;
+            }
+
+            sum += sampleResult.gradient;
+            trainingEnergy += sampleResult.upperBound;
+
+            std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+            futures.pop_front();
+        }
     }
 
-    Cost trainingEnergy = 0;
-    size_t numFutures = futures.size();
-    for(size_t n = 0; n < numFutures; ++n)
+    // Wait for remaining threads to finish
+    for(size_t n = 0; n < futures.size(); ++n)
     {
-        auto sampleResult = futures.front().get();
+        auto sampleResult = futures[n].get();
         if(!sampleResult.valid)
         {
             std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
@@ -219,10 +238,7 @@ int main(int argc, char* argv[])
         sum += sampleResult.gradient;
         trainingEnergy += sampleResult.upperBound;
 
-        std::cout << "<<< " << std::setw(4) << t << "/" << std::setw(4) << n << " >>>\t" << sampleResult.upperBound << std::endl;
-
-        // Erase the future that has already been processed to decrease memory footprint
-        futures.erase(futures.begin());
+        std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
     }
 
     // Compute step size

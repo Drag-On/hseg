@@ -141,7 +141,7 @@ int main(int argc, char** argv)
     }
 
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<Result>> futures;
+    std::deque<std::future<Result>> futures;
 
     // Iterate all files
     for(auto const& f : filenames)
@@ -155,9 +155,20 @@ int main(int argc, char** argv)
         }
         auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter);
         futures.push_back(std::move(fut));
+
+        // Wait for some threads to finish if the queue gets too long
+        while(pool.queued() > properties.numThreads * 4)
+        {
+            Result res = futures.front().get();
+            if(!res.okay)
+                std::cerr << "Couldn't process image \"" + res.filename + "\"" << std::endl;
+            else
+                std::cout << "Done with \"" + res.filename + "\"" << std::endl;
+            futures.pop_front();
+        }
     }
 
-    // Wait for all the threads to finish
+    // Wait for remaining threads to finish
     for(size_t i = 0; i < futures.size(); ++i)
     {
         Result res = futures[i].get();
