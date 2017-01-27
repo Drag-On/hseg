@@ -68,11 +68,13 @@ struct SampleResult
     Weights gradient{21ul, 512};
     Cost upperBound = 0;
     bool valid = false;
+    std::string filename;
 };
 
 SampleResult processSample(std::string const& filename, Weights const& curWeights, TrainProperties const& properties)
 {
     SampleResult sampleResult;
+    sampleResult.filename = filename;
 
     // Load images etc...
     std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
@@ -183,7 +185,7 @@ int main(int argc, char** argv)
 
 
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<SampleResult>> futures;
+    std::deque<std::future<SampleResult>> futures;
 
     Cost learningRate = properties.train.rate.base;
 
@@ -208,8 +210,26 @@ int main(int argc, char** argv)
 
             auto&& fut = pool.enqueue(processSample, filename, curWeights, properties);
             futures.push_back(std::move(fut));
+
+            // Wait for some threads to finish if the queue gets too long
+            while(pool.queued() > properties.numThreads * 4)
+            {
+                auto sampleResult = futures.front().get();
+                if(!sampleResult.valid)
+                {
+                    std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
+                    return INFERRED_INVALID;
+                }
+
+                sum += sampleResult.gradient;
+                iterationEnergy += sampleResult.upperBound;
+
+                std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+                futures.pop_front();
+            }
         }
 
+        // Wait for remaining threads to finish
         for(size_t n = 0; n < futures.size(); ++n)
         {
             auto sampleResult = futures[n].get();
@@ -219,7 +239,7 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "<<< " << std::setw(4) << t << "/" << std::setw(4) << n << " >>>\t" << sampleResult.upperBound << std::endl;
+            std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
 
             sum += sampleResult.gradient;
             iterationEnergy += sampleResult.upperBound;
