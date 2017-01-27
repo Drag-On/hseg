@@ -148,7 +148,7 @@ int main(int argc, char** argv)
     {
         std::string const& imageFilename = properties.dataset.path.img + f + properties.dataset.extension.img;
         std::string filename = boost::filesystem::path(imageFilename).stem().string();
-        if(/*boost::filesystem::exists(spPath / (filename + ".png")) && */boost::filesystem::exists(labelPath / (filename + ".png")))
+        if(boost::filesystem::exists(spPath / (filename + ".dat")) && boost::filesystem::exists(labelPath / (filename + ".png")))
         {
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
