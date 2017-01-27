@@ -206,9 +206,10 @@ int main(int argc, char* argv[])
     }
 
     Cost trainingEnergy = 0;
-    for(size_t n = 0; n < futures.size(); ++n)
+    size_t numFutures = futures.size();
+    for(size_t n = 0; n < numFutures; ++n)
     {
-        auto sampleResult = futures[n].get();
+        auto sampleResult = futures.front().get();
         if(!sampleResult.valid)
         {
             std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
@@ -219,6 +220,9 @@ int main(int argc, char* argv[])
         trainingEnergy += sampleResult.upperBound;
 
         std::cout << "<<< " << std::setw(4) << t << "/" << std::setw(4) << n << " >>>\t" << sampleResult.upperBound << std::endl;
+
+        // Erase the future that has already been processed to decrease memory footprint
+        futures.erase(futures.begin());
     }
 
     // Compute step size
