@@ -34,8 +34,10 @@ PROPERTIES_DEFINE(TrainDistMerge,
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
                                )
                                GROUP_DEFINE(rate,
-                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
-                                            PROP_DEFINE_A(float, T, 200, -T)
+                                            PROP_DEFINE_A(float, alpha, 0.001f, --alpha)
+                                            PROP_DEFINE_A(float, beta1, 0.9f, --beta1)
+                                            PROP_DEFINE_A(float, beta2, 0.999f, --beta2)
+                                            PROP_DEFINE_A(float, eps, 10e-8f, --rate_eps)
                                )
                   )
                   GROUP_DEFINE(param,
@@ -194,6 +196,14 @@ int main(int argc, char* argv[])
         return INVALID_FILE_LIST;
     }
 
+    // Initialize moment vectors (adam step size rule)
+    Weights curFirstMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights curSecondMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    float const adam_alpha = properties.train.rate.alpha;
+    float const adam_beta1 = properties.train.rate.beta1;
+    float const adam_beta2 = properties.train.rate.beta2;
+    float const adam_eps = properties.train.rate.eps;
+
     // Iterate over all predictions
     size_t N = list.size();
     size_t t = properties.t;
@@ -241,9 +251,6 @@ int main(int argc, char* argv[])
         std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
     }
 
-    // Compute step size
-    float stepSize = properties.train.rate.base / (1 + t / properties.train.rate.T);
-
     // Show current training energy
     trainingEnergy *= properties.train.C / N;
     trainingEnergy += curWeights.sqNorm() / 2.f;
@@ -253,18 +260,27 @@ int main(int argc, char* argv[])
     {
         out.precision(std::numeric_limits<float>::max_digits10);
         out << std::setw(4) << properties.t << "\t";
-        out << std::setw(12) << trainingEnergy << "\t";
-        out << std::setw(12) << stepSize << std::endl;
+        out << std::setw(12) << trainingEnergy << std::endl;
         out.close();
     }
     else
         std::cerr << "Couldn't write current training energy to file " << energyFilePath << std::endl;
 
-    // Update step
+    // Compute gradient
     sum *= properties.train.C / N;
     sum += curWeights;
-    sum *= stepSize;
-    curWeights -= sum;
+
+    // Update biased 1st and 2nd moment estimates
+    curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta2);
+    sum.squareElements();
+    curSecondMomentVector = curSecondMomentVector * adam_beta2 + sum * (1 - adam_beta2);
+
+    // Update weights
+    float const curAlpha =
+            adam_alpha * std::sqrt(1 - std::pow(adam_beta2, t + 1)) / (1 - std::pow(adam_beta1, t + 1));
+    auto sqrtSecondMomentVector = curSecondMomentVector;
+    sqrtSecondMomentVector.sqrt();
+    curWeights -= (curFirstMomentVector * curAlpha) / (sqrtSecondMomentVector + adam_eps);
 
     // Project onto the feasible set
     curWeights.clampToFeasible();

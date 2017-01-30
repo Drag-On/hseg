@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <iomanip>
+#include <cmath>
 #include "Energy/Weights.h"
 
 Weights::Weights(Label numClasses, uint32_t featDim)
@@ -27,6 +28,33 @@ Weights& Weights::operator+=(Weights const& other)
     m_featureSimMat += other.m_featureSimMat;
 
     return *this;
+}
+
+Weights Weights::operator+(Weights const& other) const
+{
+    Weights result = *this;
+    result += other;
+    return result;
+}
+
+Weights& Weights::operator+=(float bias)
+{
+    for (size_t i = 0; i < m_unaryWeights.size(); ++i)
+        m_unaryWeights[i] = m_unaryWeights[i].array() + bias;
+    for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        m_pairwiseWeights[i] = m_pairwiseWeights[i].array() + bias;
+    for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
+        m_higherOrderWeights[i] = m_higherOrderWeights[i].array() + bias;
+    m_featureSimMat = m_featureSimMat.array() + bias;
+
+    return *this;
+}
+
+Weights Weights::operator+(float bias) const
+{
+    Weights result = *this;
+    result += bias;
+    return result;
 }
 
 Weights& Weights::operator-=(Weights const& other)
@@ -72,6 +100,57 @@ Weight Weights::operator*(Weights const& other) const
     result += m_featureSimMat.cwiseProduct(other.m_featureSimMat).sum();
 
     return result;
+}
+
+Weights Weights::operator*(float factor) const
+{
+    Weights result = *this;
+    result *= factor;
+    return result;
+}
+
+Weights& Weights::operator/=(Weights const& other)
+{
+    assert(numClasses() == other.numClasses());
+
+    for (size_t i = 0; i < m_unaryWeights.size(); ++i)
+        m_unaryWeights[i].cwiseQuotient(other.m_unaryWeights[i]);
+    for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        m_pairwiseWeights[i].cwiseQuotient(other.m_pairwiseWeights[i]);
+    for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
+        m_higherOrderWeights[i].cwiseQuotient(other.m_higherOrderWeights[i]);
+    m_featureSimMat.cwiseQuotient(other.m_featureSimMat);
+
+    return *this;
+}
+
+Weights Weights::operator/(Weights const& other) const
+{
+    Weights result = *this;
+    result /= other;
+    return result;
+}
+
+void Weights::squareElements()
+{
+    for (size_t i = 0; i < m_unaryWeights.size(); ++i)
+        m_unaryWeights[i] = m_unaryWeights[i].cwiseProduct(m_unaryWeights[i]);
+    for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseProduct(m_pairwiseWeights[i]);
+    for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
+        m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseProduct(m_higherOrderWeights[i]);
+    m_featureSimMat = m_featureSimMat.cwiseProduct(m_featureSimMat);
+}
+
+void Weights::sqrt()
+{
+    for (size_t i = 0; i < m_unaryWeights.size(); ++i)
+        m_unaryWeights[i] = m_unaryWeights[i].cwiseSqrt();
+    for (size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseSqrt();
+    for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
+        m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseSqrt();
+    m_featureSimMat = m_featureSimMat.cwiseSqrt();
 }
 
 Weight Weights::sqNorm() const

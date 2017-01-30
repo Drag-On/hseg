@@ -33,8 +33,10 @@ PROPERTIES_DEFINE(Train,
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
                                )
                                GROUP_DEFINE(rate,
-                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
-                                            PROP_DEFINE_A(float, T, 200, -T)
+                                            PROP_DEFINE_A(float, alpha, 0.001f, --alpha)
+                                            PROP_DEFINE_A(float, beta1, 0.9f, --beta1)
+                                            PROP_DEFINE_A(float, beta2, 0.999f, --beta2)
+                                            PROP_DEFINE_A(float, eps, 10e-8f, --rate_eps)
                                )
                   )
                   GROUP_DEFINE(param,
@@ -191,7 +193,13 @@ int main(int argc, char** argv)
     ThreadPool pool(properties.numThreads);
     std::deque<std::future<SampleResult>> futures;
 
-    Cost learningRate = properties.train.rate.base;
+    // Initialize moment vectors (adam step size rule)
+    Weights curFirstMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights curSecondMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    float const adam_alpha = properties.train.rate.alpha;
+    float const adam_beta1 = properties.train.rate.beta1;
+    float const adam_beta2 = properties.train.rate.beta2;
+    float const adam_eps = properties.train.rate.eps;
 
     std::ofstream log(properties.log);
     if(!log.is_open())
@@ -262,17 +270,24 @@ int main(int argc, char** argv)
         iterationEnergy += regularizerCost;
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
-        // Compute learning rate
-        learningRate = properties.train.rate.base / (1 + t / properties.train.rate.T);
-
         // Print upper bound of last iteration
-        log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << "\t" << std::setw(12) << learningRate << std::endl;
+        log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << std::endl;
 
-        // Update step
+        // Compute gradient
         sum *= properties.train.C / N;
         sum += curWeights;
-        sum *= learningRate;
-        curWeights -= sum;
+
+        // Update biased 1st and 2nd moment estimates
+        curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta2);
+        sum.squareElements();
+        curSecondMomentVector = curSecondMomentVector * adam_beta2 + sum * (1 - adam_beta2);
+
+        // Update weights
+        float const curAlpha =
+                adam_alpha * std::sqrt(1 - std::pow(adam_beta2, t + 1)) / (1 - std::pow(adam_beta1, t + 1));
+        auto sqrtSecondMomentVector = curSecondMomentVector;
+        sqrtSecondMomentVector.sqrt();
+        curWeights -= (curFirstMomentVector * curAlpha) / (sqrtSecondMomentVector + adam_eps);
 
         // Project onto the feasible set
         curWeights.clampToFeasible();

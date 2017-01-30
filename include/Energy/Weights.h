@@ -124,6 +124,16 @@ public:
     }
 
     /**
+     * Sqares all elements;
+     */
+    void squareElements();
+
+    /**
+     * Compute element-wise sqrt in-place
+     */
+    void sqrt();
+
+    /**
      * @return The squared norm of the vector
      */
     Weight sqNorm() const;
@@ -160,6 +170,27 @@ public:
     Weights& operator+=(Weights const& other);
 
     /**
+     * Add element-wise
+     * @param other Weight vector to add
+     * @return Result
+     */
+    Weights operator+(Weights const& other) const;
+
+    /**
+     * Add element-wise
+     * @param bias Bias to add
+     * @return Reference to this
+     */
+    Weights& operator+=(float bias);
+
+    /**
+     * Add element-wise
+     * @param bias Bias to add
+     * @return Result
+     */
+    Weights operator+(float bias) const;
+
+    /**
      * Substract element-wise
      * @param other Weight vector to subtract
      * @return Reference to this
@@ -179,6 +210,26 @@ public:
      * @return Result
      */
     Weight operator*(Weights const& other) const;
+
+    /**
+     * @param factor Factor to multiply every weight with
+     * @return Result
+     */
+    Weights operator*(float factor) const;
+
+    /**
+     * Divide element-wise
+     * @param other Weight vector
+     * @return Resulting weight vector
+     */
+    Weights& operator/=(Weights const& other);
+
+    /**
+     * Divide element-wise
+     * @param other Weight vector
+     * @return Resulting weight vector
+     */
+    Weights operator/(Weights const& other) const;
 };
 
 std::ostream& operator<<(std::ostream& stream, Weights const& weights);
