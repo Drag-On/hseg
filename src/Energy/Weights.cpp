@@ -232,7 +232,7 @@ void Weights::clampToFeasible()
     FeatSimMat V = es.eigenvectors().cast<float>();
     for(uint16_t i = 0; i < es.eigenvalues().size(); ++i)
         if(D(i, i) < 1e-5f)
-            D(0, 0) = 1e-5f;
+            D(i, i) = 1e-5f;
     m_featureSimMat = V * D * V.inverse();
 
     updateCachedInverseFeatMat();
