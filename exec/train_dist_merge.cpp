@@ -53,11 +53,14 @@ PROPERTIES_DEFINE(TrainDistMerge,
 enum ErrorCode
 {
     SUCCESS = 0,
-    INVALID_FEATURE_WEIGHTS = 1,
-    INVALID_FILE_LIST = 2,
-    INVALID_SAMPLE = 3,
-    CANT_READ_WEIGHTS = 4,
-    CANT_WRITE_WEIGHTS = 5,
+    INVALID_FILE_LIST,
+    INVALID_SAMPLE,
+    CANT_READ_WEIGHTS,
+    CANT_WRITE_WEIGHTS,
+    CANT_READ_FIRST_MOMENT,
+    CANT_READ_SECOND_MOMENT,
+    CANT_WRITE_FIRST_MOMENT,
+    CANT_WRITE_SECOND_MOMENT,
 };
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -203,6 +206,21 @@ int main(int argc, char* argv[])
     float const adam_beta1 = properties.train.rate.beta1;
     float const adam_beta2 = properties.train.rate.beta2;
     float const adam_eps = properties.train.rate.eps;
+    std::string firstMomentFile = properties.out + "firstMoment.dat";
+    std::string secondMomentFile = properties.out + "secondMoment.dat";
+    if(properties.t > 0)
+    {
+        if(!curFirstMomentVector.read(firstMomentFile))
+        {
+            std::cerr << "Couldn't read \"" << firstMomentFile << "\"" << std::endl;
+            return CANT_READ_FIRST_MOMENT;
+        }
+        if(!curSecondMomentVector.read(secondMomentFile))
+        {
+            std::cerr << "Couldn't read \"" << secondMomentFile << "\"" << std::endl;
+            return CANT_READ_SECOND_MOMENT;
+        }
+    }
 
     // Iterate over all predictions
     size_t N = list.size();
@@ -295,6 +313,17 @@ int main(int argc, char* argv[])
     {
         std::cerr << "Couldn't write weights to file " << backupWeightsFile << std::endl;
         return CANT_WRITE_WEIGHTS;
+    }
+
+    if(!curFirstMomentVector.write(firstMomentFile))
+    {
+        std::cerr << "Couldn't write first moment to file \"" << firstMomentFile << "\"" << std::endl;
+        return CANT_WRITE_FIRST_MOMENT;
+    }
+    if(!curSecondMomentVector.write(secondMomentFile))
+    {
+        std::cerr << "Couldn't write second moment to file \"" << secondMomentFile << "\"" << std::endl;
+        return CANT_WRITE_SECOND_MOMENT;
     }
 
     return SUCCESS;
