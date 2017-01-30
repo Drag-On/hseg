@@ -11,7 +11,7 @@
  * Normal energy function, but with an added unary term for the hamming loss
  * @warning This class inherits from EnergyFunction, however, it is not meant to be used in a polymorphic context.
  */
-class LossAugmentedEnergyFunction : public EnergyFunction
+class LossAugmentedEnergyFunction : private EnergyFunction
 {
 public:
     /**
@@ -68,17 +68,19 @@ public:
      */
     static Cost computeLossFactor(LabelImage const& groundTruth, Label numClasses);
 
+    /*
+     * Provide some functionality from EnergyFunction that also works for loss augmented energies.
+     */
+    using EnergyFunction::numClasses;
+    using EnergyFunction::numClusters;
+    using EnergyFunction::pairwiseCost;
+    using EnergyFunction::higherOrderCost;
+    using EnergyFunction::featureCost;
+    using EnergyFunction::weights;
+
 private:
     LabelImage const* m_pGroundTruth;
     Cost m_lossFactor;
-
-    /*
-     * Make some functions private that are not really meant to be used via an object of this type.
-     */
-
-    using EnergyFunction::giveEnergyByWeight;
-    using EnergyFunction::computeUnaryEnergyByWeight;
-    using EnergyFunction::computePairwiseEnergyByWeight;
 };
 
 
