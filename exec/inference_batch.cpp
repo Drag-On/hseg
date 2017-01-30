@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         return FILE_LIST_EMPTY;
     }
 
-    boost::filesystem::path spPath(properties.outDir + "/sp/");
+    boost::filesystem::path spPath(properties.outDir + "/clustering/");
     boost::filesystem::path labelPath(properties.outDir + "/labeling/");
 
     // Clear output directory
