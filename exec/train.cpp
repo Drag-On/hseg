@@ -68,6 +68,8 @@ struct SampleResult
     Weights gradient{21ul, 512};
     Cost upperBound = 0;
     bool valid = false;
+    uint32_t numIter = 0;
+    uint32_t numIterGt = 0;
     std::string filename;
 };
 
@@ -105,11 +107,13 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     EnergyFunction energy(&curWeights, properties.param.numClusters);
     InferenceIterator<EnergyFunction> gtInference(&energy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
+    sampleResult.numIterGt = gtResult.numIter;
 
     // Predict with loss-augmented energy
     LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult result = inference.run();
+    sampleResult.numIter = result.numIter;
 
     // Compute energy without weights on the ground truth
     auto gtEnergy = energy.giveEnergyByWeight(features, gt, gtResult.clustering, gtResult.clusters);
@@ -224,7 +228,10 @@ int main(int argc, char** argv)
                 sum += sampleResult.gradient;
                 iterationEnergy += sampleResult.upperBound;
 
-                std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+                std::cout << "> " << std::setw(4) << t << ": " << sampleResult.filename << "\t"
+                          << std::setw(8) << sampleResult.upperBound << "\t"
+                          << std::setw(2) << sampleResult.numIter << "\t"
+                          << std::setw(2) << sampleResult.numIterGt << std::endl;
                 futures.pop_front();
             }
         }
@@ -239,7 +246,10 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+            std::cout << "> " << std::setw(4) << t << ": " << sampleResult.filename << "\t"
+                      << std::setw(8) << sampleResult.upperBound << "\t"
+                      << std::setw(2) << sampleResult.numIter << "\t"
+                      << std::setw(2) << sampleResult.numIterGt << std::endl;
 
             sum += sampleResult.gradient;
             iterationEnergy += sampleResult.upperBound;
