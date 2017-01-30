@@ -168,10 +168,10 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
             std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
             for(Label l1 = 0; l1 < numClasses; ++l1)
             {
-                for(Label l2 = 0; l2 < l1; ++l2)
+                for(Label l2 = 0; l2 < numClasses; ++l2)
                 {
                     Cost cost = m_pEnergy->pairwiseCost(f, fR, l1, l2);
-                    costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = cost;
+                    costMat[l1 + l2 * numClasses] = cost;
                 }
             }
             TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
@@ -184,10 +184,10 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
             std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
             for(Label l1 = 0; l1 < numClasses; ++l1)
             {
-                for(Label l2 = 0; l2 < l1; ++l2)
+                for(Label l2 = 0; l2 < numClasses; ++l2)
                 {
                     Cost cost = m_pEnergy->pairwiseCost(f, fD, l1, l2);
-                    costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = cost;
+                    costMat[l1 + l2 * numClasses] = cost;
                 }
             }
             TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
@@ -201,10 +201,10 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
         std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
         for(Label l1 = 0; l1 < numClasses; ++l1)
         {
-            for(Label l2 = 0; l2 < l1; ++l2)
+            for(Label l2 = 0; l2 < numClasses; ++l2)
             {
                 Cost cost = m_pEnergy->higherOrderCost(f, clusFeat, l1, l2);
-                costMat[l1 + l2 * numClasses] = costMat[l2 + l1 * numClasses] = cost;
+                costMat[l1 + l2 * numClasses] = cost;
             }
         }
         TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
