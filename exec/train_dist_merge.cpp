@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
     sum += curWeights;
 
     // Update biased 1st and 2nd moment estimates
-    curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta2);
+    curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta1);
     sum.squareElements();
     curSecondMomentVector = curSecondMomentVector * adam_beta2 + sum * (1 - adam_beta2);
 
