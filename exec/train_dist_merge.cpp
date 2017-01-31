@@ -206,8 +206,8 @@ int main(int argc, char* argv[])
     float const adam_beta1 = properties.train.rate.beta1;
     float const adam_beta2 = properties.train.rate.beta2;
     float const adam_eps = properties.train.rate.eps;
-    std::string firstMomentFile = properties.in + "firstMoment.dat";
-    std::string secondMomentFile = properties.in + "secondMoment.dat";
+    std::string firstMomentFile = energyFilePath.string() + "/firstMoment.dat";
+    std::string secondMomentFile = energyFilePath.string() + "/secondMoment.dat";
     if(properties.t > 0)
     {
         if(!curFirstMomentVector.read(firstMomentFile))
