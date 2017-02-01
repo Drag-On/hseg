@@ -213,7 +213,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
 
     // Do the actual minimization
     MRFEnergy<TypeGeneral>::Options options;
-    options.m_eps = 0.0f;
+    options.m_eps = 0.01f;
     MRFEnergy<TypeGeneral>::REAL lowerBound = 0, energy = 0;
     mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
 
