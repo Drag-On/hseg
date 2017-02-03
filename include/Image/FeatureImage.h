@@ -33,7 +33,7 @@ public:
 
     Feature const& atSite(SiteId i) const;
 
-private:
+protected:
     Coord m_width;
     Coord m_height;
     Coord m_dim;

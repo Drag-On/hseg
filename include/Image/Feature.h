@@ -5,6 +5,7 @@
 #ifndef HSEG_FEATURE_H
 #define HSEG_FEATURE_H
 
+#include <Eigen/Dense>
 
 using Feature = Eigen::VectorXf;
 

@@ -97,7 +97,12 @@ public:
      * @brief Retrieves the amount of threads within this pool
      * @return Amount of threads within the pool
      */
-    unsigned int size();
+    unsigned int size() const;
+
+    /**
+     * @return The amount of currently queued jobs (disregarding those currently served by a thread)
+     */
+    size_t queued() const;
 
 private:
     void runThread();

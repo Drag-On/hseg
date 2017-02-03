@@ -6,13 +6,13 @@
 #include <Energy/Weights.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <helper/image_helper.h>
+#include <helper/clustering_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
 PROPERTIES_DEFINE(TrainDistPred,
                   GROUP_DEFINE(dataset,
-                               PROP_DEFINE_A(std::string, list, "", -l)
                                GROUP_DEFINE(path,
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
@@ -26,15 +26,10 @@ PROPERTIES_DEFINE(TrainDistPred,
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
                                )
                   )
-                  GROUP_DEFINE(train,
-                               PROP_DEFINE_A(float, C, 0.1, -C)
-                               GROUP_DEFINE(iter,
-                                            PROP_DEFINE_A(uint32_t, end, 1000, --end)
-                               )
-                               GROUP_DEFINE(rate,
-                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
-                                            PROP_DEFINE_A(float, T, 200, -T)
-                               )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                               PROP_DEFINE_A(float, eps, 0, --eps)
+                               PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(std::string, weights, "", -w)
                   PROP_DEFINE_A(std::string, img, "", -i)
@@ -74,9 +69,11 @@ int main(int argc, char* argv[])
     boost::filesystem::path imgNamePath(properties.img);
     std::string imgName = imgNamePath.filename().stem().string();
     std::string labelPath = properties.out + "labeling/" + imgName + ".png";
-    if(boost::filesystem::exists(labelPath))
+    std::string clusterPath = properties.out + "clustering/" + imgName + ".dat";
+    std::string clusterGtPath = properties.out + "clustering_gt/" + imgName + ".dat";
+    if(boost::filesystem::exists(labelPath) && boost::filesystem::exists(clusterPath) && boost::filesystem::exists(clusterGtPath))
     {
-        std::cout << "Result for \"" << properties.img << "\" already exists in \"" << labelPath << "\". Skipping." << std::endl;
+        std::cout << "Result for \"" << properties.img << "\" already exists in \"" << properties.out << "\". Skipping." << std::endl;
         return SUCCESS;
     }
 
@@ -115,27 +112,56 @@ int main(int argc, char* argv[])
     }
 
     // Find latent variables that best explain the ground truth
-    // -- Currently none
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
+    InferenceIterator<EnergyFunction> gtInference(&energy, &features, properties.param.eps, properties.param.maxIter);
+    InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
+
+    // Check validity
+    if (gtResult.clustering.width() != features.width() || gtResult.clustering.height() != features.height())
+    {
+        std::cerr << "Predicted ground truth clustering invalid." << std::endl;
+        return INVALID_GT_SP;
+    }
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt);
-    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
+    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult result = inference.run();
 
     // Check validity
-    if(result.labeling.width() != features.width() || result.labeling.height() != features.height())
+    if (result.labeling.width() != features.width() || result.labeling.height() != features.height())
     {
         std::cerr << "Predicted labeling invalid." << std::endl;
         return INVALID_PRED_LABELING;
     }
+    if (result.clustering.width() != features.width() || result.clustering.height() != features.height())
+    {
+        std::cerr << "Predicted clustering invalid." << std::endl;
+        return INVALID_PRED_SP;
+    }
 
-    // Store predictions
+    // Store results
+    // Predicted labeling
     errCode = helper::image::writePalettePNG(labelPath, result.labeling, cmap);
     if(errCode != helper::image::PNGError::Okay)
     {
         std::cerr << "Couldn't write predicted labeling to \"" << labelPath << "\". Error Code: " << (int) errCode << std::endl;
         return CANT_WRITE_PRED_LABELING;
     }
+    // Predicted clustering
+    if(!helper::clustering::write(clusterPath, result.clustering, result.clusters))
+    {
+        std::cerr << "Couldn't write predicted clustering to \"" << clusterPath << "\"." << std::endl;
+        return CANT_WRITE_PRED_SP;
+    }
+    helper::image::colorize(result.clustering, cmap).write(clusterPath + ".png"); // This is just so it can be viewed easily
+    // Groundtruth clustering
+    if(!helper::clustering::write(clusterGtPath, gtResult.clustering, gtResult.clusters))
+    {
+        std::cerr << "Couldn't write predicted clustering to \"" << clusterGtPath << "\"." << std::endl;
+        return CANT_WRITE_GT_SP;
+    }
+    helper::image::colorize(gtResult.clustering, cmap).write(clusterGtPath + ".png");
 
     return SUCCESS;
 }

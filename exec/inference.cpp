@@ -25,6 +25,9 @@ PROPERTIES_DEFINE(Inference,
                   )
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(std::string, weights, "", -w)
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                               PROP_DEFINE_A(float, eps, 0, --eps)
+                               PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(std::string, image, "", --img)
                   PROP_DEFINE_A(std::string, outDir, "", --out)
@@ -65,11 +68,11 @@ int main(int argc, char** argv)
     }
 
     // Create energy function
-    EnergyFunction energyFun(&weights);
+    EnergyFunction energyFun(&weights, properties.param.numClusters);
 
     // Do the inference!
     Timer t(true);
-    InferenceIterator<EnergyFunction> inference(&energyFun, &features);
+    InferenceIterator<EnergyFunction> inference(&energyFun, &features, properties.param.eps, properties.param.maxIter);
     auto result = inference.runDetailed();
     t.pause();
 
@@ -83,8 +86,8 @@ int main(int argc, char** argv)
     auto errCode = helper::image::writePalettePNG(properties.outDir + filename + ".png", result.labelings.back(), cmap);
     if(errCode != helper::image::PNGError::Okay)
         std::cerr << "Couldn't write prediction to \"" << properties.outDir + filename + ".png" << "\". Error Code: " << (int) errCode << std::endl;
-    if(!helper::image::writeMarginals(properties.outDir + filename + ".marginals", result.marginals.back()))
-        std::cerr << "Couldn't write marginals to \"" << properties.outDir + filename + ".marginals" << "\"." << std::endl;
+//    if(!helper::image::writeMarginals(properties.outDir + filename + ".marginals", result.marginals.back()))
+//        std::cerr << "Couldn't write marginals to \"" << properties.outDir + filename + ".marginals" << "\"." << std::endl;
 
     return SUCCESS;
 }

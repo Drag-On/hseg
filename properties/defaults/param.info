@@ -5,4 +5,6 @@ param
 {
 	weights ""		; Weight file
 	numClusters 200	; Amount of clusters
+	eps 0           ; Maximum change of energy to be considered small enough to terminate inference
+	maxIter 50      ; Maximum number of iterations until inference is definitely aborted
 }

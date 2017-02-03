@@ -33,9 +33,16 @@ PROPERTIES_DEFINE(Train,
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
                                )
                                GROUP_DEFINE(rate,
-                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
-                                            PROP_DEFINE_A(float, T, 200, -T)
+                                            PROP_DEFINE_A(float, alpha, 0.001f, --alpha)
+                                            PROP_DEFINE_A(float, beta1, 0.9f, --beta1)
+                                            PROP_DEFINE_A(float, beta2, 0.999f, --beta2)
+                                            PROP_DEFINE_A(float, eps, 10e-8f, --rate_eps)
                                )
+                  )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                               PROP_DEFINE_A(float, eps, 0, --eps)
+                               PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
@@ -63,11 +70,15 @@ struct SampleResult
     Weights gradient{21ul, 512};
     Cost upperBound = 0;
     bool valid = false;
+    uint32_t numIter = 0;
+    uint32_t numIterGt = 0;
+    std::string filename;
 };
 
 SampleResult processSample(std::string const& filename, Weights const& curWeights, TrainProperties const& properties)
 {
     SampleResult sampleResult;
+    sampleResult.filename = filename;
 
     // Load images etc...
     std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
@@ -95,19 +106,21 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     }
 
     // Find latent variables that best explain the ground truth
-    // -- Currently none
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
+    InferenceIterator<EnergyFunction> gtInference(&energy, &features, properties.param.eps, properties.param.maxIter);
+    InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
+    sampleResult.numIterGt = gtResult.numIter;
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt);
-    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
+    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult result = inference.run();
-
-    EnergyFunction energy(&curWeights);
+    sampleResult.numIter = result.numIter;
 
     // Compute energy without weights on the ground truth
-    auto gtEnergy = energy.giveEnergyByWeight(features, gt);
+    auto gtEnergy = energy.giveEnergyByWeight(features, gt, gtResult.clustering, gtResult.clusters);
     // Compute energy without weights on the prediction
-    auto predEnergy = energy.giveEnergyByWeight(features, result.labeling);
+    auto predEnergy = energy.giveEnergyByWeight(features, result.labeling, result.clustering, result.clusters);
 
     //std::cout << gtEnergy.sum() << ", " << predEnergy.sum() << ", " << curWeights.sum() << std::endl;
 
@@ -115,7 +128,8 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     auto gtEnergyCur = curWeights * gtEnergy;
     auto predEnergyCur = curWeights * predEnergy;
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, gt, lossFactor, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.clustering, gt, result.clusters,
+                                                          lossFactor, properties.dataset.constants.numClasses);
     sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
 
     //std::cout << "Upper bound: (" << loss << " - " << predEnergyCur << ") + " << gtEnergyCur << " = " << loss - predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;
@@ -177,12 +191,15 @@ int main(int argc, char** argv)
 
 
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<SampleResult>> futures;
+    std::deque<std::future<SampleResult>> futures;
 
-//    Cost lastTrainingEnergy = std::numeric_limits<Cost>::max();
-    Cost learningRate = properties.train.rate.base;
-    Weights lastWeights = curWeights;
-    Weights lastGradient = curWeights;
+    // Initialize moment vectors (adam step size rule)
+    Weights curFirstMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights curSecondMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    float const adam_alpha = properties.train.rate.alpha;
+    float const adam_beta1 = properties.train.rate.beta1;
+    float const adam_beta2 = properties.train.rate.beta2;
+    float const adam_eps = properties.train.rate.eps;
 
     std::ofstream log(properties.log);
     if(!log.is_open())
@@ -205,8 +222,29 @@ int main(int argc, char** argv)
 
             auto&& fut = pool.enqueue(processSample, filename, curWeights, properties);
             futures.push_back(std::move(fut));
+
+            // Wait for some threads to finish if the queue gets too long
+            while(pool.queued() > properties.numThreads * 4)
+            {
+                auto sampleResult = futures.front().get();
+                if(!sampleResult.valid)
+                {
+                    std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
+                    return INFERRED_INVALID;
+                }
+
+                sum += sampleResult.gradient;
+                iterationEnergy += sampleResult.upperBound;
+
+                std::cout << "> " << std::setw(4) << t << ": " << sampleResult.filename << "\t"
+                          << std::setw(8) << sampleResult.upperBound << "\t"
+                          << std::setw(2) << sampleResult.numIter << "\t"
+                          << std::setw(2) << sampleResult.numIterGt << std::endl;
+                futures.pop_front();
+            }
         }
 
+        // Wait for remaining threads to finish
         for(size_t n = 0; n < futures.size(); ++n)
         {
             auto sampleResult = futures[n].get();
@@ -216,7 +254,10 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "<<< " << std::setw(4) << t << "/" << std::setw(4) << n << " >>>\t" << sampleResult.upperBound << std::endl;
+            std::cout << "> " << std::setw(4) << t << ": " << sampleResult.filename << "\t"
+                      << std::setw(8) << sampleResult.upperBound << "\t"
+                      << std::setw(2) << sampleResult.numIter << "\t"
+                      << std::setw(2) << sampleResult.numIterGt << std::endl;
 
             sum += sampleResult.gradient;
             iterationEnergy += sampleResult.upperBound;
@@ -229,20 +270,24 @@ int main(int argc, char** argv)
         iterationEnergy += regularizerCost;
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
-        // Compute learning rate
-        learningRate = properties.train.rate.base / (1 + t / properties.train.rate.T);
+        // Print upper bound of last iteration
+        log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << std::endl;
 
-        lastWeights = curWeights;
-//        lastTrainingEnergy = iterationEnergy;
-
-        log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << "\t" << std::setw(12) << learningRate << std::endl;
-
-        // Update step
+        // Compute gradient
         sum *= properties.train.C / N;
         sum += curWeights;
-        lastGradient = sum;
-        sum *= learningRate;
-        curWeights -= sum;
+
+        // Update biased 1st and 2nd moment estimates
+        curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta1);
+        sum.squareElements();
+        curSecondMomentVector = curSecondMomentVector * adam_beta2 + sum * (1 - adam_beta2);
+
+        // Update weights
+        float const curAlpha =
+                adam_alpha * std::sqrt(1 - std::pow(adam_beta2, t + 1)) / (1 - std::pow(adam_beta1, t + 1));
+        auto sqrtSecondMomentVector = curSecondMomentVector;
+        sqrtSecondMomentVector.sqrt();
+        curWeights -= (curFirstMomentVector * curAlpha) / (sqrtSecondMomentVector + adam_eps);
 
         // Project onto the feasible set
         curWeights.clampToFeasible();

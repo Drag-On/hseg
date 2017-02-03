@@ -4,11 +4,22 @@
 
 #include "Energy/LossAugmentedEnergyFunction.h"
 
-LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth)
-        : EnergyFunction(weights),
+LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters)
+        : EnergyFunction(weights, numClusters),
           m_pGroundTruth(groundTruth)
 {
     m_lossFactor = computeLossFactor(*groundTruth, weights->numClasses());
+}
+
+Cost LossAugmentedEnergyFunction::giveEnergy(FeatureImage const& features, LabelImage const& labeling,
+                                             LabelImage const& clustering, std::vector<Cluster> const& clusters) const
+{
+    Cost normalCost = EnergyFunction::giveEnergy(features, labeling, clustering, clusters);
+
+    // Also account for the loss
+    Cost loss = computeLoss(labeling, clustering, *m_pGroundTruth, clusters, m_lossFactor, numClasses());
+
+    return normalCost - loss;
 }
 
 Cost LossAugmentedEnergyFunction::lossFactor()
@@ -16,20 +27,24 @@ Cost LossAugmentedEnergyFunction::lossFactor()
     return m_lossFactor;
 }
 
-Cost
-LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor, Label numClasses)
+Cost LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& clustering,
+                                              LabelImage const& groundTruth, std::vector<Cluster> const& clusters,
+                                              Cost lossFactor, Label numClasses)
 {
-    Cost loss = 0;
+    SiteId lossSites = 0;
+    SiteId hoLossSites = 0;
     for (SiteId i = 0; i < labeling.pixels(); ++i)
     {
         if(groundTruth.atSite(i) < numClasses)
         {
             if (groundTruth.atSite(i) != labeling.atSite(i))
-                loss += lossFactor;
+                lossSites++;
+            if (groundTruth.atSite(i) != clusters[clustering.atSite(i)].m_label)
+                hoLossSites++;
         }
     }
 
-    return loss;
+    return (lossSites + hoLossSites) * lossFactor;
 }
 
 Cost LossAugmentedEnergyFunction::computeLossFactor(LabelImage const& groundTruth, Label numClasses)

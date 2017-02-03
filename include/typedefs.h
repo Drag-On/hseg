@@ -10,9 +10,8 @@
 
 using Label = uint16_t;
 using SiteId = uint32_t;
+using ClusterId = uint32_t;
 using Coord = uint32_t;
 using Cost = float;
-using Matrix5 = Eigen::Matrix<Cost, 5, 5>;
-using Vector5 = Eigen::Matrix<Cost, 5, 1>;
 
 #endif //HSEG_TYPEDEFS_H

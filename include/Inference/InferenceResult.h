@@ -6,6 +6,7 @@
 #define HSEG_INFERENCERESULT_H
 
 #include <Image/Image.h>
+#include "Cluster.h"
 
 /**
  * Stores the final result from inference
@@ -14,8 +15,8 @@ struct InferenceResult
 {
 public:
     LabelImage labeling; //< Class labeling
-    std::vector<Image<double, 1>> marginals; //< Marginals
-    //std::vector<Cluster> clusters; //< Cluster representatives
+    LabelImage clustering; //< Superpixel segmentation
+    std::vector<Cluster> clusters; //< Cluster representatives
     uint32_t numIter = 0; //< Amount of iterations until convergence
 };
 

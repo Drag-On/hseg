@@ -7,6 +7,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <helper/image_helper.h>
+#include <helper/clustering_helper.h>
 #include <Energy/EnergyFunction.h>
 #include <Threading/ThreadPool.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
@@ -33,9 +34,14 @@ PROPERTIES_DEFINE(TrainDistMerge,
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
                                )
                                GROUP_DEFINE(rate,
-                                            PROP_DEFINE_A(float, base, 0.001f, --rate)
-                                            PROP_DEFINE_A(float, T, 200, -T)
+                                            PROP_DEFINE_A(float, alpha, 0.001f, --alpha)
+                                            PROP_DEFINE_A(float, beta1, 0.9f, --beta1)
+                                            PROP_DEFINE_A(float, beta2, 0.999f, --beta2)
+                                            PROP_DEFINE_A(float, eps, 10e-8f, --rate_eps)
                                )
+                  )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
                   )
                   PROP_DEFINE_A(uint32_t, t, 0, -t)
                   PROP_DEFINE_A(std::string, weights, "", --weights)
@@ -47,11 +53,14 @@ PROPERTIES_DEFINE(TrainDistMerge,
 enum ErrorCode
 {
     SUCCESS = 0,
-    INVALID_FEATURE_WEIGHTS = 1,
-    INVALID_FILE_LIST = 2,
-    INVALID_SAMPLE = 3,
-    CANT_READ_WEIGHTS = 4,
-    CANT_WRITE_WEIGHTS = 5,
+    INVALID_FILE_LIST,
+    INVALID_SAMPLE,
+    CANT_READ_WEIGHTS,
+    CANT_WRITE_WEIGHTS,
+    CANT_READ_FIRST_MOMENT,
+    CANT_READ_SECOND_MOMENT,
+    CANT_WRITE_FIRST_MOMENT,
+    CANT_WRITE_SECOND_MOMENT,
 };
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -70,18 +79,22 @@ std::vector<std::string> readFileNames(std::string const& listFile)
 
 struct SampleResult
 {
-    float energy = 0;
-    Weights diff{21ul, false};
+    float upperBound = 0;
+    Weights gradient{21ul, 512};
     bool valid = false;
+    std::string filename;
 };
 
 SampleResult processSample(TrainDistMergeProperties const& properties, std::string filename, Weights const& curWeights)
 {
     SampleResult sampleResult;
+    sampleResult.filename = filename;
 
     std::string const imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
-    std::string const predictionFilename = properties.in + filename + properties.dataset.extension.gt;
     std::string const gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
+    std::string const predictionFilename = properties.in + "labeling/" + filename + properties.dataset.extension.gt;
+    std::string const clusteringFilename = properties.in + "clustering/" + filename + ".dat";
+    std::string const clusteringGtFilename = properties.in + "clustering_gt/" + filename + ".dat";
 
     // Load images etc...
     FeatureImage features;
@@ -107,33 +120,38 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
         return sampleResult;
     }
 
-    EnergyFunction energy(&curWeights);
-    //auto const& clusters = result.clusters;
-    auto predEnergyCur = energy.giveEnergy(features, prediction);
-    sampleResult.energy -= predEnergyCur;
-    //auto const& gtClusters = clusterer.clusters();
-    auto gtEnergyCur = energy.giveEnergy(features, gt);
-    sampleResult.energy += gtEnergyCur;
-
-    // Compute loss
-    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, gt, lossFactor, properties.dataset.constants.numClasses);
-    sampleResult.energy += loss;
-
-    if(sampleResult.energy <= 0)
+    LabelImage clustering, gt_clustering;
+    std::vector<Cluster> clusters, gt_clusters;
+    if(!helper::clustering::read(clusteringFilename, clustering, clusters))
     {
-        std::cerr << "Training energy was negative: " << sampleResult.energy << " (Loss: " << loss
-                  << ", prediction: " << predEnergyCur << ", ground truth: " << gtEnergyCur << ")" << std::endl;
+        std::cerr << "Unable to read clustering from \"" << clusteringFilename << "\"." << std::endl;
+        return sampleResult;
+    }
+    if(!helper::clustering::read(clusteringGtFilename, gt_clustering, gt_clusters))
+    {
+        std::cerr << "Unable to read ground truth clustering from \"" << clusteringGtFilename << "\"." << std::endl;
+        return sampleResult;
     }
 
-    // Compute energy without weights on the ground truth
-    auto gtEnergy = energy.giveEnergyByWeight(features, gt);
-    // Compute energy without weights on the prediction
-    auto predEnergy = energy.giveEnergyByWeight(features, prediction);
-    // Compute energy difference
-    gtEnergy -= predEnergy;
+    EnergyFunction energy(&curWeights, properties.param.numClusters);
 
-    sampleResult.diff = gtEnergy;
+    // Compute energy without weights on the ground truth
+    auto gtEnergy = energy.giveEnergyByWeight(features, gt, gt_clustering, gt_clusters);
+    // Compute energy without weights on the prediction
+    auto predEnergy = energy.giveEnergyByWeight(features, prediction, clustering, clusters);
+
+    // Compute upper bound on this image
+    auto gtEnergyCur = curWeights * gtEnergy;
+    auto predEnergyCur = curWeights * predEnergy;
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+    float loss = LossAugmentedEnergyFunction::computeLoss(prediction, clustering, gt, clusters, lossFactor,
+                                                          properties.dataset.constants.numClasses);
+    sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
+
+    // Compute gradient for this sample
+    gtEnergy -= predEnergy;
+    sampleResult.gradient = gtEnergy;
+
     sampleResult.valid = true;
     return sampleResult;
 }
@@ -159,6 +177,20 @@ int main(int argc, char* argv[])
         return CANT_READ_WEIGHTS;
     }
 
+    boost::filesystem::path energyFilePath(properties.out);
+    energyFilePath.remove_filename();
+
+    // Write initial weights to file
+    if(properties.t == 0)
+    {
+        std::string backupWeightsFile = energyFilePath.string() + "/weights/0.dat";
+        if(!curWeights.write(backupWeightsFile))
+        {
+            std::cerr << "Couldn't write weights to file " << backupWeightsFile << std::endl;
+            return CANT_WRITE_WEIGHTS;
+        }
+    }
+
     // Read in list of files
     std::vector<std::string> list = readFileNames(properties.dataset.list);
     if(list.empty())
@@ -167,20 +199,61 @@ int main(int argc, char* argv[])
         return INVALID_FILE_LIST;
     }
 
+    // Initialize moment vectors (adam step size rule)
+    Weights curFirstMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights curSecondMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    float const adam_alpha = properties.train.rate.alpha;
+    float const adam_beta1 = properties.train.rate.beta1;
+    float const adam_beta2 = properties.train.rate.beta2;
+    float const adam_eps = properties.train.rate.eps;
+    std::string firstMomentFile = energyFilePath.string() + "/firstMoment.dat";
+    std::string secondMomentFile = energyFilePath.string() + "/secondMoment.dat";
+    if(properties.t > 0)
+    {
+        if(!curFirstMomentVector.read(firstMomentFile))
+        {
+            std::cerr << "Couldn't read \"" << firstMomentFile << "\"" << std::endl;
+            return CANT_READ_FIRST_MOMENT;
+        }
+        if(!curSecondMomentVector.read(secondMomentFile))
+        {
+            std::cerr << "Couldn't read \"" << secondMomentFile << "\"" << std::endl;
+            return CANT_READ_SECOND_MOMENT;
+        }
+    }
+
     // Iterate over all predictions
     size_t N = list.size();
     size_t t = properties.t;
     Weights sum(numClasses, featDim);
+    Cost trainingEnergy = 0;
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<SampleResult>> futures;
+    std::deque<std::future<SampleResult>> futures;
     // Iterate over all images
     for (size_t n = 0; n < N; ++n)
     {
         auto&& fut = pool.enqueue(processSample, properties, list[n],curWeights);
         futures.push_back(std::move(fut));
+
+        // Wait for some threads to finish if the queue gets too long
+        while(pool.queued() > properties.numThreads * 4)
+        {
+            auto sampleResult = futures.front().get();
+            if(!sampleResult.valid)
+            {
+                std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
+                return INVALID_SAMPLE;
+            }
+
+            sum += sampleResult.gradient;
+            trainingEnergy += sampleResult.upperBound;
+
+            std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+            futures.pop_front();
+        }
     }
 
-    Cost trainingEnergy = 0;
+    // Wait for remaining threads to finish
     for(size_t n = 0; n < futures.size(); ++n)
     {
         auto sampleResult = futures[n].get();
@@ -190,42 +263,42 @@ int main(int argc, char* argv[])
             return INVALID_SAMPLE;
         }
 
-        sum += sampleResult.diff;
-        trainingEnergy += sampleResult.energy;
+        sum += sampleResult.gradient;
+        trainingEnergy += sampleResult.upperBound;
 
-        std::cout << "<<< " << t << "/" << n << " >>>" << std::endl;
+        std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
     }
-
-    // Compute step size
-    float stepSize = properties.train.rate.base / (1 + t / properties.train.rate.T);
 
     // Show current training energy
     trainingEnergy *= properties.train.C / N;
     trainingEnergy += curWeights.sqNorm() / 2.f;
-    std::cout << "Current training energy: " << trainingEnergy << std::endl;
-    boost::filesystem::path energyFilePath(properties.out);
-    energyFilePath.remove_filename();
+    std::cout << "Current upper bound: " << trainingEnergy << std::endl;
     std::ofstream out(energyFilePath.string() + "/training_energy.txt", std::ios::out | std::ios::app);
     if(out.is_open())
     {
         out.precision(std::numeric_limits<float>::max_digits10);
         out << std::setw(4) << properties.t << "\t";
-        out << std::setw(12) << trainingEnergy << "\t";
-        out << std::setw(12) << stepSize << std::endl;
+        out << std::setw(12) << trainingEnergy << std::endl;
         out.close();
     }
     else
         std::cerr << "Couldn't write current training energy to file " << energyFilePath << std::endl;
 
-    // Update step
+    // Compute gradient
     sum *= properties.train.C / N;
     sum += curWeights;
 
-    std::cout << "Gradient: " << sum << std::endl;
-    std::cout << "Step size: " << stepSize << std::endl;
+    // Update biased 1st and 2nd moment estimates
+    curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta1);
+    sum.squareElements();
+    curSecondMomentVector = curSecondMomentVector * adam_beta2 + sum * (1 - adam_beta2);
 
-    sum *= stepSize;
-    curWeights -= sum;
+    // Update weights
+    float const curAlpha =
+            adam_alpha * std::sqrt(1 - std::pow(adam_beta2, t + 1)) / (1 - std::pow(adam_beta1, t + 1));
+    auto sqrtSecondMomentVector = curSecondMomentVector;
+    sqrtSecondMomentVector.sqrt();
+    curWeights -= (curFirstMomentVector * curAlpha) / (sqrtSecondMomentVector + adam_eps);
 
     // Project onto the feasible set
     curWeights.clampToFeasible();
@@ -235,11 +308,23 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't write weights to file " << properties.out << std::endl;
         return CANT_WRITE_WEIGHTS;
     }
-    std::cout << "====================" << std::endl;
-    std::cout << curWeights << std::endl;
-    std::cout << "====================" << std::endl;
+    std::string backupWeightsFile = energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat";
+    if(!curWeights.write(backupWeightsFile))
+    {
+        std::cerr << "Couldn't write weights to file " << backupWeightsFile << std::endl;
+        return CANT_WRITE_WEIGHTS;
+    }
 
-    curWeights.write(energyFilePath.string() + "/weights/" + std::to_string(properties.t + 1) + ".dat");
+    if(!curFirstMomentVector.write(firstMomentFile))
+    {
+        std::cerr << "Couldn't write first moment to file \"" << firstMomentFile << "\"" << std::endl;
+        return CANT_WRITE_FIRST_MOMENT;
+    }
+    if(!curSecondMomentVector.write(secondMomentFile))
+    {
+        std::cerr << "Couldn't write second moment to file \"" << secondMomentFile << "\"" << std::endl;
+        return CANT_WRITE_SECOND_MOMENT;
+    }
 
     return SUCCESS;
 }

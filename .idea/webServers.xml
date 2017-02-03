@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="07d45e98-3bf5-45b3-9d28-657071a6f8aa" name="atcremers50" url="http://atcremers50.informatik.tu-muenchen.de">
+        <fileTransfer host="atcremers50.informatik.tu-muenchen.de" port="58022" rootFolder="/usr/stud/moellerj" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="58022" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

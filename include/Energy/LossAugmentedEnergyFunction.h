@@ -9,17 +9,20 @@
 
 /**
  * Normal energy function, but with an added unary term for the hamming loss
- * @warning This class inherits from EnergyFunction, however, it is not meant to be used in polymorphic ways.
+ * @warning This class inherits from EnergyFunction, however, it is not meant to be used in a polymorphic context.
  */
-class LossAugmentedEnergyFunction : public EnergyFunction
+class LossAugmentedEnergyFunction : private EnergyFunction
 {
 public:
     /**
      * Constructor
      * @param weights Weights to use. The pointer must stay valid as long as this object persists.
      * @param groundTruth Ground truth image. The pointer must stay valid as long as this object persists.
+     * @param numClusters Amount of clusters
      */
-    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth);
+    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters);
+
+    Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     inline Cost unaryCost(SiteId i, Feature const& f, Label l) const
     {
@@ -28,6 +31,14 @@ public:
             loss = m_lossFactor;
 
         return EnergyFunction::unaryCost(i, f, l) - loss;
+    }
+
+    inline Cost higherOrderSpecialUnaryCost(SiteId i, Label l_k) const
+    {
+        Cost loss = 0;
+        if(m_pGroundTruth->atSite(i) != l_k)
+            loss = m_lossFactor;
+        return -loss;
     }
 
     /**
@@ -44,7 +55,10 @@ public:
      * @return The loss
      */
     static Cost
-    computeLoss(LabelImage const& labeling, LabelImage const& groundTruth, Cost lossFactor, Label numClasses);
+    computeLoss(LabelImage const& labeling, LabelImage const& clustering,
+                LabelImage const& groundTruth,
+                std::vector<Cluster> const& clusters, Cost lossFactor,
+                Label numClasses);
 
     /**
      * Computes the loss factor on an image
@@ -54,18 +68,19 @@ public:
      */
     static Cost computeLossFactor(LabelImage const& groundTruth, Label numClasses);
 
+    /*
+     * Provide some functionality from EnergyFunction that also works for loss augmented energies.
+     */
+    using EnergyFunction::numClasses;
+    using EnergyFunction::numClusters;
+    using EnergyFunction::pairwiseCost;
+    using EnergyFunction::higherOrderCost;
+    using EnergyFunction::featureCost;
+    using EnergyFunction::weights;
+
 private:
     LabelImage const* m_pGroundTruth;
     Cost m_lossFactor;
-
-    /*
-     * Make some functions private that are not really meant to be used via an object of this type.
-     */
-
-    using EnergyFunction::giveEnergy;
-    using EnergyFunction::giveEnergyByWeight;
-    using EnergyFunction::computeUnaryEnergyByWeight;
-    using EnergyFunction::computePairwiseEnergyByWeight;
 };
 
 

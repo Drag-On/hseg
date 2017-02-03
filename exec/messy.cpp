@@ -192,7 +192,7 @@ int main()
         Cost lossValue = training_loss(x, gt, wCur, C, maxLabel);
         trainingEnergies.push_back(e);
         trainingLoss.push_back(lossValue);
-        std::cout << "Training energy = " << e << " | Loss = " << lossValue << std::endl;
+        std::cout << "Training upperBound = " << e << " | Loss = " << lossValue << std::endl;
 
         WeightVec p = wCur + sum * (C / N);
         wCur = wCur - p * (eta / (t + 1));

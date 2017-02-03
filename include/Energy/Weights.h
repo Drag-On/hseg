@@ -12,6 +12,7 @@
 
 using Weight = Cost;
 using WeightVec = Eigen::VectorXf;
+using FeatSimMat = Eigen::MatrixXf;
 
 /**
  * Contains all (trainable) weights needed by the energy function
@@ -21,6 +22,9 @@ class Weights
 private:
     std::vector<WeightVec> m_unaryWeights;
     std::vector<WeightVec> m_pairwiseWeights;
+    std::vector<WeightVec> m_higherOrderWeights;
+    FeatSimMat m_featureSimMat;
+    FeatSimMat m_featureSimMatInv;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, Weights const& weights);
@@ -32,6 +36,16 @@ private:
         assert(index < m_pairwiseWeights.size());
         return m_pairwiseWeights[index];
     }
+
+    inline WeightVec& higherOrder(Label l1, Label l2)
+    {
+        // Pairwise indices are stored as upper triangular matrix
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_higherOrderWeights.size());
+        return m_higherOrderWeights[index];
+    }
+
+    void updateCachedInverseFeatMat();
 
 public:
     /**
@@ -80,6 +94,46 @@ public:
     }
 
     /**
+     * Weight of the higher order linear classifier
+     * @param l1 First label
+     * @param l2 Second label
+     * @return The approriate weight
+     */
+    inline WeightVec const& higherOrder(Label l1, Label l2) const
+    {
+        // Pairwise indices are stored as upper triangular matrix
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_higherOrderWeights.size());
+        return m_higherOrderWeights[index];
+    }
+
+    /**
+     * @return Feature similarity matrix
+     */
+    inline FeatSimMat const& featureSimMat() const
+    {
+        return m_featureSimMat;
+    }
+
+    /**
+     * @return Onverse feature similarity matrix
+     */
+    inline FeatSimMat const& featureSimMatInv() const
+    {
+        return m_featureSimMatInv;
+    }
+
+    /**
+     * Sqares all elements;
+     */
+    void squareElements();
+
+    /**
+     * Compute element-wise sqrt in-place
+     */
+    void sqrt();
+
+    /**
      * @return The squared norm of the vector
      */
     Weight sqNorm() const;
@@ -116,6 +170,27 @@ public:
     Weights& operator+=(Weights const& other);
 
     /**
+     * Add element-wise
+     * @param other Weight vector to add
+     * @return Result
+     */
+    Weights operator+(Weights const& other) const;
+
+    /**
+     * Add element-wise
+     * @param bias Bias to add
+     * @return Reference to this
+     */
+    Weights& operator+=(float bias);
+
+    /**
+     * Add element-wise
+     * @param bias Bias to add
+     * @return Result
+     */
+    Weights operator+(float bias) const;
+
+    /**
      * Substract element-wise
      * @param other Weight vector to subtract
      * @return Reference to this
@@ -135,6 +210,26 @@ public:
      * @return Result
      */
     Weight operator*(Weights const& other) const;
+
+    /**
+     * @param factor Factor to multiply every weight with
+     * @return Result
+     */
+    Weights operator*(float factor) const;
+
+    /**
+     * Divide element-wise
+     * @param other Weight vector
+     * @return Resulting weight vector
+     */
+    Weights& operator/=(Weights const& other);
+
+    /**
+     * Divide element-wise
+     * @param other Weight vector
+     * @return Resulting weight vector
+     */
+    Weights operator/(Weights const& other) const;
 };
 
 std::ostream& operator<<(std::ostream& stream, Weights const& weights);

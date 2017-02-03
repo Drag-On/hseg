@@ -5,6 +5,7 @@
 #include <BaseProperties.h>
 #include <Energy/Weights.h>
 #include <helper/image_helper.h>
+#include <helper/clustering_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/operations.hpp>
 #include <Threading/ThreadPool.h>
@@ -26,7 +27,10 @@ PROPERTIES_DEFINE(InferenceBatch,
                                )
                   )
                   GROUP_DEFINE(param,
-                               PROP_DEFINE_A(std::string, weights, "", -w)
+                          PROP_DEFINE_A(std::string, weights, "", -w)
+                          PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                          PROP_DEFINE_A(float, eps, 0, --eps)
+                          PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(std::string, outDir, "", --out)
                   PROP_DEFINE_A(uint16_t, numThreads, 4, --numThreads)
@@ -45,7 +49,8 @@ struct Result
 };
 
 Result process(std::string const& imageFilename, Weights const& weights, std::string const& spOutPath,
-               std::string const& labelOutPath, helper::image::ColorMap const& cmap)
+               std::string const& labelOutPath, helper::image::ColorMap const& cmap, ClusterId numClusters, float eps,
+               uint32_t maxIter)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
@@ -60,10 +65,10 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     }
 
     // Create energy function
-    EnergyFunction energyFun(&weights);
+    EnergyFunction energyFun(&weights, numClusters);
 
     // Do the inference!
-    InferenceIterator<EnergyFunction> inference(&energyFun, &features);
+    InferenceIterator<EnergyFunction> inference(&energyFun, &features, eps, maxIter);
     auto result = inference.run();
 
     // Write results to disk
@@ -72,14 +77,14 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
     helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
-    //cv::Mat spMat = static_cast<cv::Mat>(helper::image::colorize(result.superpixels, map));
-    //cv::imwrite(spPath.string() + filename + ".png", spMat);
+    helper::image::writePalettePNG(spPath.string() + filename + ".png", result.clustering, cmap);
+    helper::clustering::write(spPath.string() + filename + ".dat", result.clustering, result.clusters);
 
     auto errCode = helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
     if(errCode != helper::image::PNGError::Okay)
         return res;
-    if(!helper::image::writeMarginals(labelPath.string() + filename + ".marginals", result.marginals))
-        return res;
+//    if(!helper::image::writeMarginals(labelPath.string() + filename + ".marginals", result.marginals))
+//        return res;
 
     res.okay = true;
     return res;
@@ -127,7 +132,7 @@ int main(int argc, char** argv)
         return FILE_LIST_EMPTY;
     }
 
-    boost::filesystem::path spPath(properties.outDir + "/sp/");
+    boost::filesystem::path spPath(properties.outDir + "/clustering/");
     boost::filesystem::path labelPath(properties.outDir + "/labeling/");
 
     // Clear output directory
@@ -142,23 +147,34 @@ int main(int argc, char** argv)
     }
 
     ThreadPool pool(properties.numThreads);
-    std::vector<std::future<Result>> futures;
+    std::deque<std::future<Result>> futures;
 
     // Iterate all files
     for(auto const& f : filenames)
     {
         std::string const& imageFilename = properties.dataset.path.img + f + properties.dataset.extension.img;
         std::string filename = boost::filesystem::path(imageFilename).stem().string();
-        if(/*boost::filesystem::exists(spPath / (filename + ".png")) && */boost::filesystem::exists(labelPath / (filename + ".png")))
+        if(boost::filesystem::exists(spPath / (filename + ".dat")) && boost::filesystem::exists(labelPath / (filename + ".png")))
         {
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap);
+        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter);
         futures.push_back(std::move(fut));
+
+        // Wait for some threads to finish if the queue gets too long
+        while(pool.queued() > properties.numThreads * 4)
+        {
+            Result res = futures.front().get();
+            if(!res.okay)
+                std::cerr << "Couldn't process image \"" + res.filename + "\"" << std::endl;
+            else
+                std::cout << "Done with \"" + res.filename + "\"" << std::endl;
+            futures.pop_front();
+        }
     }
 
-    // Wait for all the threads to finish
+    // Wait for remaining threads to finish
     for(size_t i = 0; i < futures.size(); ++i)
     {
         Result res = futures[i].get();
