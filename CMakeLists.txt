@@ -40,7 +40,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(Threads REQUIRED)
 
 ### BOOST ###
-set(Boost_USE_STATIC_LIBS ON)
+#set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.58 COMPONENTS filesystem system REQUIRED)
 
 ### OpenCV ###
@@ -60,6 +60,9 @@ add_subdirectory(lib/trw_s)
 
 ### properties ###
 add_subdirectory(lib/properties)
+
+### caffe ###
+add_subdirectory(lib/caffe)
 
 ### Set general gcc flags ###
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -139,6 +142,13 @@ target_include_directories(hseg_train_dist_merge PUBLIC ${INCLUDE_DIRS})
 target_include_directories(hseg_train_dist_merge SYSTEM PUBLIC  ${INCLUDE_SYS_DIRS})
 target_link_libraries(hseg_train_dist_merge ${LIBS} hseg)
 set_target_properties(hseg_train_dist_merge PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+
+### Compile feature training executable ###
+add_executable(hseg_train_feat exec/train_feat.cpp)
+target_include_directories(hseg_train_feat PUBLIC ${INCLUDE_DIRS})
+target_include_directories(hseg_train_feat SYSTEM PUBLIC  ${INCLUDE_SYS_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/lib/caffe/include ${CMAKE_BINARY_DIR}/lib/caffe/include)
+target_link_libraries(hseg_train_feat ${LIBS} hseg caffe)
+set_target_properties(hseg_train_feat PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
 
 ### Compile messy executable (i.e. the one where I do all my testing) ###
 add_executable(hseg_mess exec/messy.cpp)
