@@ -7,7 +7,6 @@
 #include <opencv2/core/types.hpp>
 #include <Image/Image.h>
 #include <helper/image_helper.h>
-#include <helper/coordinate_helper.h>
 
 PROPERTIES_DEFINE(TrainFeat,
 )
@@ -52,6 +51,39 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch)
     return scores;
 }
 
+cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& rgb_cv)
+{
+    caffe::Blob<float>* input_layer = net.input_blobs()[0];
+    unsigned int patch_w = input_layer->width();
+    unsigned int patch_h =  input_layer->height();
+    if(static_cast<int>(x + patch_w) > rgb_cv.cols)
+        patch_w = rgb_cv.cols - x;
+    if(static_cast<int>(y + patch_h) > rgb_cv.rows)
+        patch_h = rgb_cv.rows - y;
+    cv::Mat patch = rgb_cv(cv::Rect(x, y, patch_w, patch_h));
+
+    // Subtract mean
+    float const mean_r = 123.680f;
+    float const mean_g = 116.779f;
+    float const mean_b = 103.939f;
+
+    cv::Mat channels[3];
+    cv::split(patch, channels);
+    channels[2] -= mean_r;
+    channels[1] -= mean_g;
+    channels[0] -= mean_b;
+    cv::Mat normalized_img(patch.rows, patch.cols, CV_32FC3);
+    cv::merge(channels, 3, normalized_img);
+
+    // Pad with zeros
+    unsigned int const pad_w = input_layer->width() - patch_w;
+    unsigned int const pad_h = input_layer->height() - patch_h;
+    cv::Mat padded_img;
+    cv::copyMakeBorder(normalized_img, padded_img, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(0));
+
+    return padded_img;
+}
+
 int main(int argc, char** argv)
 {
     // Read properties
@@ -94,54 +126,83 @@ int main(int argc, char** argv)
     std::cout << "im_width: " << rgb_cv.cols << std::endl;
     std::cout << "im_height: " << rgb_cv.rows << std::endl;
 
-    // Crop out a part that has the right dimensions
-    unsigned const int x = 0;
-    unsigned const int y = 0;
-    unsigned int patch_w = input_layer->width();
-    unsigned int patch_h =  input_layer->height();
-    if(static_cast<int>(x + patch_w) > rgb_cv.cols)
-        patch_w = rgb_cv.cols - x;
-    if(static_cast<int>(y + patch_h) > rgb_cv.rows)
-        patch_h = rgb_cv.rows - y;
-    cv::Mat patch = rgb_cv(cv::Rect(x, y, patch_w, patch_h));
+    // Scale to base size
+    unsigned int const base_size = 512;
+    unsigned int const long_side = base_size + 1;
+    unsigned int new_rows = long_side;
+    unsigned int new_cols = long_side;
+    if(rgb_cv.rows > rgb_cv.cols)
+        new_cols = std::round(long_side / (float)rgb_cv.rows * rgb_cv.cols);
+    else
+        new_rows = std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows);
+    cv::resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
 
-    // Subtract mean
-    float const mean_r = 123.680f;
-    float const mean_g = 116.779f;
-    float const mean_b = 103.939f;
+    // Crop out parts that have the right dimensions
+    CHECK(input_layer->width() == input_layer->height()) << "Input must be square";
+    float const stride_rate = 2.f / 3.f;
+    float const crop_size = input_layer->width();
+    float const stride = std::ceil(crop_size * stride_rate);
+    cv::Mat data(rgb_cv.rows, rgb_cv.cols, CV_32FC(output_layer->channels()), cv::Scalar(0));
+    cv::Mat count(rgb_cv.rows, rgb_cv.cols, CV_32FC(1), cv::Scalar(0));
+    for(unsigned int y = 0; y < rgb_cv.rows; y += stride)
+    {
+        for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
+        {
+            // Pad image if necessary and subtract mean
+            cv::Mat padded_img = preImg(net, x, y, rgb_cv);
 
-    cv::Mat channels[3];
-    cv::split(patch, channels);
-    channels[2] -= mean_r;
-    channels[1] -= mean_g;
-    channels[0] -= mean_b;
-    cv::Mat normalized_img(patch.rows, patch.cols, CV_32FC3);
-    cv::merge(channels, 3, normalized_img);
+            // Run it through the network
+            auto scores = forward(net, padded_img);
+            cv::flip(padded_img, padded_img, 0);
+            auto scores_flip = forward(net, padded_img);
+            cv::flip(scores_flip, scores_flip, 0);
+            scores += scores_flip;
+            cv::exp(scores, scores);
+            for(int y = 0; y < scores.rows; ++y)
+            {
+                for (int x = 0; x < scores.cols; ++x)
+                {
+                    float sum = 0;
+                    for(int c = 0; c < scores.channels(); ++c)
+                        sum += scores.ptr<float>(y)[scores.channels() * x + c];
+                    for(int c = 0; c < scores.channels(); ++c)
+                        scores.ptr<float>(y)[scores.channels() * x + c] /= sum;
+                }
+            }
 
-    // Pad with zeros
-    unsigned int const pad_w = input_layer->width() - patch_w;
-    unsigned int const pad_h = input_layer->height() - patch_h;
-    cv::Mat padded_img;
-    cv::copyMakeBorder(normalized_img, padded_img, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(0));
+            // Remove parts that are padded
+            cv::Rect roi(0, 0, scores.cols, scores.rows);
+            if(x + scores.cols > rgb_cv.cols)
+                roi.width = rgb_cv.cols - x;
+            if(y + scores.rows > rgb_cv.rows)
+                roi.height = rgb_cv.rows - y;
+            cv::Mat croppedScores = scores(roi);
 
-    // Run it through the network
-    auto scores = forward(net, padded_img);
-//    cv::flip(padded_img, padded_img, 0);
-//    auto scores_flip = forward(net, padded_img);
-//    cv::flip(padded_img, padded_img, 0);
+            // Add to combined score map
+            data(cv::Rect(x, y, roi.width, roi.height)) += croppedScores;
+            cv::Mat countRegion = count(cv::Rect(x, y, roi.width, roi.height));
+            countRegion += cv::Scalar_<float>(1);
+        }
+    }
+    //data /= count;
+    std::vector<cv::Mat> channels(data.channels());
+    cv::split(data, channels);
+    for (cv::Mat chan : channels)
+        chan /= count;
+    cv::merge(channels, data);
 
 
     // Show labeling
-    LabelImage labeling(output_layer->width(), output_layer->height());
-    for(int y = 0; y < scores.rows; ++y)
+    LabelImage labeling(rgb_cv.cols, rgb_cv.rows);
+    for(int y = 0; y < data.rows; ++y)
     {
-        for(int x = 0; x < scores.cols; ++x)
+        for(int x = 0; x < data.cols; ++x)
         {
-            float maxCost = scores.ptr<float>(y)[scores.channels() * x + 0];
+            float maxCost = data.ptr<float>(y)[data.channels() * x + 0];
             Label maxLabel = 0;
             for (Label l = 1; l < 21; ++l)
             {
-                float cost = scores.ptr<float>(y)[scores.channels() * x + l];
+                float cost = data.ptr<float>(y)[data.channels() * x + l];
                 if (cost > maxCost)
                 {
                     maxCost = cost;
@@ -154,10 +215,7 @@ int main(int argc, char** argv)
 
     auto cmap = helper::image::generateColorMapVOC(256);
 
-    cv::imshow("patch", patch / 255);
-    double min, max;
-    cv::minMaxLoc(padded_img.reshape(1, 1), &min, &max);
-    cv::imshow("patch padded", (padded_img - min) / (max - min));
+    cv::imshow("img", rgb_cv / 255);
     cv::imshow("labeling", (cv::Mat)helper::image::colorize(labeling, cmap));
     cv::waitKey();
 
