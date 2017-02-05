@@ -10,6 +10,7 @@
 #include <Image/FeatureImage.h>
 
 PROPERTIES_DEFINE(TrainFeat,
+                  PROP_DEFINE_A(bool, useGPU, false, --useGPU)
 )
 
 cv::Mat forward(caffe::Net<float>& net, cv::Mat patch)
@@ -105,6 +106,10 @@ int main(int argc, char** argv)
     // Init network
     caffe::Net<float> net("/home/jan/Dokumente/Git/hseg/data/net/prototxt/pspnet101_VOC2012_473.prototxt", caffe::Phase::TEST);
     net.CopyTrainedLayersFrom("/home/jan/Dokumente/Git/hseg/data/net/model/pspnet101_VOC2012.caffemodel");
+    if(properties.useGPU)
+        caffe::Caffe::set_mode(caffe::Caffe::GPU);
+    else
+        caffe::Caffe::set_mode(caffe::Caffe::CPU);
 
     std::cout << "#in: " << net.num_inputs() << std::endl;
     std::cout << "#out: " << net.num_outputs() << std::endl;
