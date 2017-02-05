@@ -4,7 +4,7 @@
 
 #include <BaseProperties.h>
 #include <caffe/caffe.hpp>
-#include <opencv2/core/types.hpp>
+#include <opencv2/opencv.hpp>
 #include <Image/Image.h>
 #include <helper/image_helper.h>
 #include <Image/FeatureImage.h>
