@@ -11,6 +11,11 @@
 
 PROPERTIES_DEFINE(TrainFeat,
                   PROP_DEFINE_A(bool, useGPU, false, --useGPU)
+                  PROP_DEFINE_A(std::string, filename, "", --filename)
+                  PROP_DEFINE_A(std::string, cmpPath, "", --comparePath)
+                  PROP_DEFINE_A(std::string, imgPath, "", --imgPath)
+                  PROP_DEFINE_A(std::string, prototxt, "", --prototxt)
+                  PROP_DEFINE_A(std::string, model, "", --model)
 )
 
 cv::Mat forward(caffe::Net<float>& net, cv::Mat patch)
@@ -98,14 +103,14 @@ int main(int argc, char** argv)
     std::cout << "----------------------------------------------------------------" << std::endl;
 
     // Read in feature map
-    FeatureImage stored_features("/home/jan/Dokumente/Git/hseg/data/feat/2007_000032.mat");
+    FeatureImage stored_features(properties.cmpPath + properties.filename + ".mat");
 
     // Setup protobuf logging
     ::google::InitGoogleLogging(argv[0]);
 
     // Init network
-    caffe::Net<float> net("/home/jan/Dokumente/Git/hseg/data/net/prototxt/pspnet101_VOC2012_473.prototxt", caffe::Phase::TEST);
-    net.CopyTrainedLayersFrom("/home/jan/Dokumente/Git/hseg/data/net/model/pspnet101_VOC2012.caffemodel");
+    caffe::Net<float> net(properties.prototxt, caffe::Phase::TEST);
+    net.CopyTrainedLayersFrom(properties.model);
     if(properties.useGPU)
         caffe::Caffe::set_mode(caffe::Caffe::GPU);
     else
@@ -126,7 +131,7 @@ int main(int argc, char** argv)
 
     // Load an image
     RGBImage rgb;
-    rgb.read("/home/jan/Downloads/Pascal VOC/data/VOC2012/JPEGImages/2007_000032.jpg");
+    rgb.read(properties.imgPath + properties.filename + ".jpg");
     cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
 //    cv::cvtColor(rgb_cv, rgb_cv, CV_BGR2RGB);
     rgb_cv.convertTo(rgb_cv, CV_32FC3);
