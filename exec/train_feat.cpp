@@ -208,6 +208,7 @@ int main(int argc, char** argv)
     float max = std::numeric_limits<float>::min();
     float min_stored = std::numeric_limits<float>::max();
     float max_stored = std::numeric_limits<float>::min();
+    float max_diff = 0;
     size_t total = 0;
     for(int x = 0; x < data.cols; ++x)
     {
@@ -217,7 +218,8 @@ int main(int argc, char** argv)
             {
                 float const cur = data.ptr<float>(y)[data.channels() * x + c];
                 float const cur_stored = stored_features.at(x, y)(c);
-                accy += std::abs(cur - cur_stored);
+                float const diff = std::abs(cur - cur_stored);
+                accy += diff;
                 total++;
                 if(cur < min)
                     min = cur;
@@ -227,6 +229,8 @@ int main(int argc, char** argv)
                     min_stored = cur_stored;
                 if(cur_stored > max_stored)
                     max_stored = cur_stored;
+                if(diff > max_diff)
+                    max_diff = diff;
             }
         }
     }
@@ -234,6 +238,7 @@ int main(int argc, char** argv)
 
     std::cout << "Accy: " << accy << std::endl;
     std::cout << "Range: " << min << " - " << max << " (" << min_stored << " - " << max_stored << ")" << std::endl;
+    std::cout << "Max diff: " << max_diff << std::endl;
 
 
     return 0;
