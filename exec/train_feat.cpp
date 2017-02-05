@@ -203,8 +203,11 @@ int main(int argc, char** argv)
     CHECK_EQ(data.cols, stored_features.width());
     CHECK_EQ(data.rows, stored_features.height());
     CHECK_EQ(data.channels(), stored_features.dim());
-    float const accy = 0.01f;
-    size_t valid = 0;
+    float accy = 0.f;
+    float min = std::numeric_limits<float>::max();
+    float max = std::numeric_limits<float>::min();
+    float min_stored = std::numeric_limits<float>::max();
+    float max_stored = std::numeric_limits<float>::min();
     size_t total = 0;
     for(int x = 0; x < data.cols; ++x)
     {
@@ -212,15 +215,26 @@ int main(int argc, char** argv)
         {
             for(int c = 0; c < data.channels(); ++c)
             {
-                if(data.ptr<float>(y)[data.channels() * x + c] > stored_features.at(x, y)(c) - accy &&
-                        data.ptr<float>(y)[data.channels() * x + c] < stored_features.at(x, y)(c) + accy)
-                    valid++;
+                float const cur = data.ptr<float>(y)[data.channels() * x + c];
+                float const cur_stored = stored_features.at(x, y)(c);
+                accy += std::abs(cur - cur_stored);
                 total++;
+                if(cur < min)
+                    min = cur;
+                if(cur > max)
+                    max = cur;
+                if(cur_stored < min_stored)
+                    min_stored = cur_stored;
+                if(cur_stored > max_stored)
+                    max_stored = cur_stored;
             }
         }
     }
+    accy /= total;
 
-    std::cout << "Accy: " << valid << " / " << total << " (" << (100.f * valid) / total << "%)" << std::endl;
+    std::cout << "Accy: " << accy << std::endl;
+    std::cout << "Range: " << min << " - " << max << " (" << min_stored << " - " << max_stored << ")" << std::endl;
+
 
     return 0;
 }
