@@ -7,6 +7,7 @@
 #include <opencv2/core/types.hpp>
 #include <Image/Image.h>
 #include <helper/image_helper.h>
+#include <Image/FeatureImage.h>
 
 PROPERTIES_DEFINE(TrainFeat,
 )
@@ -95,11 +96,14 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
+    // Read in feature map
+    FeatureImage stored_features("/home/jan/Dokumente/Git/hseg/data/feat/2007_000032.mat");
+
     // Setup protobuf logging
     ::google::InitGoogleLogging(argv[0]);
 
     // Init network
-    caffe::Net<float> net("/home/jan/Dokumente/Git/hseg/data/net/prototxt/pspnet101_VOC2012_473.prototxt.bak", caffe::Phase::TEST);
+    caffe::Net<float> net("/home/jan/Dokumente/Git/hseg/data/net/prototxt/pspnet101_VOC2012_473.prototxt", caffe::Phase::TEST);
     net.CopyTrainedLayersFrom("/home/jan/Dokumente/Git/hseg/data/net/model/pspnet101_VOC2012.caffemodel");
 
     std::cout << "#in: " << net.num_inputs() << std::endl;
@@ -139,11 +143,15 @@ int main(int argc, char** argv)
 
     // Crop out parts that have the right dimensions
     CHECK(input_layer->width() == input_layer->height()) << "Input must be square";
+    CHECK(output_layer->width() == output_layer->height()) << "Output must be square";
     float const stride_rate = 2.f / 3.f;
     float const crop_size = input_layer->width();
     float const stride = std::ceil(crop_size * stride_rate);
-    cv::Mat data(rgb_cv.rows, rgb_cv.cols, CV_32FC(output_layer->channels()), cv::Scalar(0));
-    cv::Mat count(rgb_cv.rows, rgb_cv.cols, CV_32FC(1), cv::Scalar(0));
+    float const feature_factor = output_layer->width() / static_cast<float>(input_layer->width());
+    unsigned int const data_width = static_cast<unsigned int>(std::floor(rgb_cv.cols * feature_factor));
+    unsigned int const data_height = static_cast<unsigned int>(std::floor(rgb_cv.rows * feature_factor));
+    cv::Mat data(data_height, data_width, CV_32FC(output_layer->channels()), cv::Scalar(0));
+    cv::Mat count(data_height, data_width, CV_32FC(1), cv::Scalar(0));
     for(unsigned int y = 0; y < rgb_cv.rows; y += stride)
     {
         for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
@@ -152,36 +160,26 @@ int main(int argc, char** argv)
             cv::Mat padded_img = preImg(net, x, y, rgb_cv);
 
             // Run it through the network
-            auto scores = forward(net, padded_img);
-            cv::flip(padded_img, padded_img, 0);
+            auto features = forward(net, padded_img);
+            cv::flip(padded_img, padded_img, 1);
             auto scores_flip = forward(net, padded_img);
-            cv::flip(scores_flip, scores_flip, 0);
-            scores += scores_flip;
-            cv::exp(scores, scores);
-            for(int y = 0; y < scores.rows; ++y)
-            {
-                for (int x = 0; x < scores.cols; ++x)
-                {
-                    float sum = 0;
-                    for(int c = 0; c < scores.channels(); ++c)
-                        sum += scores.ptr<float>(y)[scores.channels() * x + c];
-                    for(int c = 0; c < scores.channels(); ++c)
-                        scores.ptr<float>(y)[scores.channels() * x + c] /= sum;
-                }
-            }
+            cv::flip(scores_flip, scores_flip, 1);
+            features += scores_flip;
+            features /= 2;
 
             // Remove parts that are padded
-            cv::Rect roi(0, 0, scores.cols, scores.rows);
-            if(x + scores.cols > rgb_cv.cols)
-                roi.width = rgb_cv.cols - x;
-            if(y + scores.rows > rgb_cv.rows)
-                roi.height = rgb_cv.rows - y;
-            cv::Mat croppedScores = scores(roi);
+            cv::Rect roi(0, 0, features.cols, features.rows);
+            unsigned int f_x = static_cast<unsigned int>(std::floor(x * feature_factor));
+            unsigned int f_y = static_cast<unsigned int>(std::floor(y * feature_factor));
+            if(f_x + features.cols > data_width)
+                roi.width = data_width - f_x;
+            if(f_y + features.rows > data_height)
+                roi.height = data_height - f_y;
+            cv::Mat croppedFeatures = features(roi);
 
             // Add to combined score map
-            data(cv::Rect(x, y, roi.width, roi.height)) += croppedScores;
-            cv::Mat countRegion = count(cv::Rect(x, y, roi.width, roi.height));
-            countRegion += cv::Scalar_<float>(1);
+            data(cv::Rect(f_x, f_y, roi.width, roi.height)) += croppedFeatures;
+            count(cv::Rect(f_x, f_y, roi.width, roi.height)) += cv::Scalar_<float>(1);
         }
     }
     //data /= count;
@@ -191,34 +189,28 @@ int main(int argc, char** argv)
         chan /= count;
     cv::merge(channels, data);
 
-
-    // Show labeling
-    LabelImage labeling(rgb_cv.cols, rgb_cv.rows);
-    for(int y = 0; y < data.rows; ++y)
+    // Check whether loaded features are similar to computed features
+    CHECK_EQ(data.cols, stored_features.width());
+    CHECK_EQ(data.rows, stored_features.height());
+    CHECK_EQ(data.channels(), stored_features.dim());
+    float const accy = 0.01f;
+    size_t valid = 0;
+    size_t total = 0;
+    for(int x = 0; x < data.cols; ++x)
     {
-        for(int x = 0; x < data.cols; ++x)
+        for(int y = 0; y < data.rows; ++y)
         {
-            float maxCost = data.ptr<float>(y)[data.channels() * x + 0];
-            Label maxLabel = 0;
-            for (Label l = 1; l < 21; ++l)
+            for(int c = 0; c < data.channels(); ++c)
             {
-                float cost = data.ptr<float>(y)[data.channels() * x + l];
-                if (cost > maxCost)
-                {
-                    maxCost = cost;
-                    maxLabel = l;
-                }
+                if(data.ptr<float>(y)[data.channels() * x + c] > stored_features.at(x, y)(c) - accy &&
+                        data.ptr<float>(y)[data.channels() * x + c] < stored_features.at(x, y)(c) + accy)
+                    valid++;
+                total++;
             }
-            labeling.at(x, y) = maxLabel;
         }
     }
 
-    auto cmap = helper::image::generateColorMapVOC(256);
-
-    cv::imshow("img", rgb_cv / 255);
-    cv::imshow("labeling", (cv::Mat)helper::image::colorize(labeling, cmap));
-    cv::waitKey();
-
+    std::cout << "Accy: " << valid << " / " << total << " (" << (100.f * valid) / total << "%)" << std::endl;
 
     return 0;
 }
