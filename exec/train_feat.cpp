@@ -6,7 +6,6 @@
 #include <caffe/caffe.hpp>
 #include <opencv2/opencv.hpp>
 #include <Image/Image.h>
-#include <helper/image_helper.h>
 #include <Image/FeatureImage.h>
 
 PROPERTIES_DEFINE(TrainFeat,
@@ -166,8 +165,15 @@ int main(int argc, char** argv)
     {
         for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
         {
+            unsigned int s_x = x;
+            unsigned int s_y = y;
+
             // Pad image if necessary and subtract mean
-            cv::Mat padded_img = preImg(net, x, y, rgb_cv);
+            if(x + input_layer->width() > rgb_cv.cols)
+                s_x = std::max(0, rgb_cv.cols - input_layer->width());
+            if(y + input_layer->height() > rgb_cv.rows)
+                s_y = std::max(0, rgb_cv.rows - input_layer->height());
+            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv);
 
             // Run it through the network
             auto features = forward(net, padded_img);
@@ -179,8 +185,8 @@ int main(int argc, char** argv)
 
             // Remove parts that are padded
             cv::Rect roi(0, 0, features.cols, features.rows);
-            unsigned int f_x = static_cast<unsigned int>(std::floor(x * feature_factor));
-            unsigned int f_y = static_cast<unsigned int>(std::floor(y * feature_factor));
+            unsigned int f_x = static_cast<unsigned int>(std::floor(s_x * feature_factor));
+            unsigned int f_y = static_cast<unsigned int>(std::floor(s_y * feature_factor));
             if(f_x + features.cols > data_width)
                 roi.width = data_width - f_x;
             if(f_y + features.rows > data_height)
@@ -239,6 +245,10 @@ int main(int argc, char** argv)
     std::cout << "Accy: " << accy << std::endl;
     std::cout << "Range: " << min << " - " << max << " (" << min_stored << " - " << max_stored << ")" << std::endl;
     std::cout << "Max diff: " << max_diff << std::endl;
+
+    cv::imshow("Layer 0", channels[0]);
+    cv::imshow("Layer 1", channels[1]);
+    cv::waitKey();
 
 
     return 0;
