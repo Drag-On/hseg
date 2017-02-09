@@ -41,6 +41,10 @@ namespace caffe {
 //                                  const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
 
         Weights weights_;
+        ClusterId numClusters_ = 30;
+        float eps_ = 10.f;
+        int maxIter_ = 50;
+        int const numClasses_ = 21;
 
     };
 }

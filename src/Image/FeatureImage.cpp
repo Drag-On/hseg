@@ -16,6 +16,7 @@ FeatureImage::FeatureImage(Coord width, Coord height, Coord dim)
           m_height(height),
           m_dim(dim)
 {
+    m_features.resize(width * height * dim);
 }
 
 bool FeatureImage::read(std::string const& filename)
