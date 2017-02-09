@@ -61,9 +61,6 @@ add_subdirectory(lib/trw_s)
 ### properties ###
 add_subdirectory(lib/properties)
 
-### caffe ###
-add_subdirectory(lib/caffe)
-
 ### Set general gcc flags ###
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -82,6 +79,9 @@ set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(INCLUDE_SYS_DIRS ${trw_s_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PNG_INCLUDE_DIRS} ${MATIO_INCLUDE_DIRS})
 set(LIBS trw_s properties ${OpenCV_LIBS} ${Boost_LIBRARIES} ${PNG_LIBRARIES} ${MATIO_LIBRARIES})
 PREPEND(SOURCE_FILES_FULL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${SOURCE_FILES})
+
+### caffe ###
+add_subdirectory(lib/caffe)
 
 add_definitions(${PNG_DEFINITIONS})
 

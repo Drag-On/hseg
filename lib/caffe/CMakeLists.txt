@@ -18,7 +18,7 @@ add_definitions(-DCAFFE_VERSION=${CAFFE_TARGET_VERSION})
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 # Workaround for "memcpy not declared in this scope" (https://github.com/BVLC/caffe/issues/4046)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES -std=c++11 -D_MWAITXINTRIN_H_INCLUDED")
 
 include(ExternalProject)
 
@@ -67,7 +67,7 @@ configure_file(cmake/Templates/caffe_config.h.in "${PROJECT_BINARY_DIR}/caffe_co
 
 # ---[ Includes
 set(Caffe_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-include_directories(${Caffe_INCLUDE_DIR} ${PROJECT_BINARY_DIR})
+include_directories(${Caffe_INCLUDE_DIR} ${PROJECT_BINARY_DIR} ${INCLUDE_SYS_DIRS} ${INCLUDE_DIRS})
 include_directories(BEFORE src) # This is needed for gtest.
 
 # ---[ Subdirectories
