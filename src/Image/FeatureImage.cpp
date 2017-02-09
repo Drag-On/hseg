@@ -123,3 +123,11 @@ std::vector<Feature> const& FeatureImage::data() const
 {
     return m_features;
 }
+
+void FeatureImage::subtract(FeatureImage const& other)
+{
+    assert(other.m_features.size() == m_features.size());
+
+    for(size_t i = 0; i < m_features.size(); ++i)
+        m_features[i] -= other.m_features[i];
+}

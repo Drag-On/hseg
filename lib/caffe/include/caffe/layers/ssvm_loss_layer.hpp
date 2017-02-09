@@ -10,6 +10,7 @@
 #include "caffe/layers/loss_layer.hpp"
 #include "Energy/Weights.h"
 #include <Inference/InferenceResult.h>
+#include <Image/FeatureImage.h>
 
 namespace caffe {
     template <typename Dtype>
@@ -47,6 +48,7 @@ namespace caffe {
         int maxIter_ = 50;
         int const numClasses_ = 21;
 
+        FeatureImage features_;
         InferenceResult gtResult_;
         InferenceResult predResult_;
 

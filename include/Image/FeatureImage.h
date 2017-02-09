@@ -43,6 +43,8 @@ public:
 
     std::vector<Feature> const& data() const;
 
+    void subtract(FeatureImage const& other);
+
 protected:
     Coord m_width;
     Coord m_height;
