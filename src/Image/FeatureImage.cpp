@@ -11,6 +11,13 @@ FeatureImage::FeatureImage(std::string const& filename)
     read(filename);
 }
 
+FeatureImage::FeatureImage(Coord width, Coord height, Coord dim)
+        : m_width(width),
+          m_height(height),
+          m_dim(dim)
+{
+}
+
 bool FeatureImage::read(std::string const& filename)
 {
     mat_t* matfp = Mat_Open(filename.c_str(), MAT_ACC_RDONLY);
@@ -88,8 +95,30 @@ Feature const& FeatureImage::at(Coord x, Coord y) const
     return m_features[x + y * m_width];
 }
 
+Feature& FeatureImage::at(Coord x, Coord y)
+{
+    assert(x + y * m_width < m_features.size());
+    return m_features[x + y * m_width];
+}
+
 Feature const& FeatureImage::atSite(SiteId i) const
 {
     assert(i < m_features.size());
     return m_features[i];
+}
+
+Feature& FeatureImage::atSite(SiteId i)
+{
+    assert(i < m_features.size());
+    return m_features[i];
+}
+
+std::vector<Feature>& FeatureImage::data()
+{
+    return m_features;
+}
+
+std::vector<Feature> const& FeatureImage::data() const
+{
+    return m_features;
 }

@@ -73,6 +73,16 @@ public:
     void computeHigherOrderEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, Weights& energyW) const;
 
     /**
+     * Computes the gradient of the energy function with respect to the features
+     * @param outGradients The gradients of each feature are stored here. Must be preallocated.
+     * @param labeling Class labeling
+     * @param clustering Clustering of the image
+     * @param clusters Cluster data
+     * @param features Image features
+     */
+    void computeFeatureGradient(FeatureImage& outGradients, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, FeatureImage const& features) const;
+
+    /**
      * @return Amount of classes
      */
     inline Label numClasses() const

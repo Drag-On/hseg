@@ -94,3 +94,52 @@ void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& featur
         energyW.higherOrder(l, lClus) += combinedFeat;
     }
 }
+
+void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelImage const& labeling,
+                                            LabelImage const& clustering, std::vector<Cluster> const& clusters,
+                                            FeatureImage const& features) const
+{
+    assert(outGradients.width() == labeling.width());
+    assert(outGradients.height() == labeling.height());
+    assert(outGradients.dim() == m_pWeights->unary(0).size() - 1);
+    assert(labeling.width() == clustering.width());
+    assert(labeling.height() == clustering.height());
+
+    unsigned int const featSize = outGradients.dim();
+
+    for (SiteId i = 0; i < labeling.pixels(); ++i)
+    {
+        Feature& grad = outGradients.atSite(i);
+        auto coords = helper::coord::siteTo2DCoordinate(i, labeling.width());
+        Label l = labeling.atSite(i);
+
+        // unary
+        grad = m_pWeights->unary(l);
+
+        // pairwise
+        if(static_cast<int>(coords.x()) - 1 >= 0)
+        {
+            Label l2 = labeling.at(coords.x() - 1, coords.y());
+            grad += m_pWeights->pairwise(l2, l).segment(featSize, featSize);
+        }
+        if(coords.x() + 1 < labeling.width())
+        {
+            Label l2 = labeling.at(coords.x() + 1, coords.y());
+            grad += m_pWeights->pairwise(l, l2).segment(0, featSize);
+        }
+        if(static_cast<int>(coords.y()) - 1 >= 0)
+        {
+            Label l2 = labeling.at(coords.x(), coords.y() - 1);
+            grad += m_pWeights->pairwise(l2, l).segment(featSize, featSize);
+        }
+        if(coords.y() + 1 < labeling.height())
+        {
+            Label l2 = labeling.at(coords.x(), coords.y() + 1);
+            grad += m_pWeights->pairwise(l, l2).segment(0, featSize);
+        }
+
+        // higher-order
+        grad += 2 * m_pWeights->featureSimMat() * (features.atSite(i) - clusters[clustering.atSite(i)].m_feature);
+        grad += m_pWeights->higherOrder(l, clusters[clustering.atSite(i)].m_label).segment(0, featSize);
+    }
+}

@@ -17,6 +17,8 @@ public:
 
     FeatureImage(std::string const& filename);
 
+    FeatureImage(Coord width, Coord height, Coord dim);
+
     bool read(std::string const& filename);
 
     Coord width() const;
@@ -31,7 +33,15 @@ public:
 
     Feature const& at(Coord x, Coord y) const;
 
+    Feature& at(Coord x, Coord y);
+
     Feature const& atSite(SiteId i) const;
+
+    Feature& atSite(SiteId i);
+
+    std::vector<Feature>& data();
+
+    std::vector<Feature> const& data() const;
 
 protected:
     Coord m_width;
