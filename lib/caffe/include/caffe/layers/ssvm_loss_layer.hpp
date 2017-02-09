@@ -9,6 +9,7 @@
 
 #include "caffe/layers/loss_layer.hpp"
 #include "Energy/Weights.h"
+#include <Inference/InferenceResult.h>
 
 namespace caffe {
     template <typename Dtype>
@@ -45,6 +46,9 @@ namespace caffe {
         float eps_ = 10.f;
         int maxIter_ = 50;
         int const numClasses_ = 21;
+
+        InferenceResult gtResult_;
+        InferenceResult predResult_;
 
     };
 }

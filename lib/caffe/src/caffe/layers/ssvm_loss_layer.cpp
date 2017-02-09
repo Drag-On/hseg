@@ -47,23 +47,23 @@ namespace caffe {
         // Find latent variables that best explain the ground truth
         EnergyFunction energy(&weights_, numClusters_);
         InferenceIterator<EnergyFunction> gtInference(&energy, &features, eps_, maxIter_);
-        InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
+        gtResult_ = gtInference.runOnGroundTruth(gt);
 
         // Predict with loss-augmented energy
         LossAugmentedEnergyFunction lossEnergy(&weights_, &gt, numClusters_);
         InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features, eps_, maxIter_);
-        InferenceResult result = inference.run();
+        predResult_ = inference.run();
 
         // Compute energy without weights on the ground truth
-        auto gtEnergy = energy.giveEnergyByWeight(features, gt, gtResult.clustering, gtResult.clusters);
+        auto gtEnergy = energy.giveEnergyByWeight(features, gt, gtResult_.clustering, gtResult_.clusters);
         // Compute energy without weights on the prediction
-        auto predEnergy = energy.giveEnergyByWeight(features, result.labeling, result.clustering, result.clusters);
+        auto predEnergy = energy.giveEnergyByWeight(features, predResult_.labeling, predResult_.clustering, predResult_.clusters);
 
         // Compute upper bound on this image
         auto gtEnergyCur = weights_ * gtEnergy;
         auto predEnergyCur = weights_ * predEnergy;
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses_);
-        float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.clustering, gt, result.clusters,
+        float loss = LossAugmentedEnergyFunction::computeLoss(predResult_.labeling, predResult_.clustering, gt, predResult_.clusters,
                                                               lossFactor, numClasses_);
         float sampleLoss = (loss - predEnergyCur) + gtEnergyCur;
 
@@ -73,6 +73,8 @@ namespace caffe {
     template <typename Dtype>
     void SSVMLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
+
+
     }
 
 
