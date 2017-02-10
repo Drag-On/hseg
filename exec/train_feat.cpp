@@ -7,26 +7,37 @@
 #include <opencv2/opencv.hpp>
 #include <Image/Image.h>
 #include <Image/FeatureImage.h>
+#include <helper/image_helper.h>
 
 PROPERTIES_DEFINE(TrainFeat,
                   PROP_DEFINE_A(bool, useGPU, false, --useGPU)
                   PROP_DEFINE_A(std::string, filename, "", --filename)
                   PROP_DEFINE_A(std::string, cmpPath, "", --comparePath)
                   PROP_DEFINE_A(std::string, imgPath, "", --imgPath)
+                  PROP_DEFINE_A(std::string, gtPath, "", --gtPath)
                   PROP_DEFINE_A(std::string, prototxt, "", --prototxt)
                   PROP_DEFINE_A(std::string, model, "", --model)
 )
 
-cv::Mat forward(caffe::Net<float>& net, cv::Mat patch)
+cv::Mat forward(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
 {
     caffe::Blob<float>* input_layer = net.input_blobs()[0];
+    caffe::Blob<float>* input_layer_gt = net.input_blobs()[1];
     caffe::Blob<float>* output_layer = net.output_blobs()[0];
 
-    CHECK(patch.cols == input_layer->width() && patch.rows == input_layer->height() && patch.channels() == input_layer->channels())
+    CHECK(patch.cols == input_layer->width() && patch.rows == input_layer->height()
+          && patch.channels() == input_layer->channels())
     << "Patch doesn't have the right dimensions.";
 
+    CHECK(gt.cols == input_layer_gt->width() && gt.rows == input_layer_gt->height()
+          && gt.channels() == input_layer_gt->channels())
+    << "Ground truth doesn't have the right dimensions.";
+
     input_layer->Reshape(1, 3, patch.rows, patch.cols);
+    input_layer_gt->Reshape(1, 3, gt.rows, gt.cols);
     net.Reshape();
+
+    // Copy over image
     std::vector<cv::Mat> input_channels;
     float* input_data = input_layer->mutable_cpu_data();
     for (int i = 0; i < input_layer->channels(); ++i)
@@ -38,6 +49,20 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch)
     cv::split(patch, input_channels);
 
     CHECK(reinterpret_cast<float*>(input_channels.at(0).data) == net.input_blobs()[0]->cpu_data())
+    << "Input channels are not wrapping the input layer of the network.";
+
+    // Copy over ground truth
+    input_channels.clear();
+    input_data = input_layer_gt->mutable_cpu_data();
+    for (int i = 0; i < input_layer_gt->channels(); ++i)
+    {
+        cv::Mat channel(input_layer_gt->height(), input_layer_gt->width(), CV_32FC1, input_data);
+        input_channels.push_back(channel);
+        input_data += input_layer_gt->width() * input_layer_gt->height();
+    }
+    cv::split(patch, input_channels);
+
+    CHECK(reinterpret_cast<float*>(input_channels.at(0).data) == net.input_blobs()[1]->cpu_data())
     << "Input channels are not wrapping the input layer of the network.";
 
     net.ForwardPrefilled();
@@ -57,16 +82,38 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch)
     return scores;
 }
 
-cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& rgb_cv)
+cv::Mat cropPatch(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& img)
 {
     caffe::Blob<float>* input_layer = net.input_blobs()[0];
     unsigned int patch_w = input_layer->width();
     unsigned int patch_h =  input_layer->height();
-    if(static_cast<int>(x + patch_w) > rgb_cv.cols)
-        patch_w = rgb_cv.cols - x;
-    if(static_cast<int>(y + patch_h) > rgb_cv.rows)
-        patch_h = rgb_cv.rows - y;
-    cv::Mat patch = rgb_cv(cv::Rect(x, y, patch_w, patch_h));
+    if(static_cast<int>(x + patch_w) > img.cols)
+        patch_w = img.cols - x;
+    if(static_cast<int>(y + patch_h) > img.rows)
+        patch_h = img.rows - y;
+    cv::Mat patch = img(cv::Rect(x, y, patch_w, patch_h));
+
+    return patch;
+}
+
+cv::Mat padPatch(caffe::Net<float>& net, cv::Mat const& img)
+{
+    caffe::Blob<float>* input_layer = net.input_blobs()[0];
+    unsigned int patch_w = img.cols;
+    unsigned int patch_h =  img.rows;
+
+    // Pad with zeros
+    unsigned int const pad_w = input_layer->width() - patch_w;
+    unsigned int const pad_h = input_layer->height() - patch_h;
+    cv::Mat padded_img(input_layer->height(), input_layer->width(), img.type());
+    cv::copyMakeBorder(img, padded_img, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(0));
+
+    return padded_img;
+}
+
+cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& rgb_cv)
+{
+    cv::Mat patch = cropPatch(net, x, y, rgb_cv);
 
     // Subtract mean
     float const mean_r = 123.680f;
@@ -81,14 +128,17 @@ cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat c
     cv::Mat normalized_img(patch.rows, patch.cols, CV_32FC3);
     cv::merge(channels, 3, normalized_img);
 
-    // Pad with zeros
-    unsigned int const pad_w = input_layer->width() - patch_w;
-    unsigned int const pad_h = input_layer->height() - patch_h;
-    cv::Mat padded_img;
-    cv::copyMakeBorder(normalized_img, padded_img, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(0));
+    cv::Mat padded_img = padPatch(net, normalized_img);
 
     return padded_img;
 }
+
+enum ErrorCode
+{
+    SUCCESS = 0,
+    CANT_LOAD_IMAGE,
+    CANT_LOAD_GT,
+};
 
 int main(int argc, char** argv)
 {
@@ -108,12 +158,13 @@ int main(int argc, char** argv)
     ::google::InitGoogleLogging(argv[0]);
 
     // Init network
-    caffe::Net<float> net(properties.prototxt, caffe::Phase::TEST);
-    net.CopyTrainedLayersFrom(properties.model);
     if(properties.useGPU)
         caffe::Caffe::set_mode(caffe::Caffe::GPU);
     else
         caffe::Caffe::set_mode(caffe::Caffe::CPU);
+
+    caffe::Net<float> net(properties.prototxt, caffe::Phase::TRAIN);
+    net.CopyTrainedLayersFrom(properties.model);
 
     std::cout << "#in: " << net.num_inputs() << std::endl;
     std::cout << "#out: " << net.num_outputs() << std::endl;
@@ -123,6 +174,11 @@ int main(int argc, char** argv)
     std::cout << "in_width: " << input_layer->width() << std::endl;
     std::cout << "in_height: " << input_layer->height() << std::endl;
 
+    caffe::Blob<float>* gt_layer = net.input_blobs()[1];
+    std::cout << "gt_channels: " << gt_layer->channels() << std::endl;
+    std::cout << "gt_width: " << gt_layer->width() << std::endl;
+    std::cout << "gt_height: " << gt_layer->height() << std::endl;
+
     caffe::Blob<float>* output_layer = net.output_blobs()[0];
     std::cout << "out_channels: " << output_layer->channels() << std::endl;
     std::cout << "out_width: " << output_layer->width() << std::endl;
@@ -130,14 +186,27 @@ int main(int argc, char** argv)
 
     // Load an image
     RGBImage rgb;
-    rgb.read(properties.imgPath + properties.filename + ".jpg");
+    if(!rgb.read(properties.imgPath + properties.filename + ".jpg"))
+    {
+        std::cerr << "Unable to load image \"" << properties.imgPath + properties.filename + ".jog" << "\"." << std::endl;
+        return CANT_LOAD_IMAGE;
+    }
     cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
-//    cv::cvtColor(rgb_cv, rgb_cv, CV_BGR2RGB);
     rgb_cv.convertTo(rgb_cv, CV_32FC3);
 
     std::cout << "im_channels: " << rgb_cv.channels() << std::endl;
     std::cout << "im_width: " << rgb_cv.cols << std::endl;
     std::cout << "im_height: " << rgb_cv.rows << std::endl;
+
+    // Load ground truth
+    LabelImage gt;
+    helper::image::PNGError err = helper::image::readPalettePNG(properties.gtPath + properties.filename + ".png", gt, nullptr);
+    if(err != helper::image::PNGError::Okay)
+    {
+        std::cerr << "Unable to load ground truth \"" << properties.gtPath + properties.filename + ".png" << "\". Error Code: " << (int) err << std::endl;
+        return CANT_LOAD_GT;
+    }
+    cv::Mat gt_cv = static_cast<cv::Mat>(gt);
 
     // Scale to base size
     unsigned int const base_size = 512;
@@ -149,6 +218,7 @@ int main(int argc, char** argv)
     else
         new_rows = std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows);
     cv::resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
+    cv::resize(gt_cv, gt_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
 
     // Crop out parts that have the right dimensions
     CHECK(input_layer->width() == input_layer->height()) << "Input must be square";
@@ -174,11 +244,12 @@ int main(int argc, char** argv)
             if(y + input_layer->height() > rgb_cv.rows)
                 s_y = std::max(0, rgb_cv.rows - input_layer->height());
             cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv);
+            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv));
 
             // Run it through the network
-            auto features = forward(net, padded_img);
+            auto features = forward(net, padded_img, padded_gt);
             cv::flip(padded_img, padded_img, 1);
-            auto scores_flip = forward(net, padded_img);
+            auto scores_flip = forward(net, padded_img, padded_gt);
             cv::flip(scores_flip, scores_flip, 1);
             features += scores_flip;
             features /= 2;

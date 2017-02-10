@@ -103,7 +103,7 @@ namespace caffe {
 
 
 #ifdef CPU_ONLY
-    STUB_GPU(SSVMLossLayer);
+//    STUB_GPU(SSVMLossLayer);
 #endif
 
     INSTANTIATE_CLASS(SSVMLossLayer);
