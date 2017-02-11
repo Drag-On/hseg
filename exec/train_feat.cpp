@@ -34,7 +34,7 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
     << "Ground truth doesn't have the right dimensions.";
 
     input_layer->Reshape(1, 3, patch.rows, patch.cols);
-    input_layer_gt->Reshape(1, 3, gt.rows, gt.cols);
+    input_layer_gt->Reshape(1, 1, gt.rows, gt.cols);
     net.Reshape();
 
     // Copy over image
@@ -52,7 +52,21 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
     << "Input channels are not wrapping the input layer of the network.";
 
     // Copy over ground truth
-    std::copy((float*)gt.data, (float*)gt.dataend, input_layer_gt->mutable_cpu_data());
+    for(size_t y = 0; y < gt.rows; ++y)
+    {
+        for(size_t x = 0; x < gt.cols; ++x)
+            *input_layer_gt->mutable_cpu_data_at(0, 0, y, x) = gt.at<float>(y, x);
+    }
+
+    for(size_t y = 0; y < gt.rows; ++y)
+    {
+        for (size_t x = 0; x < gt.cols; ++x)
+        {
+            CHECK(gt.at<float>(y, x) == *input_layer_gt->cpu_data_at(0, 0, y, x)) << "Ground truth not copied properly.";
+            CHECK(gt.at<float>(y, x) >= 0) << "Label not in range";
+            CHECK(gt.at<float>(y, x) < 21) << "Label not in range";
+        }
+    }
 
     net.ForwardPrefilled();
 
@@ -198,6 +212,7 @@ int main(int argc, char** argv)
         return CANT_LOAD_GT;
     }
     cv::Mat gt_cv = static_cast<cv::Mat>(gt);
+    gt_cv.convertTo(gt_cv, CV_32FC1);
 
     // Scale to base size
     unsigned int const base_size = 512;
