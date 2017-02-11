@@ -30,7 +30,7 @@ namespace caffe {
             for(Coord y = 0; y < features_.height(); ++y)
             {
                 for(Coord c = 0; c < features_.dim(); ++c)
-                    features_.at(x, y)[c] = bottom[0]->data_at(1, c, y, x);
+                    features_.at(x, y)[c] = bottom[0]->data_at(0, c, y, x);
             }
         }
 
@@ -41,7 +41,9 @@ namespace caffe {
             for(Coord y = 0; y < features_.height(); ++y)
             {
                 // Round because of float imprecision
-                gt.at(x, y) = std::round(bottom[1]->data_at(1, 0, y, x));
+                gt.at(x, y) = std::round(bottom[1]->data_at(0, 0, y, x));
+                assert(gt.at(x, y) >= 0);
+                assert(gt.at(x, y) < 21);
             }
         }
 
