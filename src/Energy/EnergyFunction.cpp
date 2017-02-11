@@ -33,6 +33,7 @@ void EnergyFunction::computeUnaryEnergyByWeight(FeatureImage const& features, La
     for (SiteId i = 0; i < labeling.pixels(); ++i)
     {
         Label l = labeling.atSite(i);
+        assert(l < numClasses());
         Feature const& f = features.atSite(i);
         Feature combinedFeat(f.size() + 1);
         combinedFeat << f, 1.f;
