@@ -40,7 +40,8 @@ namespace caffe {
         {
             for(Coord y = 0; y < features_.height(); ++y)
             {
-                gt.at(x, y) = bottom[1]->data_at(1, 0, y, x);
+                // Round because of float imprecision
+                gt.at(x, y) = std::round(bottom[1]->data_at(1, 0, y, x));
             }
         }
 
