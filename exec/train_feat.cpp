@@ -52,32 +52,23 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
     << "Input channels are not wrapping the input layer of the network.";
 
     // Copy over ground truth
-    input_channels.clear();
-    input_data = input_layer_gt->mutable_cpu_data();
-    for (int i = 0; i < input_layer_gt->channels(); ++i)
-    {
-        cv::Mat channel(input_layer_gt->height(), input_layer_gt->width(), CV_32FC1, input_data);
-        input_channels.push_back(channel);
-        input_data += input_layer_gt->width() * input_layer_gt->height();
-    }
-    cv::split(patch, input_channels);
-
-    CHECK(reinterpret_cast<float*>(input_channels.at(0).data) == net.input_blobs()[1]->cpu_data())
-    << "Input channels are not wrapping the input layer of the network.";
+    std::copy((float*)gt.data, (float*)gt.dataend, input_layer_gt->mutable_cpu_data());
 
     net.ForwardPrefilled();
 
+    std::cout << "Loss: " << *output_layer->cpu_data() << std::endl;
+
     // Copy results back
-    const float* begin = output_layer->cpu_data();
+//    const float* begin = output_layer->cpu_data();
     cv::Mat scores(output_layer->height(), output_layer->width(), CV_32FC(output_layer->channels()));
-    for(int y = 0; y < scores.rows; ++y)
-    {
-        for(int x = 0; x < scores.cols; ++x)
-        {
-            for(int c = 0; c < scores.channels(); ++c)
-                scores.ptr<float>(y)[scores.channels()*x+c] = *(begin + (x + y * output_layer->width() + c * output_layer->width() * output_layer->height()));
-        }
-    }
+//    for(int y = 0; y < scores.rows; ++y)
+//    {
+//        for(int x = 0; x < scores.cols; ++x)
+//        {
+//            for(int c = 0; c < scores.channels(); ++c)
+//                scores.ptr<float>(y)[scores.channels()*x+c] = *(begin + (x + y * output_layer->width() + c * output_layer->width() * output_layer->height()));
+//        }
+//    }
 
     return scores;
 }
@@ -245,81 +236,82 @@ int main(int argc, char** argv)
                 s_y = std::max(0, rgb_cv.rows - input_layer->height());
             cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv);
             cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv));
+            cv::resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
 
             // Run it through the network
             auto features = forward(net, padded_img, padded_gt);
             cv::flip(padded_img, padded_img, 1);
             auto scores_flip = forward(net, padded_img, padded_gt);
-            cv::flip(scores_flip, scores_flip, 1);
-            features += scores_flip;
-            features /= 2;
-
-            // Remove parts that are padded
-            cv::Rect roi(0, 0, features.cols, features.rows);
-            unsigned int f_x = static_cast<unsigned int>(std::floor(s_x * feature_factor));
-            unsigned int f_y = static_cast<unsigned int>(std::floor(s_y * feature_factor));
-            if(f_x + features.cols > data_width)
-                roi.width = data_width - f_x;
-            if(f_y + features.rows > data_height)
-                roi.height = data_height - f_y;
-            cv::Mat croppedFeatures = features(roi);
-
-            // Add to combined score map
-            data(cv::Rect(f_x, f_y, roi.width, roi.height)) += croppedFeatures;
-            count(cv::Rect(f_x, f_y, roi.width, roi.height)) += cv::Scalar_<float>(1);
+//            cv::flip(scores_flip, scores_flip, 1);
+//            features += scores_flip;
+//            features /= 2;
+//
+//            // Remove parts that are padded
+//            cv::Rect roi(0, 0, features.cols, features.rows);
+//            unsigned int f_x = static_cast<unsigned int>(std::floor(s_x * feature_factor));
+//            unsigned int f_y = static_cast<unsigned int>(std::floor(s_y * feature_factor));
+//            if(f_x + features.cols > data_width)
+//                roi.width = data_width - f_x;
+//            if(f_y + features.rows > data_height)
+//                roi.height = data_height - f_y;
+//            cv::Mat croppedFeatures = features(roi);
+//
+//            // Add to combined score map
+//            data(cv::Rect(f_x, f_y, roi.width, roi.height)) += croppedFeatures;
+//            count(cv::Rect(f_x, f_y, roi.width, roi.height)) += cv::Scalar_<float>(1);
         }
     }
     //data /= count;
-    std::vector<cv::Mat> channels(data.channels());
-    cv::split(data, channels);
-    for (cv::Mat chan : channels)
-        chan /= count;
-    cv::merge(channels, data);
+//    std::vector<cv::Mat> channels(data.channels());
+//    cv::split(data, channels);
+//    for (cv::Mat chan : channels)
+//        chan /= count;
+//    cv::merge(channels, data);
 
     // Check whether loaded features are similar to computed features
-    CHECK_EQ(data.cols, stored_features.width());
-    CHECK_EQ(data.rows, stored_features.height());
-    CHECK_EQ(data.channels(), stored_features.dim());
-    float accy = 0.f;
-    float min = std::numeric_limits<float>::max();
-    float max = std::numeric_limits<float>::min();
-    float min_stored = std::numeric_limits<float>::max();
-    float max_stored = std::numeric_limits<float>::min();
-    float max_diff = 0;
-    size_t total = 0;
-    for(int x = 0; x < data.cols; ++x)
-    {
-        for(int y = 0; y < data.rows; ++y)
-        {
-            for(int c = 0; c < data.channels(); ++c)
-            {
-                float const cur = data.ptr<float>(y)[data.channels() * x + c];
-                float const cur_stored = stored_features.at(x, y)(c);
-                float const diff = std::abs(cur - cur_stored);
-                accy += diff;
-                total++;
-                if(cur < min)
-                    min = cur;
-                if(cur > max)
-                    max = cur;
-                if(cur_stored < min_stored)
-                    min_stored = cur_stored;
-                if(cur_stored > max_stored)
-                    max_stored = cur_stored;
-                if(diff > max_diff)
-                    max_diff = diff;
-            }
-        }
-    }
-    accy /= total;
-
-    std::cout << "Accy: " << accy << std::endl;
-    std::cout << "Range: " << min << " - " << max << " (" << min_stored << " - " << max_stored << ")" << std::endl;
-    std::cout << "Max diff: " << max_diff << std::endl;
-
-    cv::imshow("Layer 0", channels[0]);
-    cv::imshow("Layer 1", channels[1]);
-    cv::waitKey();
+//    CHECK_EQ(data.cols, stored_features.width());
+//    CHECK_EQ(data.rows, stored_features.height());
+//    CHECK_EQ(data.channels(), stored_features.dim());
+//    float accy = 0.f;
+//    float min = std::numeric_limits<float>::max();
+//    float max = std::numeric_limits<float>::min();
+//    float min_stored = std::numeric_limits<float>::max();
+//    float max_stored = std::numeric_limits<float>::min();
+//    float max_diff = 0;
+//    size_t total = 0;
+//    for(int x = 0; x < data.cols; ++x)
+//    {
+//        for(int y = 0; y < data.rows; ++y)
+//        {
+//            for(int c = 0; c < data.channels(); ++c)
+//            {
+//                float const cur = data.ptr<float>(y)[data.channels() * x + c];
+//                float const cur_stored = stored_features.at(x, y)(c);
+//                float const diff = std::abs(cur - cur_stored);
+//                accy += diff;
+//                total++;
+//                if(cur < min)
+//                    min = cur;
+//                if(cur > max)
+//                    max = cur;
+//                if(cur_stored < min_stored)
+//                    min_stored = cur_stored;
+//                if(cur_stored > max_stored)
+//                    max_stored = cur_stored;
+//                if(diff > max_diff)
+//                    max_diff = diff;
+//            }
+//        }
+//    }
+//    accy /= total;
+//
+//    std::cout << "Accy: " << accy << std::endl;
+//    std::cout << "Range: " << min << " - " << max << " (" << min_stored << " - " << max_stored << ")" << std::endl;
+//    std::cout << "Max diff: " << max_diff << std::endl;
+//
+//    cv::imshow("Layer 0", channels[0]);
+//    cv::imshow("Layer 1", channels[1]);
+//    cv::waitKey();
 
 
     return 0;
