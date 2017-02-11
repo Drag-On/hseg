@@ -16,7 +16,8 @@ namespace caffe {
     void SSVMLossLayer<Dtype>::LayerSetUp(
             const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
-        weights_.read("weights.dat");
+        bool ok = weights_.read("weights.dat");
+        CHECK(ok) << "Couldn't read \"weights.dat\".";
     }
 
     template <typename Dtype>
