@@ -19,7 +19,7 @@ PROPERTIES_DEFINE(TrainFeat,
                   PROP_DEFINE_A(std::string, model, "", --model)
 )
 
-cv::Mat forward(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
+float process(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
 {
     caffe::Blob<float>* input_layer = net.input_blobs()[0];
     caffe::Blob<float>* input_layer_gt = net.input_blobs()[1];
@@ -69,22 +69,10 @@ cv::Mat forward(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
     }
 
     net.ForwardPrefilled();
+    net.Backward();
+    net.Update();
 
-    std::cout << "Loss: " << *output_layer->cpu_data() << std::endl;
-
-    // Copy results back
-//    const float* begin = output_layer->cpu_data();
-    cv::Mat scores(output_layer->height(), output_layer->width(), CV_32FC(output_layer->channels()));
-//    for(int y = 0; y < scores.rows; ++y)
-//    {
-//        for(int x = 0; x < scores.cols; ++x)
-//        {
-//            for(int c = 0; c < scores.channels(); ++c)
-//                scores.ptr<float>(y)[scores.channels()*x+c] = *(begin + (x + y * output_layer->width() + c * output_layer->width() * output_layer->height()));
-//        }
-//    }
-
-    return scores;
+    return *output_layer->cpu_data();
 }
 
 cv::Mat cropPatch(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& img)
@@ -232,11 +220,8 @@ int main(int argc, char** argv)
     float const stride_rate = 2.f / 3.f;
     float const crop_size = input_layer->width();
     float const stride = std::ceil(crop_size * stride_rate);
-    float const feature_factor = output_layer->width() / static_cast<float>(input_layer->width());
-    unsigned int const data_width = static_cast<unsigned int>(std::floor(rgb_cv.cols * feature_factor));
-    unsigned int const data_height = static_cast<unsigned int>(std::floor(rgb_cv.rows * feature_factor));
-    cv::Mat data(data_height, data_width, CV_32FC(output_layer->channels()), cv::Scalar(0));
-    cv::Mat count(data_height, data_width, CV_32FC(1), cv::Scalar(0));
+    float loss_avg = 0.f;
+    unsigned int normalizer = 0;
     for(unsigned int y = 0; y < rgb_cv.rows; y += stride)
     {
         for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
@@ -254,80 +239,17 @@ int main(int argc, char** argv)
             cv::resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
 
             // Run it through the network
-            auto features = forward(net, padded_img, padded_gt);
+            float loss = process(net, padded_img, padded_gt);
             cv::flip(padded_img, padded_img, 1);
-            auto scores_flip = forward(net, padded_img, padded_gt);
-//            cv::flip(scores_flip, scores_flip, 1);
-//            features += scores_flip;
-//            features /= 2;
-//
-//            // Remove parts that are padded
-//            cv::Rect roi(0, 0, features.cols, features.rows);
-//            unsigned int f_x = static_cast<unsigned int>(std::floor(s_x * feature_factor));
-//            unsigned int f_y = static_cast<unsigned int>(std::floor(s_y * feature_factor));
-//            if(f_x + features.cols > data_width)
-//                roi.width = data_width - f_x;
-//            if(f_y + features.rows > data_height)
-//                roi.height = data_height - f_y;
-//            cv::Mat croppedFeatures = features(roi);
-//
-//            // Add to combined score map
-//            data(cv::Rect(f_x, f_y, roi.width, roi.height)) += croppedFeatures;
-//            count(cv::Rect(f_x, f_y, roi.width, roi.height)) += cv::Scalar_<float>(1);
+            cv::flip(padded_gt, padded_gt, 1);
+            float loss_flipped = process(net, padded_img, padded_gt);
+            loss_avg += loss + loss_flipped;
+            normalizer += 2;
         }
     }
-    //data /= count;
-//    std::vector<cv::Mat> channels(data.channels());
-//    cv::split(data, channels);
-//    for (cv::Mat chan : channels)
-//        chan /= count;
-//    cv::merge(channels, data);
+    loss_avg /= normalizer;
 
-    // Check whether loaded features are similar to computed features
-//    CHECK_EQ(data.cols, stored_features.width());
-//    CHECK_EQ(data.rows, stored_features.height());
-//    CHECK_EQ(data.channels(), stored_features.dim());
-//    float accy = 0.f;
-//    float min = std::numeric_limits<float>::max();
-//    float max = std::numeric_limits<float>::min();
-//    float min_stored = std::numeric_limits<float>::max();
-//    float max_stored = std::numeric_limits<float>::min();
-//    float max_diff = 0;
-//    size_t total = 0;
-//    for(int x = 0; x < data.cols; ++x)
-//    {
-//        for(int y = 0; y < data.rows; ++y)
-//        {
-//            for(int c = 0; c < data.channels(); ++c)
-//            {
-//                float const cur = data.ptr<float>(y)[data.channels() * x + c];
-//                float const cur_stored = stored_features.at(x, y)(c);
-//                float const diff = std::abs(cur - cur_stored);
-//                accy += diff;
-//                total++;
-//                if(cur < min)
-//                    min = cur;
-//                if(cur > max)
-//                    max = cur;
-//                if(cur_stored < min_stored)
-//                    min_stored = cur_stored;
-//                if(cur_stored > max_stored)
-//                    max_stored = cur_stored;
-//                if(diff > max_diff)
-//                    max_diff = diff;
-//            }
-//        }
-//    }
-//    accy /= total;
-//
-//    std::cout << "Accy: " << accy << std::endl;
-//    std::cout << "Range: " << min << " - " << max << " (" << min_stored << " - " << max_stored << ")" << std::endl;
-//    std::cout << "Max diff: " << max_diff << std::endl;
-//
-//    cv::imshow("Layer 0", channels[0]);
-//    cv::imshow("Layer 1", channels[1]);
-//    cv::waitKey();
+    std::cout << "Average loss: " << loss_avg << std::endl;
 
-
-    return 0;
+    return SUCCESS;
 }
