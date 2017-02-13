@@ -10,11 +10,35 @@
 #include <helper/image_helper.h>
 
 PROPERTIES_DEFINE(TrainFeat,
+                  GROUP_DEFINE(dataset,
+                               PROP_DEFINE_A(std::string, list, "", -l)
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, rgb, "", --rgb)
+                                            PROP_DEFINE_A(std::string, img, "", --img)
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, rgb, ".png", --rgb_ext)
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
+                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
+                  )
+                  GROUP_DEFINE(train,
+                               PROP_DEFINE_A(float, C, 0.1, -C)
+                  )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                               PROP_DEFINE_A(float, eps, 0, --eps)
+                               PROP_DEFINE_A(float, maxIter, 50, --max_iter)
+                  )
+                  PROP_DEFINE_A(std::string, in, "", -i)
+                  PROP_DEFINE_A(std::string, out, "", -o)
+                  PROP_DEFINE_A(std::string, log, "train.log", --log)
                   PROP_DEFINE_A(bool, useGPU, false, --useGPU)
-                  PROP_DEFINE_A(std::string, filename, "", --filename)
-                  PROP_DEFINE_A(std::string, cmpPath, "", --comparePath)
-                  PROP_DEFINE_A(std::string, imgPath, "", --imgPath)
-                  PROP_DEFINE_A(std::string, gtPath, "", --gtPath)
                   PROP_DEFINE_A(std::string, prototxt, "", --prototxt)
                   PROP_DEFINE_A(std::string, model, "", --model)
 )
@@ -133,11 +157,85 @@ cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat c
     return padded_img;
 }
 
+float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_cv)
+{
+    caffe::Blob<float>* input_layer = net.input_blobs()[0];
+    caffe::Blob<float>* output_layer = net.output_blobs()[0];
+
+    // Scale to base size
+    unsigned int const base_size = 512;
+    unsigned int const long_side = base_size + 1;
+    unsigned int new_rows = long_side;
+    unsigned int new_cols = long_side;
+    if(rgb_cv.rows > rgb_cv.cols)
+        new_cols = std::round(long_side / (float)rgb_cv.rows * rgb_cv.cols);
+    else
+        new_rows = std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows);
+    resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
+    resize(gt_cv, gt_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
+
+    // Crop out parts that have the right dimensions
+    CHECK(input_layer->width() == input_layer->height()) << "Input must be square";
+    CHECK(output_layer->width() == output_layer->height()) << "Output must be square";
+    float const stride_rate = 2.f / 3.f;
+    float const crop_size = input_layer->width();
+    float const stride = std::ceil(crop_size * stride_rate);
+    float loss_avg = 0.f;
+    unsigned int normalizer = 0;
+    for(unsigned int y = 0; y < rgb_cv.rows; y += stride)
+    {
+        for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
+        {
+            unsigned int s_x = x;
+            unsigned int s_y = y;
+            unsigned int s_w = 0;
+            unsigned int s_h = 0;
+
+            // Pad image if necessary and subtract mean
+            if(x + input_layer->width() > rgb_cv.cols)
+                s_x = std::max(0, rgb_cv.cols - input_layer->width());
+            if(y + input_layer->height() > rgb_cv.rows)
+                s_y = std::max(0, rgb_cv.rows - input_layer->height());
+            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv, &s_w, &s_h);
+            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv, &s_w, &s_h));
+            resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
+
+            // Run it through the network
+            float loss = process(net, padded_img, padded_gt, s_x, s_y, s_w, s_h);
+            flip(padded_img, padded_img, 1);
+            flip(padded_gt, padded_gt, 1);
+            float loss_flipped = process(net, padded_img, padded_gt, padded_img.cols - s_x - s_w, s_y, s_w, s_h);
+            loss_avg += loss + loss_flipped;
+            normalizer += 2;
+        }
+    }
+    loss_avg /= normalizer;
+
+    std::cout << "Average loss: " << loss_avg << std::endl;
+
+    return loss_avg;
+}
+
+std::vector<std::string> readFileNames(std::string const& listFile)
+{
+    std::vector<std::string> list;
+    std::ifstream in(listFile, std::ios::in);
+    if (in.is_open())
+    {
+        std::string line;
+        while (std::getline(in, line))
+            list.push_back(line);
+        in.close();
+    }
+    return list;
+}
+
 enum ErrorCode
 {
     SUCCESS = 0,
     CANT_LOAD_IMAGE,
     CANT_LOAD_GT,
+    FILE_LIST_EMPTY,
 };
 
 int main(int argc, char** argv)
@@ -151,11 +249,16 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    // Read in feature map
-    FeatureImage stored_features(properties.cmpPath + properties.filename + ".mat");
-
     // Setup protobuf logging
     ::google::InitGoogleLogging(argv[0]);
+
+    // Read in list of training samples
+    std::vector<std::string> list = readFileNames(properties.dataset.list);
+    if(list.empty())
+    {
+        std::cout << "File list empty" << std::endl;
+        return FILE_LIST_EMPTY;
+    }
 
     // Init network
     if(properties.useGPU)
@@ -184,81 +287,41 @@ int main(int argc, char** argv)
     std::cout << "out_width: " << output_layer->width() << std::endl;
     std::cout << "out_height: " << output_layer->height() << std::endl;
 
-    // Load an image
-    RGBImage rgb;
-    if(!rgb.read(properties.imgPath + properties.filename + ".jpg"))
+    float avg_loss = 0;
+
+    for(std::string f : list)
     {
-        std::cerr << "Unable to load image \"" << properties.imgPath + properties.filename + ".jog" << "\"." << std::endl;
-        return CANT_LOAD_IMAGE;
-    }
-    cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
-    rgb_cv.convertTo(rgb_cv, CV_32FC3);
-
-    std::cout << "im_channels: " << rgb_cv.channels() << std::endl;
-    std::cout << "im_width: " << rgb_cv.cols << std::endl;
-    std::cout << "im_height: " << rgb_cv.rows << std::endl;
-
-    // Load ground truth
-    LabelImage gt;
-    helper::image::PNGError err = helper::image::readPalettePNG(properties.gtPath + properties.filename + ".png", gt, nullptr);
-    if(err != helper::image::PNGError::Okay)
-    {
-        std::cerr << "Unable to load ground truth \"" << properties.gtPath + properties.filename + ".png" << "\". Error Code: " << (int) err << std::endl;
-        return CANT_LOAD_GT;
-    }
-    cv::Mat gt_cv = static_cast<cv::Mat>(gt);
-    gt_cv.convertTo(gt_cv, CV_32FC1);
-
-    // Scale to base size
-    unsigned int const base_size = 512;
-    unsigned int const long_side = base_size + 1;
-    unsigned int new_rows = long_side;
-    unsigned int new_cols = long_side;
-    if(rgb_cv.rows > rgb_cv.cols)
-        new_cols = std::round(long_side / (float)rgb_cv.rows * rgb_cv.cols);
-    else
-        new_rows = std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows);
-    cv::resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
-    cv::resize(gt_cv, gt_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
-
-    // Crop out parts that have the right dimensions
-    CHECK(input_layer->width() == input_layer->height()) << "Input must be square";
-    CHECK(output_layer->width() == output_layer->height()) << "Output must be square";
-    float const stride_rate = 2.f / 3.f;
-    float const crop_size = input_layer->width();
-    float const stride = std::ceil(crop_size * stride_rate);
-    float loss_avg = 0.f;
-    unsigned int normalizer = 0;
-    for(unsigned int y = 0; y < rgb_cv.rows; y += stride)
-    {
-        for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
+        // Load an image
+        RGBImage rgb;
+        std::string rgbFile = properties.dataset.path.rgb + f + properties.dataset.extension.rgb;
+        if(!rgb.read(rgbFile))
         {
-            unsigned int s_x = x;
-            unsigned int s_y = y;
-            unsigned int s_w = 0;
-            unsigned int s_h = 0;
-
-            // Pad image if necessary and subtract mean
-            if(x + input_layer->width() > rgb_cv.cols)
-                s_x = std::max(0, rgb_cv.cols - input_layer->width());
-            if(y + input_layer->height() > rgb_cv.rows)
-                s_y = std::max(0, rgb_cv.rows - input_layer->height());
-            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv, &s_w, &s_h);
-            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv, &s_w, &s_h));
-            cv::resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
-
-            // Run it through the network
-            float loss = process(net, padded_img, padded_gt, s_x, s_y, s_w, s_h);
-            cv::flip(padded_img, padded_img, 1);
-            cv::flip(padded_gt, padded_gt, 1);
-            float loss_flipped = process(net, padded_img, padded_gt, padded_img.cols - s_x - s_w, s_y, s_w, s_h);
-            loss_avg += loss + loss_flipped;
-            normalizer += 2;
+            std::cerr << "Unable to load image \"" << rgbFile << "\"." << std::endl;
+            return CANT_LOAD_IMAGE;
         }
-    }
-    loss_avg /= normalizer;
+        cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
+        rgb_cv.convertTo(rgb_cv, CV_32FC3);
 
-    std::cout << "Average loss: " << loss_avg << std::endl;
+        // Load ground truth
+        LabelImage gt;
+        std::string gtFile = properties.dataset.path.gt + f + properties.dataset.extension.gt;
+        helper::image::PNGError err = helper::image::readPalettePNG(gtFile, gt, nullptr);
+        if(err != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Unable to load ground truth \"" << gtFile << "\". Error Code: " << (int) err << std::endl;
+            return CANT_LOAD_GT;
+        }
+        cv::Mat gt_cv = static_cast<cv::Mat>(gt);
+        gt_cv.convertTo(gt_cv, CV_32FC1);
+
+        std::cout << " > " << f << ": ";
+        float loss = runImage(net, rgb_cv, gt_cv);
+        std::cout << loss << std::endl;
+        avg_loss += loss;
+    }
+    avg_loss /= list.size();
+
+    std::cout << "Loss: " << avg_loss << std::endl;
 
     return SUCCESS;
 }
