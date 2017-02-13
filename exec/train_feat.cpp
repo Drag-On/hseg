@@ -18,7 +18,7 @@ PROPERTIES_DEFINE(TrainFeat,
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
                                )
                                GROUP_DEFINE(extension,
-                                            PROP_DEFINE_A(std::string, rgb, ".png", --rgb_ext)
+                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
                                             PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
                                             PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
                                )

@@ -6,11 +6,13 @@ dataset
 	list "" ; File that contains filenames
 	path
 	{
+	    rgb ""  ; Path to RGB image files
 		img ""	; Path to feature image files
 		gt ""	; Path to ground truth labelings
 	}
 	extension
 	{
+	    rgb ".jpg"  ; File extension of RGB image files
 		img ".mat"	; File extension of feature image files
 		gt ".png"	; File extension of ground truth labelings
 	}

@@ -1,0 +1,16 @@
+; Properties for hseg_train_feat
+;
+
+; dataset configuration
+#include "properties/dataset.info"
+; model parametrization
+#include "properties/param.info"
+; training configuration
+#include "properties/train.info"
+
+in ""					; Initial weights
+out ""	                ; Directory to write results to
+log "training_feat.log"	; Log file
+useGPU false            ; Run on CPU or GPU
+prototxt "pspnet101_VOC2012_473.prototxt"
+model "pspnet101_VOC2012.caffemodel"
