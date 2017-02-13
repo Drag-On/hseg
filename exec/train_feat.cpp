@@ -266,8 +266,8 @@ int main(int argc, char** argv)
     else
         caffe::Caffe::set_mode(caffe::Caffe::CPU);
 
-    caffe::Net<float> net(properties.prototxt, caffe::Phase::TRAIN);
-    net.CopyTrainedLayersFrom(properties.model);
+    caffe::Net<float> net(properties.in + properties.prototxt, caffe::Phase::TRAIN);
+    net.CopyTrainedLayersFrom(properties.in + properties.model);
 
     std::cout << "#in: " << net.num_inputs() << std::endl;
     std::cout << "#out: " << net.num_outputs() << std::endl;
@@ -322,6 +322,8 @@ int main(int argc, char** argv)
     avg_loss /= list.size();
 
     std::cout << "Loss: " << avg_loss << std::endl;
+
+    net.ToHDF5(properties.out + properties.model);
 
     return SUCCESS;
 }
