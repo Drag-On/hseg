@@ -19,10 +19,11 @@ PROPERTIES_DEFINE(TrainFeat,
                   PROP_DEFINE_A(std::string, model, "", --model)
 )
 
-float process(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
+float process(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt, unsigned int sx, unsigned int sy, unsigned int sw, unsigned int sh)
 {
     caffe::Blob<float>* input_layer = net.input_blobs()[0];
     caffe::Blob<float>* input_layer_gt = net.input_blobs()[1];
+    caffe::Blob<float>* input_layer_cropsize = net.input_blobs()[2];
     caffe::Blob<float>* output_layer = net.output_blobs()[0];
 
     CHECK(patch.cols == input_layer->width() && patch.rows == input_layer->height()
@@ -58,15 +59,21 @@ float process(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
             *input_layer_gt->mutable_cpu_data_at(0, 0, y, x) = gt.at<float>(y, x);
     }
 
-    for(size_t y = 0; y < gt.rows; ++y)
-    {
-        for (size_t x = 0; x < gt.cols; ++x)
-        {
-            CHECK(gt.at<float>(y, x) == *input_layer_gt->cpu_data_at(0, 0, y, x)) << "Ground truth not copied properly.";
-            CHECK(gt.at<float>(y, x) >= 0) << "Label not in range";
-            CHECK(gt.at<float>(y, x) < 21) << "Label not in range";
-        }
-    }
+    // Copy over crop size
+    *input_layer_cropsize->mutable_cpu_data_at(0, 0, 0, 0) = (float)sx;
+    *input_layer_cropsize->mutable_cpu_data_at(0, 0, 0, 1) = (float)sy;
+    *input_layer_cropsize->mutable_cpu_data_at(0, 0, 0, 2) = (float)sw;
+    *input_layer_cropsize->mutable_cpu_data_at(0, 0, 0, 3) = (float)sh;
+
+//    for(size_t y = 0; y < gt.rows; ++y)
+//    {
+//        for (size_t x = 0; x < gt.cols; ++x)
+//        {
+//            CHECK(gt.at<float>(y, x) == *input_layer_gt->cpu_data_at(0, 0, y, x)) << "Ground truth not copied properly.";
+//            CHECK(gt.at<float>(y, x) >= 0) << "Label not in range";
+//            CHECK(gt.at<float>(y, x) < 21) << "Label not in range";
+//        }
+//    }
 
     net.ForwardPrefilled();
     net.Backward();
@@ -75,16 +82,16 @@ float process(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt)
     return *output_layer->cpu_data();
 }
 
-cv::Mat cropPatch(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& img)
+cv::Mat cropPatch(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& img, unsigned int* pPatchW, unsigned int* pPatchH)
 {
     caffe::Blob<float>* input_layer = net.input_blobs()[0];
-    unsigned int patch_w = input_layer->width();
-    unsigned int patch_h =  input_layer->height();
-    if(static_cast<int>(x + patch_w) > img.cols)
-        patch_w = img.cols - x;
-    if(static_cast<int>(y + patch_h) > img.rows)
-        patch_h = img.rows - y;
-    cv::Mat patch = img(cv::Rect(x, y, patch_w, patch_h));
+    *pPatchW = input_layer->width();
+    *pPatchH =  input_layer->height();
+    if(static_cast<int>(x + *pPatchW) > img.cols)
+        *pPatchW = img.cols - x;
+    if(static_cast<int>(y + *pPatchH) > img.rows)
+        *pPatchH = img.rows - y;
+    cv::Mat patch = img(cv::Rect(x, y, *pPatchW, *pPatchH));
 
     return patch;
 }
@@ -104,9 +111,9 @@ cv::Mat padPatch(caffe::Net<float>& net, cv::Mat const& img)
     return padded_img;
 }
 
-cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& rgb_cv)
+cv::Mat preImg(caffe::Net<float>& net, unsigned int x, unsigned int y, cv::Mat const& rgb_cv, unsigned int* pPatchW, unsigned int* pPatchH)
 {
-    cv::Mat patch = cropPatch(net, x, y, rgb_cv);
+    cv::Mat patch = cropPatch(net, x, y, rgb_cv, pPatchW, pPatchH);
 
     // Subtract mean
     float const mean_r = 123.680f;
@@ -228,21 +235,23 @@ int main(int argc, char** argv)
         {
             unsigned int s_x = x;
             unsigned int s_y = y;
+            unsigned int s_w = 0;
+            unsigned int s_h = 0;
 
             // Pad image if necessary and subtract mean
             if(x + input_layer->width() > rgb_cv.cols)
                 s_x = std::max(0, rgb_cv.cols - input_layer->width());
             if(y + input_layer->height() > rgb_cv.rows)
                 s_y = std::max(0, rgb_cv.rows - input_layer->height());
-            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv);
-            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv));
+            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv, &s_w, &s_h);
+            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv, &s_w, &s_h));
             cv::resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
 
             // Run it through the network
-            float loss = process(net, padded_img, padded_gt);
+            float loss = process(net, padded_img, padded_gt, s_x, s_y, s_w, s_h);
             cv::flip(padded_img, padded_img, 1);
             cv::flip(padded_gt, padded_gt, 1);
-            float loss_flipped = process(net, padded_img, padded_gt);
+            float loss_flipped = process(net, padded_img, padded_gt, padded_img.cols - s_x - s_w, s_y, s_w, s_h);
             loss_avg += loss + loss_flipped;
             normalizer += 2;
         }

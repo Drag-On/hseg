@@ -24,11 +24,17 @@ namespace caffe {
     void SSVMLossLayer<Dtype>::Forward_cpu(
             const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
+        // Store crop size
+        cropX_ = std::round(bottom[2]->data_at(0, 0, 0, 0));
+        cropY_ = std::round(bottom[2]->data_at(0, 0, 0, 1));
+        cropW_ = std::round(bottom[2]->data_at(0, 0, 0, 2));
+        cropH_ = std::round(bottom[2]->data_at(0, 0, 0, 3));
+
         // Copy over the features
-        features_ = FeatureImage(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
-        for(Coord x = 0; x < features_.width(); ++x)
+        features_ = FeatureImage(cropW_, cropH_, bottom[0]->channels());
+        for(Coord x = cropX_; x < cropW_; ++x)
         {
-            for(Coord y = 0; y < features_.height(); ++y)
+            for(Coord y = cropY_; y < cropH_; ++y)
             {
                 for(Coord c = 0; c < features_.dim(); ++c)
                     features_.at(x, y)[c] = bottom[0]->data_at(0, c, y, x);
@@ -36,10 +42,10 @@ namespace caffe {
         }
 
         // Copy over label image
-        LabelImage gt(bottom[1]->width(), bottom[1]->height());
-        for(Coord x = 0; x < features_.width(); ++x)
+        LabelImage gt(cropW_, cropH_);
+        for(Coord x = cropX_; x < cropW_; ++x)
         {
-            for(Coord y = 0; y < features_.height(); ++y)
+            for(Coord y = cropY_; y < cropH_; ++y)
             {
                 // Round because of float imprecision
                 gt.at(x, y) = std::round(bottom[1]->data_at(0, 0, y, x));
@@ -85,9 +91,9 @@ namespace caffe {
         if (propagate_down[0]) {
 
             EnergyFunction energy(&weights_, numClusters_);
-            FeatureImage gradGt(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+            FeatureImage gradGt(cropW_, cropH_, bottom[0]->channels());
             energy.computeFeatureGradient(gradGt, gtResult_.labeling, gtResult_.clustering, gtResult_.clusters, features_);
-            FeatureImage gradPred(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+            FeatureImage gradPred(cropW_, cropH_, bottom[0]->channels());
             energy.computeFeatureGradient(gradPred, predResult_.labeling, predResult_.clustering, predResult_.clusters, features_);
 
             // Compute gradient
@@ -99,7 +105,12 @@ namespace caffe {
                 for(Coord y = 0; y < features_.height(); ++y)
                 {
                     for(Coord c = 0; c < features_.dim(); ++c)
-                        *(bottom[0]->mutable_cpu_diff_at(1, c, y, x)) = gradGt.at(x, y)[c];
+                    {
+                        if(x >= cropX_ && x < cropW_ && y >= cropY_ && y < cropH_)
+                            *(bottom[0]->mutable_cpu_diff_at(0, c, y, x)) = gradGt.at(x, y)[c];
+                        else
+                            *(bottom[0]->mutable_cpu_diff_at(0, c, y, x)) = 0;
+                    }
                 }
             }
         }
