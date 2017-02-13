@@ -12,5 +12,6 @@ in ""					; Initial weights
 out ""	                ; Directory to write results to
 log "training_feat.log"	; Log file
 useGPU false            ; Run on CPU or GPU
+gpu_id 0                ; Which GPU to choose
 prototxt "pspnet101_VOC2012_473.prototxt"
 model "pspnet101_VOC2012.caffemodel"

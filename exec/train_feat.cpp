@@ -39,6 +39,7 @@ PROPERTIES_DEFINE(TrainFeat,
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(std::string, log, "train.log", --log)
                   PROP_DEFINE_A(bool, useGPU, false, --useGPU)
+                  PROP_DEFINE_A(int, gpu_id, 0, --gpu_id)
                   PROP_DEFINE_A(std::string, prototxt, "", --prototxt)
                   PROP_DEFINE_A(std::string, model, "", --model)
 )
@@ -262,7 +263,10 @@ int main(int argc, char** argv)
 
     // Init network
     if(properties.useGPU)
+    {
         caffe::Caffe::set_mode(caffe::Caffe::GPU);
+        caffe::Caffe::SetDevice(properties.gpu_id);
+    }
     else
         caffe::Caffe::set_mode(caffe::Caffe::CPU);
 
