@@ -23,8 +23,8 @@ namespace caffe {
         {}
         virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                                 const vector<Blob<Dtype>*>& top);
-//        virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
-//                             const vector<Blob<Dtype>*>& top);
+        virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
+                             const vector<Blob<Dtype>*>& top);
 
         virtual inline const char* type() const { return "SSVMLoss"; }
         virtual inline int ExactNumBottomBlobs() const { return 3; }

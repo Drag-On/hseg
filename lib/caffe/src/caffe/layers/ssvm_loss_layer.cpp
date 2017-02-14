@@ -21,6 +21,12 @@ namespace caffe {
     }
 
     template <typename Dtype>
+    void SSVMLossLayer<Dtype>::Reshape(vector<Blob<Dtype>*> const& bottom, vector<Blob<Dtype>*> const& top)
+    {
+        LossLayer<Dtype>::Reshape(bottom, top);
+    }
+
+    template <typename Dtype>
     void SSVMLossLayer<Dtype>::Forward_cpu(
             const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
