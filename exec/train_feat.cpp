@@ -174,8 +174,8 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
         new_cols = std::round(long_side / (float)rgb_cv.rows * rgb_cv.cols);
     else
         new_rows = std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows);
-    resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
-    resize(gt_cv, gt_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
+    cv::resize(gt_cv, gt_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
 
     std::cout << ".";
 
