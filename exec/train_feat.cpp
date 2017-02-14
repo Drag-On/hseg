@@ -206,8 +206,13 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
             cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_resized, &s_w, &s_h));
             resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
 
+            std::cout << "." << std::flush;
+
             // Run it through the network
             float loss = process(net, padded_img, padded_gt, s_x, s_y, s_w, s_h);
+
+            std::cout << "." << std::flush;
+
             flip(padded_img, padded_img, 1);
             flip(padded_gt, padded_gt, 1);
             float loss_flipped = process(net, padded_img, padded_gt, padded_img.cols - s_x - s_w, s_y, s_w, s_h);
