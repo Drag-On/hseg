@@ -163,7 +163,7 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
     caffe::Blob<float>* input_layer = net.input_blobs()[0];
     caffe::Blob<float>* output_layer = net.output_blobs()[0];
 
-    std::cout << ".";
+    std::cout << "." << std::flush;
 
     // Scale to base size
     unsigned int const base_size = 512;
@@ -178,7 +178,7 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
     cv::resize(rgb_cv, rgb_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
     cv::resize(gt_cv, gt_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
 
-    std::cout << ".";
+    std::cout << "." << std::flush;
 
     // Crop out parts that have the right dimensions
     CHECK(input_layer->width() == input_layer->height()) << "Input must be square";
@@ -214,7 +214,7 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
             loss_avg += loss + loss_flipped;
             normalizer += 2;
 
-            std::cout << ".";
+            std::cout << "." << std::flush;
         }
     }
     loss_avg /= normalizer;
@@ -325,7 +325,7 @@ int main(int argc, char** argv)
         cv::Mat gt_cv = static_cast<cv::Mat>(gt);
         gt_cv.convertTo(gt_cv, CV_32FC1);
 
-        std::cout << " > " << f << ": ";
+        std::cout << " > " << f << ": " << std::flush;
         float loss = runImage(net, rgb_cv, gt_cv);
         std::cout << " " << loss << std::endl;
         avg_loss += loss;
