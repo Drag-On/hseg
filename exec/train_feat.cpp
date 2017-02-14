@@ -174,8 +174,9 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
         new_cols = std::round(long_side / (float)rgb_cv.rows * rgb_cv.cols);
     else
         new_rows = std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows);
-    cv::resize(rgb_cv, rgb_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
-    cv::resize(gt_cv, gt_cv, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
+    cv::Mat rgb_resized, gt_resized;
+    cv::resize(rgb_cv, rgb_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
+    cv::resize(gt_cv, gt_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
 
     std::cout << ".";
 
@@ -187,9 +188,9 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
     float const stride = std::ceil(crop_size * stride_rate);
     float loss_avg = 0.f;
     unsigned int normalizer = 0;
-    for(unsigned int y = 0; y < rgb_cv.rows; y += stride)
+    for(unsigned int y = 0; y < rgb_resized.rows; y += stride)
     {
-        for(unsigned int x = 0; x < rgb_cv.cols; x += stride)
+        for(unsigned int x = 0; x < rgb_resized.cols; x += stride)
         {
             unsigned int s_x = x;
             unsigned int s_y = y;
@@ -197,12 +198,12 @@ float runImage(caffe::Net<float>& net, cv::Mat const& rgb_cv, cv::Mat const& gt_
             unsigned int s_h = 0;
 
             // Pad image if necessary and subtract mean
-            if(x + input_layer->width() > rgb_cv.cols)
-                s_x = std::max(0, rgb_cv.cols - input_layer->width());
-            if(y + input_layer->height() > rgb_cv.rows)
-                s_y = std::max(0, rgb_cv.rows - input_layer->height());
-            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_cv, &s_w, &s_h);
-            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_cv, &s_w, &s_h));
+            if(x + input_layer->width() > rgb_resized.cols)
+                s_x = std::max(0, rgb_resized.cols - input_layer->width());
+            if(y + input_layer->height() > rgb_resized.rows)
+                s_y = std::max(0, rgb_resized.rows - input_layer->height());
+            cv::Mat padded_img = preImg(net, s_x, s_y, rgb_resized, &s_w, &s_h);
+            cv::Mat padded_gt = padPatch(net, cropPatch(net, s_x, s_y, gt_resized, &s_w, &s_h));
             resize(padded_gt, padded_gt, cv::Size(60, 60), 0, 0, cv::INTER_NEAREST);
 
             // Run it through the network
