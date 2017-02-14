@@ -61,6 +61,7 @@ float process(caffe::Net<float>& net, cv::Mat patch, cv::Mat gt, unsigned int sx
 
     input_layer->Reshape(1, 3, patch.rows, patch.cols);
     input_layer_gt->Reshape(1, 1, gt.rows, gt.cols);
+    input_layer_cropsize->Reshape(1, 1, 1, 4);
     net.Reshape();
 
     // Copy over image
@@ -297,6 +298,11 @@ int main(int argc, char** argv)
     std::cout << "gt_channels: " << gt_layer->channels() << std::endl;
     std::cout << "gt_width: " << gt_layer->width() << std::endl;
     std::cout << "gt_height: " << gt_layer->height() << std::endl;
+
+    caffe::Blob<float>* cropsize_layer = net.input_blobs()[2];
+    std::cout << "cropsize_channels: " << cropsize_layer->channels() << std::endl;
+    std::cout << "cropsize_width: " << cropsize_layer->width() << std::endl;
+    std::cout << "cropsize_height: " << cropsize_layer->height() << std::endl;
 
     caffe::Blob<float>* output_layer = net.output_blobs()[0];
     std::cout << "out_channels: " << output_layer->channels() << std::endl;
