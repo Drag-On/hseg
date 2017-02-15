@@ -21,14 +21,17 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, rescale, "", --rescale)
                                PROP_DEFINE_A(std::string, matchGt, "", --match_gt)
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
+                               PROP_DEFINE_A(std::string, prepareFeatTrain, "", --prepareFeatTrain)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
                                GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, rgb, "", --rgb)
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
                                )
                                GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
                                             PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
                                             PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
                                )
@@ -448,6 +451,166 @@ bool copyFixPNG(UtilProperties const& properties)
     return true;
 }
 
+bool prepareFeatTrain(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list = readLines(properties.job.prepareFeatTrain);
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    for (std::string const& file : list)
+    {
+        std::cout << " > " << file << ": " << std::flush;
+
+        std::string filenameRgb = file + properties.dataset.extension.rgb;
+        std::string pathRgb = properties.dataset.path.rgb + filenameRgb;
+        std::string filenameGt = file + properties.dataset.extension.gt;
+        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string outPathRgb = properties.out + "rgb/";
+        std::string outPathGt = properties.out + "gt/";
+
+        // Load an image
+        RGBImage rgb;
+        if(!rgb.read(pathRgb))
+        {
+            std::cerr << "Unable to load image \"" << pathRgb << "\"." << std::endl;
+            return false;
+        }
+        cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
+//        rgb_cv.convertTo(rgb_cv, CV_32FC3);
+
+        // Load ground truth
+        LabelImage gt;
+        helper::image::PNGError err = helper::image::readPalettePNG(pathGt, gt, nullptr);
+        if(err != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Unable to load ground truth \"" << pathGt << "\". Error Code: " << (int) err << std::endl;
+            return false;
+        }
+        cv::Mat gt_cv = static_cast<cv::Mat>(gt);
+//        gt_cv.convertTo(gt_cv, CV_32FC1);
+
+        // Scale to base size
+        int const base_size = 512;
+        int const long_side = base_size + 1;
+        int new_rows = long_side;
+        int new_cols = long_side;
+        if(rgb_cv.rows > rgb_cv.cols)
+            new_cols = static_cast<int>(std::round(long_side / (float)rgb_cv.rows * rgb_cv.cols));
+        else
+            new_rows = static_cast<int>(std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows));
+        cv::Mat rgb_resized, gt_resized;
+        cv::resize(rgb_cv, rgb_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
+        cv::resize(gt_cv, gt_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
+
+        // Crop out parts that have the right dimensions
+        float const stride_rate = 2.f / 3.f;
+        int const crop_size = 473;
+        int const stride = static_cast<int>(std::ceil(crop_size * stride_rate));
+        for(int y = 0; y <= rgb_resized.rows; y += stride)
+        {
+            int s_y = y;
+            bool breakOnEnd = false;
+            if(y + crop_size > rgb_resized.rows)
+            {
+                s_y = std::max(0, rgb_resized.rows - crop_size);
+                breakOnEnd = true;
+            }
+            for(int x = 0; x <= rgb_resized.cols; x += stride)
+            {
+                int s_x = x;
+                bool breakOnEnd = false;
+                if(x + crop_size > rgb_resized.cols)
+                {
+                    s_x = std::max(0, rgb_resized.cols - crop_size);
+                    breakOnEnd = true;
+                }
+
+
+                //
+                // RGB image
+                //
+
+                // Crop
+                int patchW = crop_size, patchH = crop_size;
+                if(s_x + patchW > rgb_resized.cols)
+                    patchW = rgb_resized.cols - s_x;
+                if(y + patchH > rgb_resized.rows)
+                    patchH = rgb_resized.rows - s_y;
+                cv::Mat patch = rgb_resized(cv::Rect(s_x, s_y, patchW, patchH));
+
+                // Pad with zeros
+                int const pad_w = crop_size - patchW;
+                int const pad_h = crop_size - patchH;
+                cv::Mat padded_img(crop_size, crop_size, patch.type());
+                cv::copyMakeBorder(patch, padded_img, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(0));
+
+                //
+                // Ground Truth
+                //
+
+                // Crop
+                cv::Mat patch_gt = gt_resized(cv::Rect(s_x, s_y, patchW, patchH));
+
+                // Pad with 255
+                cv::Mat padded_gt(crop_size, crop_size, patch_gt.type());
+                cv::copyMakeBorder(patch_gt, padded_gt, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(255));
+
+                //
+                // Also create flipped version of the image
+                //
+
+                cv::Mat padded_img_flip, padded_gt_flip;
+                flip(padded_img, padded_img_flip, 1);
+                flip(padded_gt, padded_gt_flip, 1);
+
+                //
+                // Write to file
+                //
+                std::string cropFileName = file + "_" + std::to_string(x / stride) + "_" + std::to_string(y / stride);
+                std::string cropFileNameFlip = file + "_FLIP_" + std::to_string(x / stride) + "_" + std::to_string(y / stride);
+
+                // RGB
+                std::string rgbOut = outPathRgb + cropFileName + properties.dataset.extension.rgb;
+                if(!cv::imwrite(rgbOut, padded_img))
+                {
+                    std::cerr << "Couldn't write RGB crop to \"" << rgbOut << "\"" << std::endl;
+                    return false;
+                }
+                std::string rgbOutFlip = outPathRgb + cropFileNameFlip + properties.dataset.extension.rgb;
+                if(!cv::imwrite(rgbOutFlip, padded_img_flip))
+                {
+                    std::cerr << "Couldn't write flipped RGB crop to \"" << rgbOutFlip << "\"" << std::endl;
+                    return false;
+                }
+
+                // GT
+                std::string gtOut = outPathGt + cropFileName + properties.dataset.extension.gt;
+                auto err = helper::image::writePalettePNG(gtOut, padded_gt, cmap);
+                if(err != helper::image::PNGError::Okay)
+                {
+                    std::cerr << "Couldn't write GT crop to \"" << gtOut << "\". Error Code: " << (int) err << std::endl;
+                    return false;
+                }
+                std::string gtOutFlip = outPathGt + cropFileNameFlip + properties.dataset.extension.gt;
+                err = helper::image::writePalettePNG(gtOutFlip, padded_gt_flip, cmap);
+                if(err != helper::image::PNGError::Okay)
+                {
+                    std::cerr << "Couldn't write flipped GT crop to \"" << gtOutFlip << "\". Error Code: " << (int) err << std::endl;
+                    return false;
+                }
+
+                if(breakOnEnd)
+                    break;
+            }
+            if(breakOnEnd)
+                break;
+        }
+        std::cout << "OK!" << std::endl;
+    }
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -484,6 +647,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.copyFixPNG.empty())
         copyFixPNG(properties);
+
+    if(!properties.job.prepareFeatTrain.empty())
+        prepareFeatTrain(properties);
 
     return 0;
 }
