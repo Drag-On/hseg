@@ -455,6 +455,7 @@ bool prepareFeatTrain(UtilProperties const& properties)
 {
     // Read in file names
     std::vector<std::string> list = readLines(properties.job.prepareFeatTrain);
+    std::vector<std::string> rgbList, gtList;
     auto cmap = helper::image::generateColorMapVOC(256);
 
     for (std::string const& file : list)
@@ -599,6 +600,11 @@ bool prepareFeatTrain(UtilProperties const& properties)
                     return false;
                 }
 
+                rgbList.push_back(rgbOut);
+                rgbList.push_back(rgbOutFlip);
+                gtList.push_back(gtOut);
+                gtList.push_back(gtOutFlip);
+
                 if(breakOnEnd)
                     break;
             }
@@ -607,6 +613,27 @@ bool prepareFeatTrain(UtilProperties const& properties)
         }
         std::cout << "OK!" << std::endl;
     }
+
+    // Write list with images to file
+    std::ofstream outRGB(properties.out + "rgb.txt");
+    if(outRGB.is_open())
+    {
+        for (auto const& l : rgbList)
+            outRGB << l << std::endl;
+        outRGB.close();
+    }
+    else
+        std::cerr << "Unable to write RGB list to \"" << properties.out + "rgb.txt" << "\"" << std::endl;
+
+    std::ofstream outGt(properties.out + "gt.txt");
+    if(outGt.is_open())
+    {
+        for (auto const& l : gtList)
+            outGt << l << std::endl;
+        outGt.close();
+    }
+    else
+        std::cerr << "Unable to write RGB list to \"" << properties.out + "gt.txt" << "\"" << std::endl;
 
     return true;
 }
