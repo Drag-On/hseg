@@ -52,8 +52,6 @@ namespace caffe {
         FeatureImage features_;
         InferenceResult gtResult_;
         InferenceResult predResult_;
-        unsigned int cropX_, cropY_, cropW_, cropH_;
-
     };
 }
 
