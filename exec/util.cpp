@@ -666,6 +666,7 @@ bool prepareFeatTrain(UtilProperties const& properties)
     }
 
     transaction->Commit();
+    db->Close();
 
     // Write list with images to file
     std::ofstream outRGB(properties.out + "rgb.txt");
