@@ -127,8 +127,8 @@ set_target_properties(hseg_train PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedan
 ### Compile utility executable ###
 add_executable(hseg_util exec/util.cpp)
 target_include_directories(hseg_util PUBLIC ${INCLUDE_DIRS})
-target_include_directories(hseg_util SYSTEM PUBLIC  ${INCLUDE_SYS_DIRS})
-target_link_libraries(hseg_util ${LIBS} hseg)
+target_include_directories(hseg_util SYSTEM PUBLIC  ${INCLUDE_SYS_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/lib/caffe/include ${CMAKE_BINARY_DIR}/lib/caffe/include)
+target_link_libraries(hseg_util ${LIBS} hseg caffe)
 set_target_properties(hseg_util PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
 
 ### Compile distributed training executables ###

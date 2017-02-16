@@ -7,8 +7,9 @@
 #include <helper/image_helper.h>
 #include <helper/coordinate_helper.h>
 #include <boost/filesystem/path.hpp>
-#include <Energy/LossAugmentedEnergyFunction.h>
 #include <boost/filesystem/operations.hpp>
+#include <Energy/LossAugmentedEnergyFunction.h>
+#include <caffe/util/db.hpp>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -458,6 +459,12 @@ bool prepareFeatTrain(UtilProperties const& properties)
     std::vector<std::string> rgbList, gtList;
     auto cmap = helper::image::generateColorMapVOC(256);
 
+    // Create database
+    std::string dbFilename = properties.out + "database_lmdb";
+    std::unique_ptr<caffe::db::DB> db(caffe::db::GetDB("lmdb"));
+    db->Open(dbFilename, caffe::db::NEW);
+    std::unique_ptr<caffe::db::Transaction> transaction(db->NewTransaction());
+
     for (std::string const& file : list)
     {
         std::cout << " > " << file << ": " << std::flush;
@@ -477,7 +484,7 @@ bool prepareFeatTrain(UtilProperties const& properties)
             return false;
         }
         cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
-//        rgb_cv.convertTo(rgb_cv, CV_32FC3);
+        rgb_cv.convertTo(rgb_cv, CV_8UC3);
 
         // Load ground truth
         LabelImage gt;
@@ -488,7 +495,7 @@ bool prepareFeatTrain(UtilProperties const& properties)
             return false;
         }
         cv::Mat gt_cv = static_cast<cv::Mat>(gt);
-//        gt_cv.convertTo(gt_cv, CV_32FC1);
+        gt_cv.convertTo(gt_cv, CV_8UC1);
 
         // Scale to base size
         int const base_size = 512;
@@ -600,6 +607,50 @@ bool prepareFeatTrain(UtilProperties const& properties)
                     return false;
                 }
 
+                // Write to database
+                caffe::Datum dat, dat_flipped;
+                dat.set_width(padded_img.cols);
+                dat.set_height(padded_img.rows);
+                dat.set_channels(4); // BGR + Labels
+                dat_flipped.set_width(padded_img.cols);
+                dat_flipped.set_height(padded_img.rows);
+                dat_flipped.set_channels(4); // BGR + Labels
+                char* buffer = new char[dat.width() * dat.height() * dat.channels()];
+                char* buffer_flipped = new char[dat.width() * dat.height() * dat.channels()];
+                for (int h = 0; h < dat.height(); ++h)
+                {
+                    for (int w = 0; w < dat.width(); ++w)
+                    {
+                        for (int c = 0; c < dat.channels(); ++c)
+                        {
+                            int datum_index = (c * dat.height() + h) * dat.width() + w;
+                            if(c < 3)
+                            {
+                                buffer[datum_index] = padded_img.at<cv::Vec3b>(h, w)[c];
+                                buffer_flipped[datum_index] = padded_img_flip.at<cv::Vec3b>(h, w)[c];
+                            }
+                            else
+                            {
+                                buffer[datum_index] = padded_gt.at<char>(h, w);
+                                buffer_flipped[datum_index] = padded_gt_flip.at<char>(h, w);
+                            }
+                        }
+                    }
+                }
+                dat.set_data(buffer);
+                dat_flipped.set_data(buffer_flipped);
+
+                std::string out;
+                CHECK(dat.SerializeToString(&out));
+                transaction->Put(cropFileName, out);
+                CHECK(dat_flipped.SerializeToString(&out));
+                transaction->Put(cropFileNameFlip, out);
+                transaction->Commit();
+                transaction.reset(db->NewTransaction());
+
+                delete[] buffer;
+                delete[] buffer_flipped;
+
                 rgbList.push_back(rgbOut);
                 rgbList.push_back(rgbOutFlip);
                 gtList.push_back(gtOut);
@@ -613,6 +664,8 @@ bool prepareFeatTrain(UtilProperties const& properties)
         }
         std::cout << "OK!" << std::endl;
     }
+
+    transaction->Commit();
 
     // Write list with images to file
     std::ofstream outRGB(properties.out + "rgb.txt");
