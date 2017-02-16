@@ -637,8 +637,8 @@ bool prepareFeatTrain(UtilProperties const& properties)
                         }
                     }
                 }
-                dat.set_data(buffer);
-                dat_flipped.set_data(buffer_flipped);
+                dat.set_data(buffer, dat.width() * dat.height() * dat.channels());
+                dat_flipped.set_data(buffer_flipped, dat.width() * dat.height() * dat.channels());
 
                 std::string out;
                 CHECK(dat.SerializeToString(&out));
