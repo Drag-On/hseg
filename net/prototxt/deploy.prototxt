@@ -4,18 +4,6 @@ input_dim: 1
 input_dim: 3
 input_dim: 473
 input_dim: 473
-#
-input: "gt"
-input_dim: 1
-input_dim: 1
-input_dim: 60
-input_dim: 60
-#
-input: "crop"
-input_dim: 1
-input_dim: 1
-input_dim: 1
-input_dim: 4
 
 layer {
   name: "conv1_1_3x3_s2"
@@ -7119,12 +7107,4 @@ layer {
   dropout_param {
     dropout_ratio: 0.1
   }
-}
-layer {
-  name: "loss"
-  type: "SSVMLoss"
-  bottom: "conv5_4"
-  bottom: "gt"
-  bottom: "crop"
-  top: "loss"
 }
