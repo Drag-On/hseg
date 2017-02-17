@@ -1,86 +1,37 @@
-## Pyramid Scene Parsing Network
+# Caffe
 
-by Hengshuang Zhao, Jianping Shi, Xiaojuan Qi, Xiaogang Wang, Jiaya Jia, details are in [project page](http://www.cse.cuhk.edu.hk/~hszhao/projects/pspnet/index.html).
+[![Build Status](https://travis-ci.org/BVLC/caffe.svg?branch=master)](https://travis-ci.org/BVLC/caffe)
+[![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
 
-### Introduction
+Caffe is a deep learning framework made with expression, speed, and modularity in mind.
+It is developed by the Berkeley Vision and Learning Center ([BVLC](http://bvlc.eecs.berkeley.edu)) and community contributors.
 
-This repository is for '[Pyramid Scene Parsing Network](https://arxiv.org/abs/1612.01105)', which ranked 1st place in [ImageNet Scene Parsing Challenge 2016](http://image-net.org/challenges/LSVRC/2016/results). The code is modified from Caffe version of [yjxiong](https://github.com/yjxiong/caffe/tree/mem) and [DeepLab v2](https://bitbucket.org/aquariusjay/deeplab-public-ver2) for evaluation. We merge the batch normalization layer named 'bn_layer' in the former one into the later one while keep the original 'batch_norm_layer' in the later one unchanged for compatibility. The difference is that 'bn_layer' contains four parameters as 'slope,bias,mean,variance' while 'batch_norm_layer' contains two parameters as 'mean,variance'. Several evaluation code is borrowed from [MIT Scene Parsing](https://github.com/CSAILVision/sceneparsing).
+Check out the [project site](http://caffe.berkeleyvision.org) for all the details like
 
-### Installation
+- [DIY Deep Learning for Vision with Caffe](https://docs.google.com/presentation/d/1UeKXVgRvvxg9OUdh_UiC5G71UMscNPlvArsWER41PsU/edit#slide=id.p)
+- [Tutorial Documentation](http://caffe.berkeleyvision.org/tutorial/)
+- [BVLC reference models](http://caffe.berkeleyvision.org/model_zoo.html) and the [community model zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo)
+- [Installation instructions](http://caffe.berkeleyvision.org/installation.html)
 
-For installation, please follow the instructions of [Caffe](https://github.com/BVLC/caffe) and [DeepLab v2](https://bitbucket.org/aquariusjay/deeplab-public-ver2). To enable cuDNN for GPU acceleration, cuDNN v5 is needed as required in 'yjxiong'. If you meet error related with 'matio', please download and install [matio](https://sourceforge.net/projects/matio/files/matio/1.5.2) as required in 'DeepLab v2'.
+and step-by-step examples.
 
-The code has been tested successfully on Ubuntu 14.04 and 12.04 with CUDA 7.0.
+[![Join the chat at https://gitter.im/BVLC/caffe](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/BVLC/caffe?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Usage
+Please join the [caffe-users group](https://groups.google.com/forum/#!forum/caffe-users) or [gitter chat](https://gitter.im/BVLC/caffe) to ask questions and talk about methods and models.
+Framework development discussions and thorough bug reports are collected on [Issues](https://github.com/BVLC/caffe/issues).
 
-1. Clone the repository:
+Happy brewing!
 
-   ```shell
-   git clone https://github.com/hszhao/PSPNet.git
-   ```
+## License and Citation
 
-2. Build Caffe and matcaffe:
+Caffe is released under the [BSD 2-Clause license](https://github.com/BVLC/caffe/blob/master/LICENSE).
+The BVLC reference models are released for unrestricted use.
 
-   ```shell
-   cd $PSPNET_ROOT
-   cp Makefile.config.example Makefile.config
-   vim Makefile.config
-   make -j8 && make matcaffe
-   ```
+Please cite Caffe in your publications if it helps your research:
 
-3. Evaluation:
-
-   - Evaluation code is in folder 'evaluation'.
-   - Download trained models and put them in folder 'evaluation/model':
-     - pspnet50\_ADE20K.caffemodel: [GoogleDrive](https://drive.google.com/open?id=0BzaU285cX7TCN1R3QnUwQ0hoMTA)
-     - pspnet101\_VOC2012.caffemodel: [GoogleDrive](https://drive.google.com/open?id=0BzaU285cX7TCNVhETE5vVUdMYk0)
-     - pspnet101\_cityscapes.caffemodel: [GoogleDrive](https://drive.google.com/open?id=0BzaU285cX7TCT1M3TmNfNjlUeEU)
-   - Modify the related paths in 'eval_all.m':
-     - Mainly variables 'data_root' and 'eval_list', and your image list for evaluation should be similarity to that in folder 'evaluation/samplelist' if you use this evaluation code structure. 
-     - Matlab 'parfor' evaluation is used and the default GPUs are with ID [0:3]. Modify variable 'gpu_id_array' if needed. We assume that number of images can be divided by number of GPUs; if not, you can just pad your image list or switch to single GPU evaluation by set 'gpu_id_array' be length of one, and change 'parfor' to 'for' loop.
-
-   ```shell
-   cd evaluation
-   vim eval_all.m
-   ```
-
-   - Run the evaluation scripts:
-
-   ```
-   ./run.sh
-   ```
-
-4. Results: 
-
-   Prediction results will show in folder 'evaluation/mc_result' and the expected scores are:
-
-   (single scale testing denotes as 'ss' and multiple scale testing denotes as 'ms')
-
-   - PSPNet50 on ADE20K valset (mIoU/pAcc): 41.68/80.04 (ss) and 42.78/80.76 (ms) 
-   - PSPNet101 on VOC2012 testset (mIoU): 85.41 (ms)
-   - PSPNet101 on cityscapes valset (mIoU/pAcc): 79.70/96.38 (ss) and 80.91/96.59 (ms)
-
-5. Demo video:
-
-   Video processed by PSPNet101 on cityscapes dataset: [Youtube](https://youtu.be/gdAVqJn_J2M)
-
-## Citation
-
-If PSPNet is useful for your research, please consider citing:
-
-    @article{zhao2016pspnet,
-      author    = {Hengshuang Zhao and
-      			   Jianping Shi and
-      			   Xiaojuan Qi and
-      			   Xiaogang Wang and
-      			   Jiaya Jia},
-      title     = {Pyramid Scene Parsing Network},
-      journal   = {CoRR},
-      volume    = {abs/1612.01105},
-      year      = {2016},
-      url       = {https://arxiv.org/abs/1612.01105},
+    @article{jia2014caffe,
+      Author = {Jia, Yangqing and Shelhamer, Evan and Donahue, Jeff and Karayev, Sergey and Long, Jonathan and Girshick, Ross and Guadarrama, Sergio and Darrell, Trevor},
+      Journal = {arXiv preprint arXiv:1408.5093},
+      Title = {Caffe: Convolutional Architecture for Fast Feature Embedding},
+      Year = {2014}
     }
-### Questions
-
-Please contact 'hszhao@cse.cuhk.edu.hk'

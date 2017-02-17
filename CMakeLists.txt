@@ -64,13 +64,14 @@ add_subdirectory(lib/properties)
 ### Set general gcc flags ###
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
 
+set(HSEG_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 ### caffe ###
 add_subdirectory(lib/caffe)
 
 add_definitions(${PNG_DEFINITIONS})
 
 ### Compile main library ###
-set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include(cmake/compile_hseg.cmake)
 
 ### Compile inference executables ###

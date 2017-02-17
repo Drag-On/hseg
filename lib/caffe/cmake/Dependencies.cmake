@@ -28,11 +28,6 @@ find_package(HDF5 COMPONENTS HL REQUIRED)
 include_directories(SYSTEM ${HDF5_INCLUDE_DIRS} ${HDF5_HL_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
-# --- [ MatIO
-find_package(MATIO REQUIRED)
-include_directories(SYSTEM ${MATIO_INCLUDE_DIRS})
-list(APPEND Caffe_LINKER_LIBS ${MATIO_LIBRARIES})
-
 # ---[ LMDB
 if(USE_LMDB)
   find_package(LMDB REQUIRED)
@@ -72,6 +67,30 @@ if(NOT HAVE_CUDA)
   add_definitions(-DCPU_ONLY)
 endif()
 
+# ---[ Eigen
+find_package(Eigen3 REQUIRED)
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+
+# ---[ MatIO
+find_package(MATIO REQUIRED)
+include_directories(SYSTEM ${MATIO_INCLUDE_DIRS})
+list(APPEND Caffe_LINKER_LIBS ${MATIO_LIBRARIES})
+
+# ---[ HSEG
+#add_subdirectory(${HSEG_DIR}/lib/trw_s ${CMAKE_CURRENT_BINARY_DIR}/trw_s)
+#add_subdirectory(${HSEG_DIR}/lib/properties ${CMAKE_CURRENT_BINARY_DIR}/properties)
+#include(${HSEG_DIR}/cmake/compile_hseg.cmake)
+set(HSEG_INCLUDE_DIR ${HSEG_DIR}/include ${HSEG_DIR}/lib/trw_s ${HSEG_DIR}/lib/properties/include)
+include_directories(${HSEG_INCLUDE_DIR})
+list(APPEND Caffe_LINKER_LIBS hseg)
+
+if(USE_NCCL)
+  find_package(NCCL REQUIRED)
+  include_directories(SYSTEM ${NCCL_INCLUDE_DIR})
+  list(APPEND Caffe_LINKER_LIBS ${NCCL_LIBRARIES})
+  add_definitions(-DUSE_NCCL)
+endif()
+
 # ---[ OpenCV
 if(USE_OPENCV)
   find_package(OpenCV QUIET COMPONENTS core highgui imgproc imgcodecs)
@@ -107,6 +126,12 @@ elseif(APPLE)
   find_package(vecLib REQUIRED)
   include_directories(SYSTEM ${vecLib_INCLUDE_DIR})
   list(APPEND Caffe_LINKER_LIBS ${vecLib_LINKER_LIBS})
+
+  if(VECLIB_FOUND)
+    if(NOT vecLib_INCLUDE_DIR MATCHES "^/System/Library/Frameworks/vecLib.framework.*")
+      add_definitions(-DUSE_ACCELERATE)
+    endif()
+  endif()
 endif()
 
 # ---[ Python
@@ -118,18 +143,18 @@ if(BUILD_python)
     find_package(NumPy 1.7.1)
     # Find the matching boost python implementation
     set(version ${PYTHONLIBS_VERSION_STRING})
-    
+
     STRING( REGEX REPLACE "[^0-9]" "" boost_py_version ${version} )
     find_package(Boost 1.46 COMPONENTS "python-py${boost_py_version}")
     set(Boost_PYTHON_FOUND ${Boost_PYTHON-PY${boost_py_version}_FOUND})
-    
+
     while(NOT "${version}" STREQUAL "" AND NOT Boost_PYTHON_FOUND)
       STRING( REGEX REPLACE "([0-9.]+).[0-9]+" "\\1" version ${version} )
-      
+
       STRING( REGEX REPLACE "[^0-9]" "" boost_py_version ${version} )
       find_package(Boost 1.46 COMPONENTS "python-py${boost_py_version}")
       set(Boost_PYTHON_FOUND ${Boost_PYTHON-PY${boost_py_version}_FOUND})
-      
+
       STRING( REGEX MATCHALL "([0-9.]+).[0-9]+" has_more_version ${version} )
       if("${has_more_version}" STREQUAL "")
         break()
