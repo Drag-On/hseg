@@ -52,7 +52,7 @@ include(cmake/Dependencies.cmake)
 if(UNIX OR APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall")
 endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -D_FORCE_INLINES -D_MWAITXINTRIN_H_INCLUDED")
 
 caffe_set_caffe_link()
 
