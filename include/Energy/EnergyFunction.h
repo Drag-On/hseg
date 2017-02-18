@@ -107,7 +107,8 @@ public:
      */
     inline Cost unaryCost(SiteId /*i*/, Feature const& f, Label l) const
     {
-        assert(l < numClasses());
+        if(l >= numClasses())
+            return 0;
 
         auto const& w = m_pWeights->unary(l);
         auto const& wHead = w.head(w.size() - 1);
@@ -124,7 +125,8 @@ public:
      */
     inline Cost pairwiseCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
     {
-        assert(l1 < numClasses() && l2 < numClasses());
+        if(l1 >= numClasses() || l2 >= numClasses())
+            return 0;
 
         auto const& w = m_pWeights->pairwise(l1, l2);
         auto const& wHead = w.head(f1.size());
@@ -143,7 +145,8 @@ public:
      */
     inline Cost higherOrderCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
     {
-        assert(l1 < numClasses() && l2 < numClasses());
+        if(l1 >= numClasses() || l2 >= numClasses())
+            return 0;
 
         auto const& w = m_pWeights->higherOrder(l1, l2);
         auto const& wHead = w.head(f1.size());
