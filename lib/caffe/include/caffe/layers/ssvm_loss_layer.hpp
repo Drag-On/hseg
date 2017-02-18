@@ -50,6 +50,7 @@ namespace caffe {
         int const numClasses_ = 21;
 
         FeatureImage features_;
+        LabelImage gt_;
         InferenceResult gtResult_;
         InferenceResult predResult_;
     };

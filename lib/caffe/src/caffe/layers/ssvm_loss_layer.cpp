@@ -42,38 +42,37 @@ namespace caffe {
         }
 
         // Copy over label image
-        LabelImage gt(bottom[0]->width(), bottom[0]->height());
-        for(Coord x = 0; x < bottom[0]->width(); ++x)
+        gt_ = LabelImage(bottom[1]->width(), bottom[1]->height());
+        for(Coord x = 0; x < bottom[1]->width(); ++x)
         {
-            for(Coord y = 0; y < bottom[0]->height(); ++y)
+            for(Coord y = 0; y < bottom[1]->height(); ++y)
             {
                 // Round because of float imprecision
-                gt.at(x, y) = std::round(bottom[1]->data_at(0, 0, y, x));
-                assert(gt.at(x, y) >= 0);
-                assert(gt.at(x, y) < 21);
+                gt_.at(x, y) = std::round(bottom[1]->data_at(0, 0, y, x));
             }
         }
+        gt_.rescale(features_.width(), features_.height(), false);
 
         // Find latent variables that best explain the ground truth
         EnergyFunction energy(&weights_, numClusters_);
         InferenceIterator<EnergyFunction> gtInference(&energy, &features_, eps_, maxIter_);
-        gtResult_ = gtInference.runOnGroundTruth(gt);
+        gtResult_ = gtInference.runOnGroundTruth(gt_);
 
         // Predict with loss-augmented energy
-        LossAugmentedEnergyFunction lossEnergy(&weights_, &gt, numClusters_);
+        LossAugmentedEnergyFunction lossEnergy(&weights_, &gt_, numClusters_);
         InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features_, eps_, maxIter_);
         predResult_ = inference.run();
 
         // Compute energy without weights on the ground truth
-        auto gtEnergy = energy.giveEnergyByWeight(features_, gt, gtResult_.clustering, gtResult_.clusters);
+        auto gtEnergy = energy.giveEnergyByWeight(features_, gt_, gtResult_.clustering, gtResult_.clusters);
         // Compute energy without weights on the prediction
         auto predEnergy = energy.giveEnergyByWeight(features_, predResult_.labeling, predResult_.clustering, predResult_.clusters);
 
         // Compute upper bound on this image
         auto gtEnergyCur = weights_ * gtEnergy;
         auto predEnergyCur = weights_ * predEnergy;
-        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses_);
-        float loss = LossAugmentedEnergyFunction::computeLoss(predResult_.labeling, predResult_.clustering, gt, predResult_.clusters,
+        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt_, numClasses_);
+        float loss = LossAugmentedEnergyFunction::computeLoss(predResult_.labeling, predResult_.clustering, gt_, predResult_.clusters,
                                                               lossFactor, numClasses_);
         float sampleLoss = (loss - predEnergyCur) + gtEnergyCur;
 
@@ -104,7 +103,7 @@ namespace caffe {
             {
                 for(Coord y = 0; y < features_.height(); ++y)
                 {
-                    Label l = std::round(bottom[1]->data_at(0, 0, y, x));
+                    Label l = gt_.at(x, y);
                     for(Coord c = 0; c < features_.dim(); ++c)
                     {
                         if(l < numClasses_)
