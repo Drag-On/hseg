@@ -33,11 +33,13 @@ void EnergyFunction::computeUnaryEnergyByWeight(FeatureImage const& features, La
     for (SiteId i = 0; i < labeling.pixels(); ++i)
     {
         Label l = labeling.atSite(i);
-        assert(l < numClasses());
-        Feature const& f = features.atSite(i);
-        Feature combinedFeat(f.size() + 1);
-        combinedFeat << f, 1.f;
-        energyW.m_unaryWeights[l] += combinedFeat;
+        if(l < numClasses())
+        {
+            Feature const& f = features.atSite(i);
+            Feature combinedFeat(f.size() + 1);
+            combinedFeat << f, 1.f;
+            energyW.m_unaryWeights[l] += combinedFeat;
+        }
     }
 }
 
@@ -48,10 +50,14 @@ void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features,
         for (Coord y = 0; y < labeling.height(); ++y)
         {
             Label l = labeling.at(x, y);
+            if(l >= numClasses())
+                continue;
             Feature const& f = features.at(x, y);
             if(x + 1 < labeling.width())
             {
                 Label lR = labeling.at(x + 1, y);
+                if(lR >= numClasses())
+                    continue;
                 Feature const& fR = features.at(x + 1, y);
 
                 Feature combinedFeat(f.size() + fR.size() + 1);
@@ -62,6 +68,8 @@ void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features,
             if(y + 1 < labeling.height())
             {
                 Label lD = labeling.at(x, y + 1);
+                if(lD >= numClasses())
+                    continue;
                 Feature const& fD = features.at(x, y + 1);
 
                 Feature combinedFeat(f.size() + fD.size() + 1);
@@ -80,6 +88,8 @@ void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& featur
     {
         Feature const& f = features.atSite(i);
         Label const l = labeling.atSite(i);
+        if(l >= numClasses())
+            continue;
         ClusterId const k = clustering.atSite(i);
 
         Feature const& fClus = clusters[k].m_feature;
@@ -113,6 +123,8 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         Feature& grad = outGradients.atSite(i);
         auto coords = helper::coord::siteTo2DCoordinate(i, labeling.width());
         Label l = labeling.atSite(i);
+        if(l >= numClasses())
+            continue;
 
         // unary
         grad = m_pWeights->unary(l);
@@ -121,21 +133,29 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         if(static_cast<int>(coords.x()) - 1 >= 0)
         {
             Label l2 = labeling.at(coords.x() - 1, coords.y());
+            if(l2 >= numClasses())
+                continue;
             grad += m_pWeights->pairwise(l2, l).segment(featSize, featSize);
         }
         if(coords.x() + 1 < labeling.width())
         {
             Label l2 = labeling.at(coords.x() + 1, coords.y());
+            if(l2 >= numClasses())
+                continue;
             grad += m_pWeights->pairwise(l, l2).segment(0, featSize);
         }
         if(static_cast<int>(coords.y()) - 1 >= 0)
         {
             Label l2 = labeling.at(coords.x(), coords.y() - 1);
+            if(l2 >= numClasses())
+                continue;
             grad += m_pWeights->pairwise(l2, l).segment(featSize, featSize);
         }
         if(coords.y() + 1 < labeling.height())
         {
             Label l2 = labeling.at(coords.x(), coords.y() + 1);
+            if(l2 >= numClasses())
+                continue;
             grad += m_pWeights->pairwise(l, l2).segment(0, featSize);
         }
 
