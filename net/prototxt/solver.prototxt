@@ -1,5 +1,5 @@
 # The train/validation net protocol buffer definition, that is, the training architecture
-net: "data/net/prototxt/train_val.prototxt"
+net: "net/prototxt/train_val.prototxt"
 
 # Note: 1 iteration = 1 forward pass over all the images in one batch
 
