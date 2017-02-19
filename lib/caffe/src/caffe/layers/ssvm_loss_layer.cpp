@@ -29,10 +29,10 @@ namespace caffe {
             const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
         // Pre-allocate memory
-        features_.reserve(bottom[0]->num());
-        gt_.reserve(bottom[0]->num());
-        gtResult_.reserve(bottom[0]->num());
-        predResult_.reserve(bottom[0]->num());
+        features_.resize(bottom[0]->num(), FeatureImage(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels()));
+        gt_.resize(bottom[0]->num(), LabelImage(bottom[1]->width(), bottom[1]->height()));
+        gtResult_.resize(bottom[0]->num());
+        predResult_.resize(bottom[0]->num());
 
         std::vector<std::future<float>> futures;
         // For every image in the batch
@@ -42,8 +42,7 @@ namespace caffe {
                     std::async([&]()
                                {
                                    // Copy over the features
-                                   features_.emplace_back(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
-                                   FeatureImage& featImg = features_.back();
+                                   FeatureImage& featImg = features_[i];
                                    for (Coord x = 0; x < bottom[0]->width(); ++x)
                                    {
                                        for (Coord y = 0; y < bottom[0]->height(); ++y)
@@ -54,8 +53,7 @@ namespace caffe {
                                    }
 
                                    // Copy over label image
-                                   gt_.emplace_back(bottom[1]->width(), bottom[1]->height());
-                                   LabelImage& gt = gt_.back();
+                                   LabelImage& gt = gt_[i];
                                    for (Coord x = 0; x < bottom[1]->width(); ++x)
                                    {
                                        for (Coord y = 0; y < bottom[1]->height(); ++y)
@@ -69,15 +67,15 @@ namespace caffe {
                                    // Find latent variables that best explain the ground truth
                                    EnergyFunction energy(&weights_, numClusters_);
                                    InferenceIterator<EnergyFunction> gtInference(&energy, &featImg, eps_, maxIter_);
-                                   gtResult_.emplace_back(gtInference.runOnGroundTruth(gt));
-                                   InferenceResult& gtResult = gtResult_.back();
+                                   gtResult_[i] = gtInference.runOnGroundTruth(gt);
+                                   InferenceResult& gtResult = gtResult_[i];
 
                                    // Predict with loss-augmented energy
                                    LossAugmentedEnergyFunction lossEnergy(&weights_, &gt, numClusters_);
                                    InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &featImg, eps_,
                                                                                             maxIter_);
-                                   predResult_.emplace_back(inference.run());
-                                   InferenceResult& predResult = predResult_.back();
+                                   predResult_[i] = inference.run();
+                                   InferenceResult& predResult = predResult_[i];
 
                                    // Compute energy without weights on the ground truth
                                    auto gtEnergy = energy.giveEnergyByWeight(featImg, gt, gtResult.clustering,
