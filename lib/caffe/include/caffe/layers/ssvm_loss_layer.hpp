@@ -49,10 +49,10 @@ namespace caffe {
         int maxIter_ = 50;
         int const numClasses_ = 21;
 
-        FeatureImage features_;
-        LabelImage gt_;
-        InferenceResult gtResult_;
-        InferenceResult predResult_;
+        std::vector<FeatureImage> features_;
+        std::vector<LabelImage> gt_;
+        std::vector<InferenceResult> gtResult_;
+        std::vector<InferenceResult> predResult_;
     };
 }
 

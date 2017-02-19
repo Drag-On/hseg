@@ -1,14 +1,12 @@
 #include <algorithm>
-#include <cfloat>
-#include <vector>
 
 #include "caffe/layers/ssvm_loss_layer.hpp"
-#include "caffe/util/math_functions.hpp"
 
-#include "Image/FeatureImage.h"
 #include <Energy/EnergyFunction.h>
 #include <Inference/InferenceIterator.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
+#include <thread>
+#include <future>
 
 namespace caffe {
 
@@ -30,53 +28,83 @@ namespace caffe {
     void SSVMLossLayer<Dtype>::Forward_cpu(
             const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
-        // Copy over the features
-        features_ = FeatureImage(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
-        for(Coord x = 0; x < bottom[0]->width(); ++x)
+        // Pre-allocate memory
+        features_.reserve(bottom[0]->num());
+        gt_.reserve(bottom[0]->num());
+        gtResult_.reserve(bottom[0]->num());
+        predResult_.reserve(bottom[0]->num());
+
+        std::vector<std::future<float>> futures;
+        // For every image in the batch
+        for (int i = 0; i < bottom[0]->num(); ++i)
         {
-            for(Coord y = 0; y < bottom[0]->height(); ++y)
-            {
-                for(Coord c = 0; c < features_.dim(); ++c)
-                    features_.at(x, y)[c] = bottom[0]->data_at(0, c, y, x);
-            }
+            futures.emplace_back(
+                    std::async([&]()
+                               {
+                                   // Copy over the features
+                                   features_.emplace_back(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+                                   FeatureImage& featImg = features_.back();
+                                   for (Coord x = 0; x < bottom[0]->width(); ++x)
+                                   {
+                                       for (Coord y = 0; y < bottom[0]->height(); ++y)
+                                       {
+                                           for (Coord c = 0; c < featImg.dim(); ++c)
+                                               featImg.at(x, y)[c] = bottom[0]->data_at(i, c, y, x);
+                                       }
+                                   }
+
+                                   // Copy over label image
+                                   gt_.emplace_back(bottom[1]->width(), bottom[1]->height());
+                                   LabelImage& gt = gt_.back();
+                                   for (Coord x = 0; x < bottom[1]->width(); ++x)
+                                   {
+                                       for (Coord y = 0; y < bottom[1]->height(); ++y)
+                                       {
+                                           // Round because of float imprecision
+                                           gt.at(x, y) = std::round(bottom[1]->data_at(i, 0, y, x));
+                                       }
+                                   }
+                                   gt.rescale(featImg.width(), featImg.height(), false);
+
+                                   // Find latent variables that best explain the ground truth
+                                   EnergyFunction energy(&weights_, numClusters_);
+                                   InferenceIterator<EnergyFunction> gtInference(&energy, &featImg, eps_, maxIter_);
+                                   gtResult_.emplace_back(gtInference.runOnGroundTruth(gt));
+                                   InferenceResult& gtResult = gtResult_.back();
+
+                                   // Predict with loss-augmented energy
+                                   LossAugmentedEnergyFunction lossEnergy(&weights_, &gt, numClusters_);
+                                   InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &featImg, eps_,
+                                                                                            maxIter_);
+                                   predResult_.emplace_back(inference.run());
+                                   InferenceResult& predResult = predResult_.back();
+
+                                   // Compute energy without weights on the ground truth
+                                   auto gtEnergy = energy.giveEnergyByWeight(featImg, gt, gtResult.clustering,
+                                                                             gtResult.clusters);
+                                   // Compute energy without weights on the prediction
+                                   auto predEnergy = energy.giveEnergyByWeight(featImg, predResult.labeling,
+                                                                               predResult.clustering,
+                                                                               predResult.clusters);
+
+                                   // Compute upper bound on this image
+                                   auto gtEnergyCur = weights_ * gtEnergy;
+                                   auto predEnergyCur = weights_ * predEnergy;
+                                   float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, numClasses_);
+                                   float loss = LossAugmentedEnergyFunction::computeLoss(predResult.labeling,
+                                                                                         predResult.clustering, gt,
+                                                                                         predResult.clusters,
+                                                                                         lossFactor, numClasses_);
+                                   float sampleLoss = (loss - predEnergyCur) + gtEnergyCur;
+                                   return sampleLoss;
+                               }));
         }
 
-        // Copy over label image
-        gt_ = LabelImage(bottom[1]->width(), bottom[1]->height());
-        for(Coord x = 0; x < bottom[1]->width(); ++x)
-        {
-            for(Coord y = 0; y < bottom[1]->height(); ++y)
-            {
-                // Round because of float imprecision
-                gt_.at(x, y) = std::round(bottom[1]->data_at(0, 0, y, x));
-            }
-        }
-        gt_.rescale(features_.width(), features_.height(), false);
+        float loss = 0;
+        for (int j = 0; j < futures.size(); ++j)
+            loss += futures[j].get();
 
-        // Find latent variables that best explain the ground truth
-        EnergyFunction energy(&weights_, numClusters_);
-        InferenceIterator<EnergyFunction> gtInference(&energy, &features_, eps_, maxIter_);
-        gtResult_ = gtInference.runOnGroundTruth(gt_);
-
-        // Predict with loss-augmented energy
-        LossAugmentedEnergyFunction lossEnergy(&weights_, &gt_, numClusters_);
-        InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features_, eps_, maxIter_);
-        predResult_ = inference.run();
-
-        // Compute energy without weights on the ground truth
-        auto gtEnergy = energy.giveEnergyByWeight(features_, gt_, gtResult_.clustering, gtResult_.clusters);
-        // Compute energy without weights on the prediction
-        auto predEnergy = energy.giveEnergyByWeight(features_, predResult_.labeling, predResult_.clustering, predResult_.clusters);
-
-        // Compute upper bound on this image
-        auto gtEnergyCur = weights_ * gtEnergy;
-        auto predEnergyCur = weights_ * predEnergy;
-        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt_, numClasses_);
-        float loss = LossAugmentedEnergyFunction::computeLoss(predResult_.labeling, predResult_.clustering, gt_, predResult_.clusters,
-                                                              lossFactor, numClasses_);
-        float sampleLoss = (loss - predEnergyCur) + gtEnergyCur;
-
-        top[0]->mutable_cpu_data()[0] = sampleLoss;
+        top[0]->mutable_cpu_data()[0] = loss;
     }
 
     template <typename Dtype>
@@ -87,29 +115,35 @@ namespace caffe {
             LOG(FATAL) << this->type()
                        << " Layer cannot backpropagate to label inputs.";
         }
-        if (propagate_down[0]) {
-
-            EnergyFunction energy(&weights_, numClusters_);
-            FeatureImage gradGt(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
-            energy.computeFeatureGradient(gradGt, gtResult_.labeling, gtResult_.clustering, gtResult_.clusters, features_);
-            FeatureImage gradPred(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
-            energy.computeFeatureGradient(gradPred, predResult_.labeling, predResult_.clustering, predResult_.clusters, features_);
-
-            // Compute gradient
-            gradGt.subtract(gradPred);
-
-            // Write back
-            for(Coord x = 0; x < features_.width(); ++x)
+        if (propagate_down[0])
+        {
+            // For every image in the batch
+            for (int i = 0; i < bottom[0]->num(); ++i)
             {
-                for(Coord y = 0; y < features_.height(); ++y)
+                EnergyFunction energy(&weights_, numClusters_);
+                FeatureImage gradGt(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+                energy.computeFeatureGradient(gradGt, gtResult_[i].labeling, gtResult_[i].clustering,
+                                              gtResult_[i].clusters, features_[i]);
+                FeatureImage gradPred(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+                energy.computeFeatureGradient(gradPred, predResult_[i].labeling, predResult_[i].clustering,
+                                              predResult_[i].clusters, features_[i]);
+
+                // Compute gradient
+                gradGt.subtract(gradPred);
+
+                // Write back
+                for (Coord x = 0; x < features_[i].width(); ++x)
                 {
-                    Label l = gt_.at(x, y);
-                    for(Coord c = 0; c < features_.dim(); ++c)
+                    for (Coord y = 0; y < features_[i].height(); ++y)
                     {
-                        if(l < numClasses_)
-                            *(bottom[0]->mutable_cpu_diff_at(0, c, y, x)) = gradGt.at(x, y)[c];
-                        else
-                            *(bottom[0]->mutable_cpu_diff_at(0, c, y, x)) = 0;
+                        Label l = gt_[i].at(x, y);
+                        for (Coord c = 0; c < features_[i].dim(); ++c)
+                        {
+                            if (l < numClasses_)
+                                *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x, y)[c];
+                            else
+                                *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = 0;
+                        }
                     }
                 }
             }
