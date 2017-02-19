@@ -39,7 +39,7 @@ namespace caffe {
         for (int i = 0; i < bottom[0]->num(); ++i)
         {
             futures.emplace_back(
-                    std::async([&]()
+                    std::async([&, i]()
                                {
                                    // Copy over the features
                                    FeatureImage& featImg = features_[i];
@@ -47,7 +47,7 @@ namespace caffe {
                                    {
                                        for (Coord y = 0; y < bottom[0]->height(); ++y)
                                        {
-                                           for (Coord c = 0; c < featImg.dim(); ++c)
+                                           for (Coord c = 0; c < bottom[0]->channels(); ++c)
                                                featImg.at(x, y)[c] = bottom[0]->data_at(i, c, y, x);
                                        }
                                    }
