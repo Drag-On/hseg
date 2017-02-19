@@ -54,6 +54,7 @@ namespace caffe {
 
                                    // Copy over label image
                                    LabelImage& gt = gt_[i];
+                                   gt = LabelImage(bottom[1]->width(), bottom[1]->height()); // Overwrite downscaled version of previous iteration
                                    for (Coord x = 0; x < bottom[1]->width(); ++x)
                                    {
                                        for (Coord y = 0; y < bottom[1]->height(); ++y)
