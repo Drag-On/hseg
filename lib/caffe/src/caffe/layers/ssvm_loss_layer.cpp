@@ -101,6 +101,7 @@ namespace caffe {
         float loss = 0;
         for (int j = 0; j < futures.size(); ++j)
             loss += futures[j].get();
+        loss /= futures.size();
 
         top[0]->mutable_cpu_data()[0] = loss;
     }
