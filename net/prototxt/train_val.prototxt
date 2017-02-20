@@ -3,7 +3,7 @@ layer {
   type: "Data"
   top: "data"
   data_param {
-    source: "/home/jan/Dokumente/Git/hseg/data/featDataset/database_lmdb"
+    source: "/work/moellerj/featDataset/database_lmdb"
     batch_size: 1
     backend: LMDB
   }

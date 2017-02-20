@@ -40,3 +40,4 @@ snapshot_prefix: "snapshot_"
 
 # solver mode: CPU or GPU
 solver_mode: CPU
+device_id: 0
