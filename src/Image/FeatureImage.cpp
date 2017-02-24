@@ -86,11 +86,13 @@ bool FeatureImage::write(std::string const& filename)
     }
 
     size_t dims[] = {m_height, m_width, m_dim};
-    matvar_t *matvar = Mat_VarCreate("features", MAT_C_SINGLE, MAT_T_SINGLE, 3, dims, nullptr, 0);
+    float* data = new float[m_height * m_width * m_dim];
+    matvar_t *matvar = Mat_VarCreate("features", MAT_C_SINGLE, MAT_T_SINGLE, 3, dims, data, MAT_F_DONT_COPY_DATA);
     if ( matvar == nullptr )
     {
         std::cerr << "Error creating feature map in file \"" << filename << "\"." << std::endl;
         Mat_Close(matfp);
+        delete [] data;
         return false;
     }
     else
@@ -111,6 +113,7 @@ bool FeatureImage::write(std::string const& filename)
     }
 
     Mat_Close(matfp);
+    delete [] data;
     return true;
 }
 
