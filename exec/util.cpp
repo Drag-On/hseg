@@ -28,10 +28,12 @@ PROPERTIES_DEFINE(Util,
                                GROUP_DEFINE(path,
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
+                                            PROP_DEFINE_A(std::string, rgb, "", --rgb)
                                )
                                GROUP_DEFINE(extension,
                                             PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
                                             PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
                                )
                                GROUP_DEFINE(constants,
                                             PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
@@ -424,8 +426,8 @@ bool scale_up(UtilProperties const& properties)
 
     for (std::string const& file : list)
     {
-        std::string filenameGt = file + properties.dataset.extension.gt;
-        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string filenameRgb = file + properties.dataset.extension.rgb;
+        std::string pathRgb = properties.dataset.path.rgb + filenameRgb;
         std::string filenameLabeling = file + properties.dataset.extension.gt;
         std::string pathLabeling = properties.in + "labeling/" + filenameLabeling;
         std::string filenameClustering = file + properties.dataset.extension.gt;
@@ -433,21 +435,20 @@ bool scale_up(UtilProperties const& properties)
         std::string outPathLabeling = properties.out + "labeling/";
         std::string outPathClustering = properties.out + "clustering/";
 
-        std::cout << outPathLabeling << filenameGt;
+        std::cout << filenameRgb;
 
         // Ground truth image
-        LabelImage gt;
-        auto ok = helper::image::readPalettePNG(pathGt, gt, nullptr);
-        if (ok != helper::image::PNGError::Okay)
+        RGBImage rgb;
+        if (!rgb.read(pathRgb))
         {
             std::cout << "\tERROR" << std::endl;
-            std::cerr << " Couldn't read ground truth image \"" << pathGt << "\". Error Code: " << (int) ok << std::endl;
+            std::cerr << " Couldn't read rgb image \"" << pathRgb << "\"." << std::endl;
             return false;
         }
 
         // Labeling
         LabelImage labeling;
-        ok = helper::image::readPalettePNG(pathLabeling, labeling, nullptr);
+        auto ok = helper::image::readPalettePNG(pathLabeling, labeling, nullptr);
         if (ok != helper::image::PNGError::Okay)
         {
             std::cout << "\tERROR" << std::endl;
@@ -466,8 +467,8 @@ bool scale_up(UtilProperties const& properties)
         }
 
         // Rescale
-        labeling.rescale(gt.width(), gt.height(), false);
-        clustering.rescale(gt.width(), gt.height(), false);
+        labeling.rescale(rgb.width(), rgb.height(), false);
+        clustering.rescale(rgb.width(), rgb.height(), false);
 
         // Write results to disk
         ok = helper::image::writePalettePNG(outPathLabeling + filenameLabeling, labeling, cmap);
