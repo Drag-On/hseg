@@ -49,8 +49,8 @@ struct Result
 };
 
 Result process(std::string const& imageFilename, Weights const& weights, std::string const& spOutPath,
-               std::string const& labelOutPath, helper::image::ColorMap const& cmap, ClusterId numClusters, float eps,
-               uint32_t maxIter)
+               std::string const& labelOutPath, std::string const& margOutPath, helper::image::ColorMap const& cmap,
+               ClusterId numClusters, float eps, uint32_t maxIter)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
@@ -76,9 +76,14 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     boost::filesystem::create_directories(spPath);
     boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
+    boost::filesystem::path margPath(margOutPath);
+    boost::filesystem::create_directories(margPath);
     helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
     helper::image::writePalettePNG(spPath.string() + filename + ".png", result.clustering, cmap);
     helper::clustering::write(spPath.string() + filename + ".dat", result.clustering, result.clusters);
+    cv::FileStorage fs(margPath.string() + filename + ".yml", cv::FileStorage::WRITE);
+    fs << result.marginals;
+    fs.release();
 
     res.okay = true;
     return res;
@@ -128,6 +133,7 @@ int main(int argc, char** argv)
 
     boost::filesystem::path spPath(properties.outDir + "/clustering/");
     boost::filesystem::path labelPath(properties.outDir + "/labeling/");
+    boost::filesystem::path marginalsPath(properties.outDir + "/marginals/");
 
     // Clear output directory
     boost::filesystem::path basePath(properties.outDir);
@@ -138,6 +144,7 @@ int main(int argc, char** argv)
     {
         boost::filesystem::remove_all(spPath);
         boost::filesystem::remove_all(labelPath);
+        boost::filesystem::remove_all(marginalsPath);
     }
 
     ThreadPool pool(properties.numThreads);
@@ -153,7 +160,7 @@ int main(int argc, char** argv)
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter);
+        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter);
         futures.push_back(std::move(fut));
 
         // Wait for some threads to finish if the queue gets too long
