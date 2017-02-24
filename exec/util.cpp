@@ -19,6 +19,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, maxLoss, "", --max_loss)
                                PROP_DEFINE_A(std::string, outline, "", --outline)
                                PROP_DEFINE_A(std::string, rescale, "", --rescale)
+                               PROP_DEFINE_A(std::string, scaleUp, "", --scale_up)
                                PROP_DEFINE_A(std::string, matchGt, "", --match_gt)
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
                   )
@@ -37,6 +38,7 @@ PROPERTIES_DEFINE(Util,
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
                                )
                   )
+                  PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(float, rescaleFactor, 0.5f, --rescale)
                   PROP_DEFINE_A(ARG(std::array<unsigned short, 3>), border, ARG(std::array<unsigned short, 3>{255, 255, 255}), --color)
@@ -414,6 +416,79 @@ bool match_gt(UtilProperties const& properties)
     return true;
 }
 
+bool scale_up(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> list = readLines(properties.job.scaleUp);
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    for (std::string const& file : list)
+    {
+        std::string filenameGt = file + properties.dataset.extension.gt;
+        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string filenameLabeling = file + properties.dataset.extension.gt;
+        std::string pathLabeling = properties.in + "labeling/" + filenameLabeling;
+        std::string filenameClustering = file + properties.dataset.extension.gt;
+        std::string pathClustering = properties.in + "clustering/" + filenameClustering;
+        std::string outPathLabeling = properties.out + "labeling/";
+        std::string outPathClustering = properties.out + "clustering/";
+
+        std::cout << outPathLabeling << filenameGt;
+
+        // Ground truth image
+        LabelImage gt;
+        auto ok = helper::image::readPalettePNG(pathGt, gt, nullptr);
+        if (ok != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't read ground truth image \"" << pathGt << "\". Error Code: " << (int) ok << std::endl;
+            return false;
+        }
+
+        // Labeling
+        LabelImage labeling;
+        ok = helper::image::readPalettePNG(pathLabeling, labeling, nullptr);
+        if (ok != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't read labeling \"" << pathLabeling << "\". Error Code: " << (int) ok << std::endl;
+            return false;
+        }
+
+        // Clustering
+        LabelImage clustering;
+        ok = helper::image::readPalettePNG(pathClustering, clustering, nullptr);
+        if (ok != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't read clustering \"" << pathClustering << "\". Error Code: " << (int) ok << std::endl;
+            return false;
+        }
+
+        // Rescale
+        labeling.rescale(gt.width(), gt.height(), false);
+        clustering.rescale(gt.width(), gt.height(), false);
+
+        // Write results to disk
+        ok = helper::image::writePalettePNG(outPathLabeling + filenameLabeling, labeling, cmap);
+        if(ok != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't write rescaled labeling \"" << outPathLabeling + filenameLabeling << "\". Error Code: " << (int) ok << std::endl;
+            return false;
+        }
+        ok = helper::image::writePalettePNG(outPathClustering + filenameClustering, clustering, cmap);
+        if(ok != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't write rescaled clustering \"" << outPathClustering + filenameClustering << "\". Error Code: " << (int) ok << std::endl;
+            return false;
+        }
+        std::cout << "\tOK" << std::endl;
+    }
+    return true;
+}
+
 bool copyFixPNG(UtilProperties const& properties)
 {
     boost::filesystem::path inPath = properties.job.copyFixPNG;
@@ -478,6 +553,9 @@ int main(int argc, char** argv)
 
     if (!properties.job.rescale.empty())
         rescale(properties);
+
+    if (!properties.job.scaleUp.empty())
+        scale_up(properties);
 
     if (!properties.job.matchGt.empty())
         match_gt(properties);
