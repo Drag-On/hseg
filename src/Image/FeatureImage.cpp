@@ -86,7 +86,7 @@ bool FeatureImage::write(std::string const& filename)
     }
 
     size_t dims[] = {m_height, m_width, m_dim};
-    matvar_t *matvar = Mat_VarCreate("features", MAT_C_SINGLE, MAT_T_MATRIX, 3, dims, nullptr, 0);
+    matvar_t *matvar = Mat_VarCreate("features", MAT_C_SINGLE, MAT_T_SINGLE, 3, dims, nullptr, 0);
     if ( matvar == nullptr )
     {
         std::cerr << "Error creating feature map in file \"" << filename << "\"." << std::endl;
