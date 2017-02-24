@@ -40,6 +40,9 @@ PROPERTIES_DEFINE(Util,
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
                                )
                   )
+                  GROUP_DEFINE(param,
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                  )
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(float, rescaleFactor, 0.5f, --rescale)
@@ -466,9 +469,68 @@ bool scale_up(UtilProperties const& properties)
             return false;
         }
 
+        // Make up crude "marginals"
+        cv::Mat labelingMarginals(labeling.height(), labeling.width(), CV_32FC(properties.dataset.constants.numClasses), cv::Scalar(0));
+        cv::Mat clusteringMarginals(clustering.height(), clustering.width(), CV_32FC(properties.param.numClusters), cv::Scalar(0));
+
+        size_t const cols = labelingMarginals.cols;
+        size_t const rows = labelingMarginals.rows;
+        size_t const ch_lab = labelingMarginals.channels();
+        size_t const ch_clu = clusteringMarginals.channels();
+
+        for(int x = 0; x < labelingMarginals.cols; ++x)
+        {
+            for(int y = 0; y < labelingMarginals.rows; ++y)
+            {
+                ((float*)labelingMarginals.data)[cols * y * ch_lab + x * ch_lab + labeling.at(x, y)] = 1;
+                ((float*)clusteringMarginals.data)[cols * y * ch_clu + x * ch_clu + clustering.at(x, y)] = 1;
+            }
+        }
+
         // Rescale
-        labeling.rescale(rgb.width(), rgb.height(), false);
-        clustering.rescale(rgb.width(), rgb.height(), false);
+        labeling = LabelImage(rgb.width(), rgb.height());
+        clustering = LabelImage(rgb.width(), rgb.height());
+        cv::Mat labelingMarginalsResized, clusteringMarginalsResized;
+        cv::resize(labelingMarginals, labelingMarginalsResized, cv::Size(rgb.width(), rgb.height()));
+        cv::resize(clusteringMarginals, clusteringMarginalsResized, cv::Size(rgb.width(), rgb.height()));
+
+        labelingMarginals = labelingMarginalsResized;
+        clusteringMarginals = clusteringMarginalsResized;
+
+        // Copy arg max back
+        for(int x = 0; x < labelingMarginals.cols; ++x)
+        {
+            for(int y = 0; y < labelingMarginals.rows; ++y)
+            {
+                // Labeling
+                float curMax = ((float*)labelingMarginals.data)[labelingMarginals.cols * y * ch_lab + x * ch_lab+ 0];
+                Label curLabel = 0;
+                for(int c = 1; c < labelingMarginals.channels(); ++c)
+                {
+                    float val = ((float*)labelingMarginals.data)[labelingMarginals.cols * y * ch_lab + x * ch_lab + c];
+                    if(val > curMax)
+                    {
+                        curMax = val;
+                        curLabel = c;
+                    }
+                }
+                labeling.at(x, y) = curLabel;
+
+                // Clustering
+                curMax = ((float*)clusteringMarginals.data)[clusteringMarginals.cols * y * ch_clu + x * ch_clu + 0];
+                curLabel = 0;
+                for(int c = 1; c < clusteringMarginals.channels(); ++c)
+                {
+                    float val = ((float*)clusteringMarginals.data)[clusteringMarginals.cols * y * ch_clu + x * ch_clu + c];
+                    if(val > curMax)
+                    {
+                        curMax = val;
+                        curLabel = c;
+                    }
+                }
+                clustering.at(x, y) = curLabel;
+            }
+        }
 
         // Write results to disk
         ok = helper::image::writePalettePNG(outPathLabeling + filenameLabeling, labeling, cmap);
