@@ -9,6 +9,7 @@
 #include <boost/filesystem/path.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <boost/filesystem/operations.hpp>
+#include <opencv2/core/core.hpp>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -431,6 +432,8 @@ bool scale_up(UtilProperties const& properties)
     {
         std::string filenameRgb = file + properties.dataset.extension.rgb;
         std::string pathRgb = properties.dataset.path.rgb + filenameRgb;
+        std::string filenameMarginals = file + ".mat";
+        std::string pathMarginals = properties.in + "marginals/" + filenameMarginals;
         std::string filenameLabeling = file + properties.dataset.extension.gt;
         std::string pathLabeling = properties.in + "labeling/" + filenameLabeling;
         std::string filenameClustering = file + properties.dataset.extension.gt;
@@ -469,9 +472,26 @@ bool scale_up(UtilProperties const& properties)
             return false;
         }
 
+        // Marginals
+        FeatureImage marginals;
+        if(!marginals.read(pathMarginals))
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't read marginals \"" << pathMarginals << "\". " << std::endl;
+            return false;
+        }
+        cv::Mat labelingMarginals = static_cast<cv::Mat>(marginals);
+
         // Make up crude "marginals"
-        cv::Mat labelingMarginals(labeling.height(), labeling.width(), CV_32FC(properties.dataset.constants.numClasses), cv::Scalar(0));
+//        cv::Mat labelingMarginals(labeling.height(), labeling.width(), CV_32FC(properties.dataset.constants.numClasses), cv::Scalar(0));
         cv::Mat clusteringMarginals(clustering.height(), clustering.width(), CV_32FC(properties.param.numClusters), cv::Scalar(0));
+
+        if(labelingMarginals.cols != clusteringMarginals.cols || labelingMarginals.rows != clusteringMarginals.rows)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Marginals don't match." << std::endl;
+            return false;
+        }
 
         size_t const cols = labelingMarginals.cols;
         size_t const rows = labelingMarginals.rows;

@@ -81,9 +81,7 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
     helper::image::writePalettePNG(spPath.string() + filename + ".png", result.clustering, cmap);
     helper::clustering::write(spPath.string() + filename + ".dat", result.clustering, result.clusters);
-    cv::FileStorage fs(margPath.string() + filename + ".yml", cv::FileStorage::WRITE);
-    fs << "marginals" << result.marginals;
-    fs.release();
+    result.marginals.write(margPath.string() + filename + ".mat");
 
     res.okay = true;
     return res;

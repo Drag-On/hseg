@@ -59,7 +59,7 @@ protected:
 
     void updateClusterAffiliation(LabelImage& outClustering, LabelImage const& labeling, std::vector<Cluster> const& clusters);
 
-    void updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, cv::Mat* pOutMarginals = nullptr);
+    void updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, FeatureImage* pOutMarginals = nullptr);
 
     void updateClusterFeatures(std::vector<Cluster>& outClusters, LabelImage const& labeling, LabelImage const& clustering);
 
@@ -108,7 +108,7 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
 }
 
 template<typename EnergyFun>
-void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, cv::Mat* pOutMarginals)
+void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, FeatureImage* pOutMarginals)
 {
     ClusterId const numClusters = m_pEnergy->numClusters();
     Label const numClasses = m_pEnergy->numClasses();
@@ -219,14 +219,14 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
 
     // Copy over result
     if(pOutMarginals != nullptr)
-        *pOutMarginals = cv::Mat(outLabeling.height(), outLabeling.width(), CV_32FC(numClasses));
+        *pOutMarginals = FeatureImage(outLabeling.width(), outLabeling.height(), numClasses);
     for (SiteId i = 0; i < numPx; ++i)
     {
         outLabeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
         if(pOutMarginals != nullptr)
         {
             for(Label l = 0; l < numClasses; ++l)
-                ((float*)pOutMarginals->data)[i * numClasses + l] = nodeIds[i]->m_D.GetValue(globalSize, TypeGeneral::LocalSize(numClasses), l);
+                pOutMarginals->atSite(i)[l] = nodeIds[i]->m_D.GetValue(globalSize, TypeGeneral::LocalSize(numClasses), l);
         }
     }
     for (ClusterId k = 0; k < numClusters; ++k)
@@ -418,7 +418,7 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
         updateClusterFeatures(clusters, labeling, clustering);
 
         // Update labels
-        cv::Mat marginals;
+        FeatureImage marginals;
         updateLabels(labeling, clusters, clustering, &marginals);
 
         // Compute current energy to check for convergence

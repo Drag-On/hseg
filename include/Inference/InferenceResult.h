@@ -17,7 +17,7 @@ public:
     LabelImage labeling; //< Class labeling
     LabelImage clustering; //< Superpixel segmentation
     std::vector<Cluster> clusters; //< Cluster representatives
-    cv::Mat marginals; //< Marginals
+    FeatureImage marginals; //< Marginals
     uint32_t numIter = 0; //< Amount of iterations until convergence
 };
 
