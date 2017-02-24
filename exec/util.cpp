@@ -491,8 +491,8 @@ bool scale_up(UtilProperties const& properties)
         labeling = LabelImage(rgb.width(), rgb.height());
         clustering = LabelImage(rgb.width(), rgb.height());
         cv::Mat labelingMarginalsResized, clusteringMarginalsResized;
-        cv::resize(labelingMarginals, labelingMarginalsResized, cv::Size(rgb.width(), rgb.height()));
-        cv::resize(clusteringMarginals, clusteringMarginalsResized, cv::Size(rgb.width(), rgb.height()));
+        cv::resize(labelingMarginals, labelingMarginalsResized, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_CUBIC);
+        cv::resize(clusteringMarginals, clusteringMarginalsResized, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_CUBIC);
 
         labelingMarginals = labelingMarginalsResized;
         clusteringMarginals = clusteringMarginalsResized;
