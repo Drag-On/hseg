@@ -223,10 +223,21 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
     for (SiteId i = 0; i < numPx; ++i)
     {
         outLabeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
+
+        // Compute marginals?
         if(pOutMarginals != nullptr)
         {
+            // This is just a soft max over the message vector
+            double sum = 0;
             for(Label l = 0; l < numClasses; ++l)
-                pOutMarginals->atSite(i)[l] = nodeIds[i]->m_D.GetValue(globalSize, TypeGeneral::LocalSize(numClasses), l);
+            {
+                double marginal = std::exp(-nodeIds[i]->m_D.GetValue(globalSize, nodeIds[i]->m_K, l));
+                pOutMarginals->atSite(i)[l] = marginal;
+                sum += marginal;
+            }
+            // Normalize
+            for(Label l = 0; l < numClasses; ++l)
+                pOutMarginals->atSite(i)[l] /= sum;
         }
     }
     for (ClusterId k = 0; k < numClusters; ++k)
