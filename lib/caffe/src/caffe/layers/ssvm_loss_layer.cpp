@@ -39,7 +39,7 @@ namespace caffe {
         for (int i = 0; i < bottom[0]->num(); ++i)
         {
             futures.emplace_back(
-                    std::async([&, i]()
+                    std::async(std::launch::async, [&, i]()
                                {
                                    // Copy over the features
                                    FeatureImage& featImg = features_[i];
