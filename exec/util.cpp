@@ -502,7 +502,7 @@ bool scale_up(UtilProperties const& properties)
         {
             for(int y = 0; y < labelingMarginals.rows; ++y)
             {
-                ((float*)labelingMarginals.data)[cols * y * ch_lab + x * ch_lab + labeling.at(x, y)] = 1;
+//                ((float*)labelingMarginals.data)[cols * y * ch_lab + x * ch_lab + labeling.at(x, y)] = 1;
                 ((float*)clusteringMarginals.data)[cols * y * ch_clu + x * ch_clu + clustering.at(x, y)] = 1;
             }
         }
