@@ -67,9 +67,12 @@ namespace caffe {
 
                                    // Find latent variables that best explain the ground truth
                                    EnergyFunction energy(&weights_, numClusters_);
-                                   InferenceIterator<EnergyFunction> gtInference(&energy, &featImg, eps_, maxIter_);
-                                   gtResult_[i] = gtInference.runOnGroundTruth(gt);
-                                   InferenceResult& gtResult = gtResult_[i];
+                                   std::future<bool> futureGtResult = std::async(std::launch::async, [&]()
+                                   {
+                                       InferenceIterator<EnergyFunction> gtInference(&energy, &featImg, eps_, maxIter_);
+                                       gtResult_[i] = gtInference.runOnGroundTruth(gt);
+                                       return true;
+                                   });
 
                                    // Predict with loss-augmented energy
                                    LossAugmentedEnergyFunction lossEnergy(&weights_, &gt, numClusters_);
@@ -77,6 +80,8 @@ namespace caffe {
                                                                                             maxIter_);
                                    predResult_[i] = inference.run();
                                    InferenceResult& predResult = predResult_[i];
+                                   futureGtResult.get(); // Wait until prediction on gt is done
+                                   InferenceResult& gtResult = gtResult_[i];
 
                                    // Compute energy without weights on the ground truth
                                    auto gtEnergy = energy.giveEnergyByWeight(featImg, gt, gtResult.clustering,
