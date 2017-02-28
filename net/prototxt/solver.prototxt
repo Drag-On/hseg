@@ -30,5 +30,5 @@ snapshot: 500
 snapshot_prefix: "/work/moellerj/snapshot_adam_"
 
 # solver mode: CPU or GPU
-solver_mode: CPU
+solver_mode: GPU
 device_id: 0
