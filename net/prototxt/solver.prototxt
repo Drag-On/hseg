@@ -27,7 +27,7 @@ max_iter: 100000
 
 # snapshot intermediate results, that is, every 5000 iterations it saves a snapshot of the weights
 snapshot: 500
-snapshot_prefix: "snapshot_adam_"
+snapshot_prefix: "/work/moellerj/snapshot_adam_"
 
 # solver mode: CPU or GPU
 solver_mode: CPU
