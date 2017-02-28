@@ -4,7 +4,7 @@ layer {
   top: "data"
   data_param {
     source: "/work/moellerj/featDataset/database_lmdb"
-    batch_size: 1
+    batch_size: 4
     backend: LMDB
   }
 }
