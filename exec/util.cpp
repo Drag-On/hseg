@@ -23,6 +23,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, matchGt, "", --match_gt)
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
                                PROP_DEFINE_A(std::string, prepareFeatTrain, "", --prepareFeatTrain)
+                               PROP_DEFINE_A(std::string, writeLMDB, "", --writeLMDB)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -459,12 +460,6 @@ bool prepareFeatTrain(UtilProperties const& properties)
     std::vector<std::string> rgbList, gtList;
     auto cmap = helper::image::generateColorMapVOC(256);
 
-    // Create database
-    std::string dbFilename = properties.out + "database_lmdb";
-    std::unique_ptr<caffe::db::DB> db(caffe::db::GetDB("lmdb"));
-    db->Open(dbFilename, caffe::db::NEW);
-    std::unique_ptr<caffe::db::Transaction> transaction(db->NewTransaction());
-
     for (std::string const& file : list)
     {
         std::cout << " > " << file << ": " << std::flush;
@@ -607,50 +602,6 @@ bool prepareFeatTrain(UtilProperties const& properties)
                     return false;
                 }
 
-                // Write to database
-                caffe::Datum dat, dat_flipped;
-                dat.set_width(padded_img.cols);
-                dat.set_height(padded_img.rows);
-                dat.set_channels(4); // BGR + Labels
-                dat_flipped.set_width(padded_img.cols);
-                dat_flipped.set_height(padded_img.rows);
-                dat_flipped.set_channels(4); // BGR + Labels
-                char* buffer = new char[dat.width() * dat.height() * dat.channels()];
-                char* buffer_flipped = new char[dat.width() * dat.height() * dat.channels()];
-                for (int h = 0; h < dat.height(); ++h)
-                {
-                    for (int w = 0; w < dat.width(); ++w)
-                    {
-                        for (int c = 0; c < dat.channels(); ++c)
-                        {
-                            int datum_index = (c * dat.height() + h) * dat.width() + w;
-                            if(c < 3)
-                            {
-                                buffer[datum_index] = padded_img.at<cv::Vec3b>(h, w)[c];
-                                buffer_flipped[datum_index] = padded_img_flip.at<cv::Vec3b>(h, w)[c];
-                            }
-                            else
-                            {
-                                buffer[datum_index] = padded_gt.at<char>(h, w);
-                                buffer_flipped[datum_index] = padded_gt_flip.at<char>(h, w);
-                            }
-                        }
-                    }
-                }
-                dat.set_data(buffer, dat.width() * dat.height() * dat.channels());
-                dat_flipped.set_data(buffer_flipped, dat.width() * dat.height() * dat.channels());
-
-                std::string out;
-                CHECK(dat.SerializeToString(&out));
-                transaction->Put(cropFileName, out);
-                CHECK(dat_flipped.SerializeToString(&out));
-                transaction->Put(cropFileNameFlip, out);
-                transaction->Commit();
-                transaction.reset(db->NewTransaction());
-
-                delete[] buffer;
-                delete[] buffer_flipped;
-
                 rgbList.push_back(rgbOut);
                 rgbList.push_back(rgbOutFlip);
                 gtList.push_back(gtOut);
@@ -664,9 +615,6 @@ bool prepareFeatTrain(UtilProperties const& properties)
         }
         std::cout << "OK!" << std::endl;
     }
-
-    transaction->Commit();
-    db->Close();
 
     // Write list with images to file
     std::ofstream outRGB(properties.out + "rgb.txt");
@@ -687,7 +635,112 @@ bool prepareFeatTrain(UtilProperties const& properties)
         outGt.close();
     }
     else
-        std::cerr << "Unable to write RGB list to \"" << properties.out + "gt.txt" << "\"" << std::endl;
+        std::cerr << "Unable to write GT list to \"" << properties.out + "gt.txt" << "\"" << std::endl;
+
+    return true;
+}
+
+bool writeLMDB(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> rgbList = readLines(properties.job.writeLMDB + "rgb.txt");
+    std::vector<std::string> gtList = readLines(properties.job.writeLMDB + "gt.txt");
+
+    if(rgbList.size() != gtList.size())
+    {
+        std::cerr << "RGB list and GT list don't match up." << std::endl;
+        return false;
+    }
+
+    std::cout << rgbList.size() << " crops." << std::endl;
+
+    // Shuffle indices
+    std::vector<size_t> indices(rgbList.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(indices.begin(), indices.end(), g);
+
+    auto cmap = helper::image::generateColorMapVOC(256);
+
+    // Create database
+    std::string dbFilename = properties.out + "database_lmdb";
+    std::unique_ptr<caffe::db::DB> db(caffe::db::GetDB("lmdb"));
+    db->Open(dbFilename, caffe::db::NEW);
+    std::unique_ptr<caffe::db::Transaction> transaction(db->NewTransaction());
+
+    for (size_t const& i : indices)
+    {
+        std::string filenameRgb = rgbList[i];
+        std::string filenameGt = gtList[i];
+
+        std::cout << " > " << i << ": \"" << filenameRgb << "\" / \"" << filenameGt << "\"" << std::flush;
+
+        // Load an image
+        RGBImage rgb;
+        if(!rgb.read(filenameRgb))
+        {
+            std::cerr << "Unable to load image \"" << filenameRgb << "\"." << std::endl;
+            db->Close();
+            return false;
+        }
+        cv::Mat rgb_cv = static_cast<cv::Mat>(rgb);
+        rgb_cv.convertTo(rgb_cv, CV_8UC3);
+
+        // Load ground truth
+        LabelImage gt;
+        helper::image::PNGError err = helper::image::readPalettePNG(filenameGt, gt, nullptr);
+        if(err != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Unable to load ground truth \"" << filenameGt << "\". Error Code: " << (int) err << std::endl;
+            db->Close();
+            return false;
+        }
+        cv::Mat gt_cv = static_cast<cv::Mat>(gt);
+        gt_cv.convertTo(gt_cv, CV_8UC1);
+
+        if(rgb_cv.cols != gt_cv.cols || rgb_cv.rows != gt_cv.rows)
+        {
+            std::cerr << "RGB patch and GT patch don't match up." << std::endl;
+            db->Close();
+            return false;
+        }
+
+        // Write to database
+        caffe::Datum dat;
+        dat.set_width(gt_cv.cols);
+        dat.set_height(gt_cv.rows);
+        dat.set_channels(4); // BGR + Labels
+        char* buffer = new char[dat.width() * dat.height() * dat.channels()];
+        for (int h = 0; h < dat.height(); ++h)
+        {
+            for (int w = 0; w < dat.width(); ++w)
+            {
+                for (int c = 0; c < dat.channels(); ++c)
+                {
+                    int datum_index = (c * dat.height() + h) * dat.width() + w;
+                    if(c < 3)
+                        buffer[datum_index] = rgb_cv.at<cv::Vec3b>(h, w)[c];
+                    else
+                        buffer[datum_index] = gt_cv.at<char>(h, w);
+                }
+            }
+        }
+        dat.set_data(buffer, dat.width() * dat.height() * dat.channels());
+
+        std::string out;
+        CHECK(dat.SerializeToString(&out));
+        transaction->Put(std::to_string(i), out);
+        transaction->Commit();
+        transaction.reset(db->NewTransaction());
+
+        delete[] buffer;
+
+        std::cout << "OK!" << std::endl;
+    }
+
+    transaction->Commit();
+    db->Close();
 
     return true;
 }
@@ -731,6 +784,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.prepareFeatTrain.empty())
         prepareFeatTrain(properties);
+
+    if(!properties.job.writeLMDB.empty())
+        writeLMDB(properties);
 
     return 0;
 }
