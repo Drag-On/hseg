@@ -58,6 +58,9 @@ find_package(MATIO REQUIRED)
 ### trw_s ###
 add_subdirectory(lib/trw_s)
 
+### dense crf ###
+add_subdirectory(lib/densecrf)
+
 ### properties ###
 add_subdirectory(lib/properties)
 
@@ -76,8 +79,8 @@ ENDFUNCTION(PREPEND)
 ### All the source files and headers
 set(SOURCE_FILES include/Image/Image.h include/helper/coordinate_helper.h include/helper/image_helper.h src/helper/image_helper.cpp include/helper/opencv_helper.h src/helper/opencv_helper.cpp src/Energy/EnergyFunction.cpp include/Energy/EnergyFunction.h include/Image/Coordinates.h src/Energy/Weights.cpp include/Energy/Weights.h include/helper/hash_helper.h src/Timer.cpp include/Timer.h src/Accuracy/ConfusionMatrix.cpp include/Accuracy/ConfusionMatrix.h include/Inference/InferenceIterator.h include/Inference/InferenceResult.h include/Inference/InferenceResultDetails.h src/Threading/ThreadPool.cpp include/Threading/ThreadPool.h include/typedefs.h src/Image/FeatureImage.cpp include/Image/FeatureImage.h include/Image/Feature.h src/Energy/LossAugmentedEnergyFunction.cpp include/Energy/LossAugmentedEnergyFunction.h include/Inference/Cluster.h include/helper/clustering_helper.h src/helper/clustering_helper.cpp)
 set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(INCLUDE_SYS_DIRS ${trw_s_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PNG_INCLUDE_DIRS} ${MATIO_INCLUDE_DIRS})
-set(LIBS trw_s properties ${OpenCV_LIBS} ${Boost_LIBRARIES} ${PNG_LIBRARIES} ${MATIO_LIBRARIES})
+set(INCLUDE_SYS_DIRS ${trw_s_INCLUDE_DIRS} ${properties_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PNG_INCLUDE_DIRS} ${MATIO_INCLUDE_DIRS} ${dense_crf_INCLUDE_DIRS})
+set(LIBS trw_s densecrf properties ${OpenCV_LIBS} ${Boost_LIBRARIES} ${PNG_LIBRARIES} ${MATIO_LIBRARIES})
 PREPEND(SOURCE_FILES_FULL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${SOURCE_FILES})
 
 add_definitions(${PNG_DEFINITIONS})
