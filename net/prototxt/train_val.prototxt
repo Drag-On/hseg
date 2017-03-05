@@ -62,11 +62,11 @@ layer {
   bottom: "conv1_1_3x3_s2"
   top: "conv1_1_3x3_s2"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -122,11 +122,11 @@ layer {
   bottom: "conv1_2_3x3"
   top: "conv1_2_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -182,11 +182,11 @@ layer {
   bottom: "conv1_3_3x3"
   top: "conv1_3_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -254,11 +254,11 @@ layer {
   bottom: "conv2_1_1x1_reduce"
   top: "conv2_1_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -314,11 +314,11 @@ layer {
   bottom: "conv2_1_3x3"
   top: "conv2_1_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -374,11 +374,11 @@ layer {
   bottom: "conv2_1_1x1_increase"
   top: "conv2_1_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -428,11 +428,11 @@ layer {
   bottom: "conv2_1_1x1_proj"
   top: "conv2_1_1x1_proj"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -498,11 +498,11 @@ layer {
   bottom: "conv2_2_1x1_reduce"
   top: "conv2_2_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -558,11 +558,11 @@ layer {
   bottom: "conv2_2_3x3"
   top: "conv2_2_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -618,11 +618,11 @@ layer {
   bottom: "conv2_2_1x1_increase"
   top: "conv2_2_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -688,11 +688,11 @@ layer {
   bottom: "conv2_3_1x1_reduce"
   top: "conv2_3_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -748,11 +748,11 @@ layer {
   bottom: "conv2_3_3x3"
   top: "conv2_3_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -808,11 +808,11 @@ layer {
   bottom: "conv2_3_1x1_increase"
   top: "conv2_3_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -878,11 +878,11 @@ layer {
   bottom: "conv3_1_1x1_reduce"
   top: "conv3_1_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -938,11 +938,11 @@ layer {
   bottom: "conv3_1_3x3"
   top: "conv3_1_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -998,11 +998,11 @@ layer {
   bottom: "conv3_1_1x1_increase"
   top: "conv3_1_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1052,11 +1052,11 @@ layer {
   bottom: "conv3_1_1x1_proj"
   top: "conv3_1_1x1_proj"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1122,11 +1122,11 @@ layer {
   bottom: "conv3_2_1x1_reduce"
   top: "conv3_2_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1182,11 +1182,11 @@ layer {
   bottom: "conv3_2_3x3"
   top: "conv3_2_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1242,11 +1242,11 @@ layer {
   bottom: "conv3_2_1x1_increase"
   top: "conv3_2_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1312,11 +1312,11 @@ layer {
   bottom: "conv3_3_1x1_reduce"
   top: "conv3_3_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1372,11 +1372,11 @@ layer {
   bottom: "conv3_3_3x3"
   top: "conv3_3_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1432,11 +1432,11 @@ layer {
   bottom: "conv3_3_1x1_increase"
   top: "conv3_3_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1502,11 +1502,11 @@ layer {
   bottom: "conv3_4_1x1_reduce"
   top: "conv3_4_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1562,11 +1562,11 @@ layer {
   bottom: "conv3_4_3x3"
   top: "conv3_4_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1622,11 +1622,11 @@ layer {
   bottom: "conv3_4_1x1_increase"
   top: "conv3_4_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1692,11 +1692,11 @@ layer {
   bottom: "conv4_1_1x1_reduce"
   top: "conv4_1_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1753,11 +1753,11 @@ layer {
   bottom: "conv4_1_3x3"
   top: "conv4_1_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1813,11 +1813,11 @@ layer {
   bottom: "conv4_1_1x1_increase"
   top: "conv4_1_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1867,11 +1867,11 @@ layer {
   bottom: "conv4_1_1x1_proj"
   top: "conv4_1_1x1_proj"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1937,11 +1937,11 @@ layer {
   bottom: "conv4_2_1x1_reduce"
   top: "conv4_2_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -1998,11 +1998,11 @@ layer {
   bottom: "conv4_2_3x3"
   top: "conv4_2_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2058,11 +2058,11 @@ layer {
   bottom: "conv4_2_1x1_increase"
   top: "conv4_2_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2128,11 +2128,11 @@ layer {
   bottom: "conv4_3_1x1_reduce"
   top: "conv4_3_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2189,11 +2189,11 @@ layer {
   bottom: "conv4_3_3x3"
   top: "conv4_3_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2249,11 +2249,11 @@ layer {
   bottom: "conv4_3_1x1_increase"
   top: "conv4_3_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2319,11 +2319,11 @@ layer {
   bottom: "conv4_4_1x1_reduce"
   top: "conv4_4_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2380,11 +2380,11 @@ layer {
   bottom: "conv4_4_3x3"
   top: "conv4_4_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2440,11 +2440,11 @@ layer {
   bottom: "conv4_4_1x1_increase"
   top: "conv4_4_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2510,11 +2510,11 @@ layer {
   bottom: "conv4_5_1x1_reduce"
   top: "conv4_5_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2571,11 +2571,11 @@ layer {
   bottom: "conv4_5_3x3"
   top: "conv4_5_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2631,11 +2631,11 @@ layer {
   bottom: "conv4_5_1x1_increase"
   top: "conv4_5_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2701,11 +2701,11 @@ layer {
   bottom: "conv4_6_1x1_reduce"
   top: "conv4_6_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2762,11 +2762,11 @@ layer {
   bottom: "conv4_6_3x3"
   top: "conv4_6_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2822,11 +2822,11 @@ layer {
   bottom: "conv4_6_1x1_increase"
   top: "conv4_6_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2892,11 +2892,11 @@ layer {
   bottom: "conv4_7_1x1_reduce"
   top: "conv4_7_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -2953,11 +2953,11 @@ layer {
   bottom: "conv4_7_3x3"
   top: "conv4_7_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3013,11 +3013,11 @@ layer {
   bottom: "conv4_7_1x1_increase"
   top: "conv4_7_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3083,11 +3083,11 @@ layer {
   bottom: "conv4_8_1x1_reduce"
   top: "conv4_8_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3144,11 +3144,11 @@ layer {
   bottom: "conv4_8_3x3"
   top: "conv4_8_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3204,11 +3204,11 @@ layer {
   bottom: "conv4_8_1x1_increase"
   top: "conv4_8_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3274,11 +3274,11 @@ layer {
   bottom: "conv4_9_1x1_reduce"
   top: "conv4_9_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3335,11 +3335,11 @@ layer {
   bottom: "conv4_9_3x3"
   top: "conv4_9_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3395,11 +3395,11 @@ layer {
   bottom: "conv4_9_1x1_increase"
   top: "conv4_9_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3465,11 +3465,11 @@ layer {
   bottom: "conv4_10_1x1_reduce"
   top: "conv4_10_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3526,11 +3526,11 @@ layer {
   bottom: "conv4_10_3x3"
   top: "conv4_10_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3586,11 +3586,11 @@ layer {
   bottom: "conv4_10_1x1_increase"
   top: "conv4_10_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3656,11 +3656,11 @@ layer {
   bottom: "conv4_11_1x1_reduce"
   top: "conv4_11_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3717,11 +3717,11 @@ layer {
   bottom: "conv4_11_3x3"
   top: "conv4_11_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3777,11 +3777,11 @@ layer {
   bottom: "conv4_11_1x1_increase"
   top: "conv4_11_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3847,11 +3847,11 @@ layer {
   bottom: "conv4_12_1x1_reduce"
   top: "conv4_12_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3908,11 +3908,11 @@ layer {
   bottom: "conv4_12_3x3"
   top: "conv4_12_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -3968,11 +3968,11 @@ layer {
   bottom: "conv4_12_1x1_increase"
   top: "conv4_12_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4038,11 +4038,11 @@ layer {
   bottom: "conv4_13_1x1_reduce"
   top: "conv4_13_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4099,11 +4099,11 @@ layer {
   bottom: "conv4_13_3x3"
   top: "conv4_13_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4159,11 +4159,11 @@ layer {
   bottom: "conv4_13_1x1_increase"
   top: "conv4_13_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4229,11 +4229,11 @@ layer {
   bottom: "conv4_14_1x1_reduce"
   top: "conv4_14_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4290,11 +4290,11 @@ layer {
   bottom: "conv4_14_3x3"
   top: "conv4_14_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4350,11 +4350,11 @@ layer {
   bottom: "conv4_14_1x1_increase"
   top: "conv4_14_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4420,11 +4420,11 @@ layer {
   bottom: "conv4_15_1x1_reduce"
   top: "conv4_15_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4481,11 +4481,11 @@ layer {
   bottom: "conv4_15_3x3"
   top: "conv4_15_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4541,11 +4541,11 @@ layer {
   bottom: "conv4_15_1x1_increase"
   top: "conv4_15_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4611,11 +4611,11 @@ layer {
   bottom: "conv4_16_1x1_reduce"
   top: "conv4_16_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4672,11 +4672,11 @@ layer {
   bottom: "conv4_16_3x3"
   top: "conv4_16_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4732,11 +4732,11 @@ layer {
   bottom: "conv4_16_1x1_increase"
   top: "conv4_16_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4802,11 +4802,11 @@ layer {
   bottom: "conv4_17_1x1_reduce"
   top: "conv4_17_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4863,11 +4863,11 @@ layer {
   bottom: "conv4_17_3x3"
   top: "conv4_17_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4923,11 +4923,11 @@ layer {
   bottom: "conv4_17_1x1_increase"
   top: "conv4_17_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -4993,11 +4993,11 @@ layer {
   bottom: "conv4_18_1x1_reduce"
   top: "conv4_18_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5054,11 +5054,11 @@ layer {
   bottom: "conv4_18_3x3"
   top: "conv4_18_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5114,11 +5114,11 @@ layer {
   bottom: "conv4_18_1x1_increase"
   top: "conv4_18_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5184,11 +5184,11 @@ layer {
   bottom: "conv4_19_1x1_reduce"
   top: "conv4_19_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5245,11 +5245,11 @@ layer {
   bottom: "conv4_19_3x3"
   top: "conv4_19_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5305,11 +5305,11 @@ layer {
   bottom: "conv4_19_1x1_increase"
   top: "conv4_19_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5375,11 +5375,11 @@ layer {
   bottom: "conv4_20_1x1_reduce"
   top: "conv4_20_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5436,11 +5436,11 @@ layer {
   bottom: "conv4_20_3x3"
   top: "conv4_20_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5496,11 +5496,11 @@ layer {
   bottom: "conv4_20_1x1_increase"
   top: "conv4_20_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5566,11 +5566,11 @@ layer {
   bottom: "conv4_21_1x1_reduce"
   top: "conv4_21_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5627,11 +5627,11 @@ layer {
   bottom: "conv4_21_3x3"
   top: "conv4_21_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5687,11 +5687,11 @@ layer {
   bottom: "conv4_21_1x1_increase"
   top: "conv4_21_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5757,11 +5757,11 @@ layer {
   bottom: "conv4_22_1x1_reduce"
   top: "conv4_22_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5818,11 +5818,11 @@ layer {
   bottom: "conv4_22_3x3"
   top: "conv4_22_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5878,11 +5878,11 @@ layer {
   bottom: "conv4_22_1x1_increase"
   top: "conv4_22_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -5948,11 +5948,11 @@ layer {
   bottom: "conv4_23_1x1_reduce"
   top: "conv4_23_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6009,11 +6009,11 @@ layer {
   bottom: "conv4_23_3x3"
   top: "conv4_23_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6069,11 +6069,11 @@ layer {
   bottom: "conv4_23_1x1_increase"
   top: "conv4_23_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6139,11 +6139,11 @@ layer {
   bottom: "conv5_1_1x1_reduce"
   top: "conv5_1_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6200,11 +6200,11 @@ layer {
   bottom: "conv5_1_3x3"
   top: "conv5_1_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6260,11 +6260,11 @@ layer {
   bottom: "conv5_1_1x1_increase"
   top: "conv5_1_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6314,11 +6314,11 @@ layer {
   bottom: "conv5_1_1x1_proj"
   top: "conv5_1_1x1_proj"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6384,11 +6384,11 @@ layer {
   bottom: "conv5_2_1x1_reduce"
   top: "conv5_2_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6445,11 +6445,11 @@ layer {
   bottom: "conv5_2_3x3"
   top: "conv5_2_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6505,11 +6505,11 @@ layer {
   bottom: "conv5_2_1x1_increase"
   top: "conv5_2_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6575,11 +6575,11 @@ layer {
   bottom: "conv5_3_1x1_reduce"
   top: "conv5_3_1x1_reduce"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6636,11 +6636,11 @@ layer {
   bottom: "conv5_3_3x3"
   top: "conv5_3_3x3"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6696,11 +6696,11 @@ layer {
   bottom: "conv5_3_1x1_increase"
   top: "conv5_3_1x1_increase"
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -6776,11 +6776,11 @@ layer {
   bottom: "conv5_3_pool1_conv"
   top: "conv5_3_pool1_conv"
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
@@ -6856,11 +6856,11 @@ layer {
   bottom: "conv5_3_pool2_conv"
   top: "conv5_3_pool2_conv"
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
@@ -6936,11 +6936,11 @@ layer {
   bottom: "conv5_3_pool3_conv"
   top: "conv5_3_pool3_conv"
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
@@ -7016,11 +7016,11 @@ layer {
   bottom: "conv5_3_pool6_conv"
   top: "conv5_3_pool6_conv"
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
@@ -7096,11 +7096,11 @@ layer {
   bottom: "conv5_4"
   top: "conv5_4"
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
-    lr_mult: 0
+    lr_mult: 10
     decay_mult: 0
   }
   param {
