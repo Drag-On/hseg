@@ -10,6 +10,7 @@
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/core/core.hpp>
+#include <densecrf.h>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -432,8 +433,6 @@ bool scale_up(UtilProperties const& properties)
     {
         std::string filenameRgb = file + properties.dataset.extension.rgb;
         std::string pathRgb = properties.dataset.path.rgb + filenameRgb;
-        std::string filenameMarginals = file + ".mat";
-        std::string pathMarginals = properties.in + "marginals/" + filenameMarginals;
         std::string filenameLabeling = file + properties.dataset.extension.gt;
         std::string pathLabeling = properties.in + "labeling/" + filenameLabeling;
         std::string filenameClustering = file + properties.dataset.extension.gt;
@@ -472,38 +471,28 @@ bool scale_up(UtilProperties const& properties)
             return false;
         }
 
-        // Marginals
-        FeatureImage marginals;
-        if(!marginals.read(pathMarginals))
-        {
-            std::cout << "\tERROR" << std::endl;
-            std::cerr << " Couldn't read marginals \"" << pathMarginals << "\". " << std::endl;
-            return false;
-        }
-        cv::Mat labelingMarginals = static_cast<cv::Mat>(marginals);
-
         // Make up crude "marginals"
-//        cv::Mat labelingMarginals(labeling.height(), labeling.width(), CV_32FC(properties.dataset.constants.numClasses), cv::Scalar(0));
-        cv::Mat clusteringMarginals(clustering.height(), clustering.width(), CV_32FC(properties.param.numClusters), cv::Scalar(0));
+        cv::Mat labelingMarginals(labeling.height(), labeling.width(), CV_32FC(properties.dataset.constants.numClasses), cv::Scalar(0));
+//        cv::Mat clusteringMarginals(clustering.height(), clustering.width(), CV_32FC(properties.param.numClusters), cv::Scalar(0));
 
-        if(labelingMarginals.cols != clusteringMarginals.cols || labelingMarginals.rows != clusteringMarginals.rows)
-        {
-            std::cout << "\tERROR" << std::endl;
-            std::cerr << " Marginals don't match." << std::endl;
-            return false;
-        }
+//        if(labelingMarginals.cols != clusteringMarginals.cols || labelingMarginals.rows != clusteringMarginals.rows)
+//        {
+//            std::cout << "\tERROR" << std::endl;
+//            std::cerr << " Marginals don't match." << std::endl;
+//            return false;
+//        }
 
         size_t const cols = labelingMarginals.cols;
         size_t const rows = labelingMarginals.rows;
         size_t const ch_lab = labelingMarginals.channels();
-        size_t const ch_clu = clusteringMarginals.channels();
+//        size_t const ch_clu = clusteringMarginals.channels();
 
         for(int x = 0; x < labelingMarginals.cols; ++x)
         {
             for(int y = 0; y < labelingMarginals.rows; ++y)
             {
-//                ((float*)labelingMarginals.data)[cols * y * ch_lab + x * ch_lab + labeling.at(x, y)] = 1;
-                ((float*)clusteringMarginals.data)[cols * y * ch_clu + x * ch_clu + clustering.at(x, y)] = 1;
+                ((float*)labelingMarginals.data)[cols * y * ch_lab + x * ch_lab + labeling.at(x, y)] = 1;
+//                ((float*)clusteringMarginals.data)[cols * y * ch_clu + x * ch_clu + clustering.at(x, y)] = 1;
             }
         }
 
@@ -512,44 +501,60 @@ bool scale_up(UtilProperties const& properties)
         clustering = LabelImage(rgb.width(), rgb.height());
         cv::Mat labelingMarginalsResized, clusteringMarginalsResized;
         cv::resize(labelingMarginals, labelingMarginalsResized, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_CUBIC);
-        cv::resize(clusteringMarginals, clusteringMarginalsResized, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_CUBIC);
+//        cv::resize(clusteringMarginals, clusteringMarginalsResized, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_CUBIC);
 
         labelingMarginals = labelingMarginalsResized;
-        clusteringMarginals = clusteringMarginalsResized;
+//        clusteringMarginals = clusteringMarginalsResized;
 
-        // Copy arg max back
-        for(int x = 0; x < labelingMarginals.cols; ++x)
+        // Do Dense CRF inference
+        // Store it in a way the dense crf implementation understands
+        Label const numClasses = properties.dataset.constants.numClasses;
+        Eigen::MatrixXf unary(numClasses, rgb.width() * rgb.height());
+        for(Coord y = 0; y < rgb.height(); ++y)
         {
-            for(int y = 0; y < labelingMarginals.rows; ++y)
+            for(Coord x = 0; x < rgb.width(); ++x)
             {
-                // Labeling
-                float curMax = ((float*)labelingMarginals.data)[labelingMarginals.cols * y * ch_lab + x * ch_lab+ 0];
-                Label curLabel = 0;
-                for(int c = 1; c < labelingMarginals.channels(); ++c)
-                {
-                    float val = ((float*)labelingMarginals.data)[labelingMarginals.cols * y * ch_lab + x * ch_lab + c];
-                    if(val > curMax)
-                    {
-                        curMax = val;
-                        curLabel = c;
-                    }
-                }
-                labeling.at(x, y) = curLabel;
-
-                // Clustering
-                curMax = ((float*)clusteringMarginals.data)[clusteringMarginals.cols * y * ch_clu + x * ch_clu + 0];
-                curLabel = 0;
-                for(int c = 1; c < clusteringMarginals.channels(); ++c)
-                {
-                    float val = ((float*)clusteringMarginals.data)[clusteringMarginals.cols * y * ch_clu + x * ch_clu + c];
-                    if(val > curMax)
-                    {
-                        curMax = val;
-                        curLabel = c;
-                    }
-                }
-                clustering.at(x, y) = curLabel;
+                for(Label l = 0; l < numClasses; ++l)
+                    unary(l, x + y * rgb.width()) = -((float*)labelingMarginalsResized.data)[rgb.width() * y * ch_lab + x * ch_lab + l];
             }
+        }
+
+        // Store image in a way the dense crf implementation understands
+        std::vector<unsigned char> im(rgb.width() * rgb.height() * 3, 0);
+        for(Coord x = 0; x < rgb.width(); ++x)
+        {
+            for(Coord y = 0; y < rgb.height(); ++y)
+            {
+                for(uint32_t c = 0; c < 3; ++c)
+                    im[c + x * 3 + y * 3 * rgb.width()] = rgb.at(x, y, c);
+            }
+        }
+
+        // Setup the CRF model
+        DenseCRF2D crf(rgb.width(), rgb.height(), numClasses);
+        // Specify the unary potential as an array of size W*H*(#classes)
+        // packing order: x0y0l0 x0y0l1 x0y0l2 .. x1y0l0 x1y0l1 ...
+        crf.setUnaryEnergy( unary );
+        // add a color independent term (feature = pixel location 0..W-1, 0..H-1)
+        // x_stddev = 3
+        // y_stddev = 3
+        // weight = 3
+        crf.addPairwiseGaussian( 3, 3, new PottsCompatibility( 1 ) );
+        // add a color dependent term (feature = xyrgb)
+        // x_stddev = 60
+        // y_stddev = 60
+        // r_stddev = g_stddev = b_stddev = 20
+        // weight = 10
+        crf.addPairwiseBilateral( 30, 30, 13, 13, 13, im.data(), new PottsCompatibility( 5 ) );
+
+        // Do map inference
+        VectorXs map = crf.map(5);
+
+        // Copy result to label image
+        for (Coord x = 0; x < rgb.width(); ++x)
+        {
+            for (Coord y = 0; y < rgb.height(); ++y)
+                labeling.at(x, y) = map(x + y * rgb.width());
         }
 
         // Write results to disk
@@ -560,13 +565,13 @@ bool scale_up(UtilProperties const& properties)
             std::cerr << " Couldn't write rescaled labeling \"" << outPathLabeling + filenameLabeling << "\". Error Code: " << (int) ok << std::endl;
             return false;
         }
-        ok = helper::image::writePalettePNG(outPathClustering + filenameClustering, clustering, cmap);
-        if(ok != helper::image::PNGError::Okay)
-        {
-            std::cout << "\tERROR" << std::endl;
-            std::cerr << " Couldn't write rescaled clustering \"" << outPathClustering + filenameClustering << "\". Error Code: " << (int) ok << std::endl;
-            return false;
-        }
+//        ok = helper::image::writePalettePNG(outPathClustering + filenameClustering, clustering, cmap);
+//        if(ok != helper::image::PNGError::Okay)
+//        {
+//            std::cout << "\tERROR" << std::endl;
+//            std::cerr << " Couldn't write rescaled clustering \"" << outPathClustering + filenameClustering << "\". Error Code: " << (int) ok << std::endl;
+//            return false;
+//        }
         std::cout << "\tOK" << std::endl;
     }
     return true;
