@@ -45,6 +45,7 @@ PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(prepareDataset,
                           PROP_DEFINE_A(int, baseSize, 512, --base_size)
                           PROP_DEFINE_A(int, cropSize, 473, --crop_size)
+                          PROP_DEFINE_A(bool, withGt, true, --with_gt)
                   )
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(float, rescaleFactor, 0.5f, --rescale)
@@ -487,14 +488,18 @@ bool prepareDataset(UtilProperties const& properties)
 
         // Load ground truth
         LabelImage gt;
-        helper::image::PNGError err = helper::image::readPalettePNG(pathGt, gt, nullptr);
-        if(err != helper::image::PNGError::Okay)
+        cv::Mat gt_cv;
+        if(properties.prepareDataset.withGt)
         {
-            std::cerr << "Unable to load ground truth \"" << pathGt << "\". Error Code: " << (int) err << std::endl;
-            return false;
+            helper::image::PNGError err = helper::image::readPalettePNG(pathGt, gt, nullptr);
+            if(err != helper::image::PNGError::Okay)
+            {
+                std::cerr << "Unable to load ground truth \"" << pathGt << "\". Error Code: " << (int) err << std::endl;
+                return false;
+            }
+            gt_cv = static_cast<cv::Mat>(gt);
+            gt_cv.convertTo(gt_cv, CV_8UC1);
         }
-        cv::Mat gt_cv = static_cast<cv::Mat>(gt);
-        gt_cv.convertTo(gt_cv, CV_8UC1);
 
         // Scale to base size
         int const base_size = properties.prepareDataset.baseSize;
@@ -507,7 +512,8 @@ bool prepareDataset(UtilProperties const& properties)
             new_rows = static_cast<int>(std::round(long_side / (float)rgb_cv.cols * rgb_cv.rows));
         cv::Mat rgb_resized, gt_resized;
         cv::resize(rgb_cv, rgb_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_LINEAR);
-        cv::resize(gt_cv, gt_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
+        if(properties.prepareDataset.withGt)
+            cv::resize(gt_cv, gt_resized, cv::Size(new_cols, new_rows), 0, 0, cv::INTER_NEAREST);
 
         // Crop out parts that have the right dimensions
         float const stride_rate = 2.f / 3.f;
@@ -555,12 +561,16 @@ bool prepareDataset(UtilProperties const& properties)
                 // Ground Truth
                 //
 
-                // Crop
-                cv::Mat patch_gt = gt_resized(cv::Rect(s_x, s_y, patchW, patchH));
+                cv::Mat padded_gt;
+                if(properties.prepareDataset.withGt)
+                {
+                    // Crop
+                    cv::Mat patch_gt = gt_resized(cv::Rect(s_x, s_y, patchW, patchH));
 
-                // Pad with 255
-                cv::Mat padded_gt(crop_size, crop_size, patch_gt.type());
-                cv::copyMakeBorder(patch_gt, padded_gt, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(255));
+                    // Pad with 255
+                    padded_gt = cv::Mat(crop_size, crop_size, patch_gt.type());
+                    cv::copyMakeBorder(patch_gt, padded_gt, 0, pad_h, 0, pad_w, cv::BORDER_CONSTANT, cv::Scalar(255));
+                }
 
                 //
                 // Also create flipped version of the image
@@ -568,7 +578,8 @@ bool prepareDataset(UtilProperties const& properties)
 
                 cv::Mat padded_img_flip, padded_gt_flip;
                 flip(padded_img, padded_img_flip, 1);
-                flip(padded_gt, padded_gt_flip, 1);
+                if(properties.prepareDataset.withGt)
+                    flip(padded_gt, padded_gt_flip, 1);
 
                 //
                 // Write to file
@@ -591,21 +602,25 @@ bool prepareDataset(UtilProperties const& properties)
                 }
 
                 // GT
-                std::string gtOut = outPathGt + cropFileName + properties.dataset.extension.gt;
-                auto err = helper::image::writePalettePNG(gtOut, padded_gt, cmap);
-                if(err != helper::image::PNGError::Okay)
+                if(properties.prepareDataset.withGt)
                 {
-                    std::cerr << "Couldn't write GT crop to \"" << gtOut << "\". Error Code: " << (int) err << std::endl;
-                    return false;
-                }
-                std::string gtOutFlip = outPathGt + cropFileNameFlip + properties.dataset.extension.gt;
-                err = helper::image::writePalettePNG(gtOutFlip, padded_gt_flip, cmap);
-                if(err != helper::image::PNGError::Okay)
-                {
-                    std::cerr << "Couldn't write flipped GT crop to \"" << gtOutFlip << "\". Error Code: " << (int) err << std::endl;
-                    return false;
+                    std::string gtOut = outPathGt + cropFileName + properties.dataset.extension.gt;
+                    auto err = helper::image::writePalettePNG(gtOut, padded_gt, cmap);
+                    if(err != helper::image::PNGError::Okay)
+                    {
+                        std::cerr << "Couldn't write GT crop to \"" << gtOut << "\". Error Code: " << (int) err << std::endl;
+                        return false;
+                    }
+                    std::string gtOutFlip = outPathGt + cropFileNameFlip + properties.dataset.extension.gt;
+                    err = helper::image::writePalettePNG(gtOutFlip, padded_gt_flip, cmap);
+                    if(err != helper::image::PNGError::Okay)
+                    {
+                        std::cerr << "Couldn't write flipped GT crop to \"" << gtOutFlip << "\". Error Code: " << (int) err << std::endl;
+                        return false;
+                    }
                 }
 
+                // Write additional info
                 std::string info = cropFileName + ";" +
                                    std::to_string(s_x) + ";" +
                                    std::to_string(s_y) + ";" +
