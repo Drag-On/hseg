@@ -268,15 +268,19 @@ Image<T, C>::Image(cv::Mat const& mat) noexcept
     if (!mat.data || mat.channels() != C)
         return;
 
-    m_width = mat.cols;
-    m_height = mat.rows;
+    int const opencvType = helper::opencv::getOpenCvType<T>(C);
+    cv::Mat intMat;
+    mat.convertTo(intMat, opencvType);
+
+    m_width = intMat.cols;
+    m_height = intMat.rows;
     m_data.resize(m_width * m_height * C, 0);
 
     for (size_t y = 0; y < m_height; ++y)
     {
         for (size_t x = 0; x < m_width; ++x)
         {
-            auto color = mat.at<cv::Vec<T, C>>(y, x);
+            auto color = intMat.at<cv::Vec<T, C>>(y, x);
             for (size_t c = 0; c < C; ++c)
                 at(x, y, c) = color[c];
         }
