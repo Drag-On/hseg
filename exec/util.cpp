@@ -22,7 +22,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, rescale, "", --rescale)
                                PROP_DEFINE_A(std::string, matchGt, "", --match_gt)
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
-                               PROP_DEFINE_A(std::string, prepareFeatTrain, "", --prepareFeatTrain)
+                               PROP_DEFINE_A(std::string, prepareDataset, "", --prepareDataset)
                                PROP_DEFINE_A(std::string, writeLMDB, "", --writeLMDB)
                   )
                   GROUP_DEFINE(dataset,
@@ -41,6 +41,10 @@ PROPERTIES_DEFINE(Util,
                                             PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
                                )
+                  )
+                  GROUP_DEFINE(prepareDataset,
+                          PROP_DEFINE_A(int, baseSize, 512, --base_size)
+                          PROP_DEFINE_A(int, cropSize, 473, --crop_size)
                   )
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(float, rescaleFactor, 0.5f, --rescale)
@@ -453,11 +457,11 @@ bool copyFixPNG(UtilProperties const& properties)
     return true;
 }
 
-bool prepareFeatTrain(UtilProperties const& properties)
+bool prepareDataset(UtilProperties const& properties)
 {
     // Read in file names
-    std::vector<std::string> list = readLines(properties.job.prepareFeatTrain);
-    std::vector<std::string> rgbList, gtList;
+    std::vector<std::string> list = readLines(properties.job.prepareDataset);
+    std::vector<std::string> infoList;
     auto cmap = helper::image::generateColorMapVOC(256);
 
     for (std::string const& file : list)
@@ -493,7 +497,7 @@ bool prepareFeatTrain(UtilProperties const& properties)
         gt_cv.convertTo(gt_cv, CV_8UC1);
 
         // Scale to base size
-        int const base_size = 512;
+        int const base_size = properties.prepareDataset.baseSize;
         int const long_side = base_size + 1;
         int new_rows = long_side;
         int new_cols = long_side;
@@ -507,7 +511,7 @@ bool prepareFeatTrain(UtilProperties const& properties)
 
         // Crop out parts that have the right dimensions
         float const stride_rate = 2.f / 3.f;
-        int const crop_size = 473;
+        int const crop_size = properties.prepareDataset.cropSize;
         int const stride = static_cast<int>(std::ceil(crop_size * stride_rate));
         for(int y = 0; y <= rgb_resized.rows; y += stride)
         {
@@ -602,10 +606,23 @@ bool prepareFeatTrain(UtilProperties const& properties)
                     return false;
                 }
 
-                rgbList.push_back(rgbOut);
-                rgbList.push_back(rgbOutFlip);
-                gtList.push_back(gtOut);
-                gtList.push_back(gtOutFlip);
+                std::string info = cropFileName + ";" +
+                                   std::to_string(s_x) + ";" +
+                                   std::to_string(s_y) + ";" +
+                                   std::to_string(patchW) + ";" +
+                                   std::to_string(patchH) + ";" +
+                                   file + ";" +
+                                   "false";
+                std::string infoFlip = cropFileNameFlip + ";" +
+                                       std::to_string(s_x) + ";" +
+                                       std::to_string(s_y) + ";" +
+                                       std::to_string(patchW) + ";" +
+                                       std::to_string(patchH) + ";" +
+                                       file + ";" +
+                                       "true";
+
+                infoList.push_back(info);
+                infoList.push_back(infoFlip);
 
                 if(breakOnEnd)
                     break;
@@ -617,25 +634,15 @@ bool prepareFeatTrain(UtilProperties const& properties)
     }
 
     // Write list with images to file
-    std::ofstream outRGB(properties.out + "rgb.txt");
-    if(outRGB.is_open())
+    std::ofstream outMetadata(properties.out + "metadata.txt");
+    if(outMetadata.is_open())
     {
-        for (auto const& l : rgbList)
-            outRGB << l << std::endl;
-        outRGB.close();
+        for (auto const& l : infoList)
+            outMetadata << l << std::endl;
+        outMetadata.close();
     }
     else
-        std::cerr << "Unable to write RGB list to \"" << properties.out + "rgb.txt" << "\"" << std::endl;
-
-    std::ofstream outGt(properties.out + "gt.txt");
-    if(outGt.is_open())
-    {
-        for (auto const& l : gtList)
-            outGt << l << std::endl;
-        outGt.close();
-    }
-    else
-        std::cerr << "Unable to write GT list to \"" << properties.out + "gt.txt" << "\"" << std::endl;
+        std::cerr << "Unable to write meta data to \"" << properties.out + "metadata.txt" << "\"" << std::endl;
 
     return true;
 }
@@ -782,8 +789,8 @@ int main(int argc, char** argv)
     if(!properties.job.copyFixPNG.empty())
         copyFixPNG(properties);
 
-    if(!properties.job.prepareFeatTrain.empty())
-        prepareFeatTrain(properties);
+    if(!properties.job.prepareDataset.empty())
+        prepareDataset(properties);
 
     if(!properties.job.writeLMDB.empty())
         writeLMDB(properties);
