@@ -59,7 +59,7 @@ protected:
 
     void updateClusterAffiliation(LabelImage& outClustering, LabelImage const& labeling, std::vector<Cluster> const& clusters);
 
-    void updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering);
+    void updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, FeatureImage* pOutMarginals = nullptr);
 
     void updateClusterFeatures(std::vector<Cluster>& outClusters, LabelImage const& labeling, LabelImage const& clustering);
 
@@ -108,7 +108,7 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
 }
 
 template<typename EnergyFun>
-void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering)
+void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, FeatureImage* pOutMarginals)
 {
     ClusterId const numClusters = m_pEnergy->numClusters();
     Label const numClasses = m_pEnergy->numClasses();
@@ -218,8 +218,28 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
     mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
 
     // Copy over result
+    if(pOutMarginals != nullptr)
+        *pOutMarginals = FeatureImage(outLabeling.width(), outLabeling.height(), numClasses);
     for (SiteId i = 0; i < numPx; ++i)
+    {
         outLabeling.atSite(i) = mrfEnergy.GetSolution(nodeIds[i]);
+
+        // Compute marginals?
+        if(pOutMarginals != nullptr)
+        {
+            // This is just a soft max over the message vector
+            double sum = 0;
+            for(Label l = 0; l < numClasses; ++l)
+            {
+                double marginal = std::exp(-nodeIds[i]->m_D.GetValue(globalSize, nodeIds[i]->m_K, l));
+                pOutMarginals->atSite(i)[l] = marginal;
+                sum += marginal;
+            }
+            // Normalize
+            for(Label l = 0; l < numClasses; ++l)
+                pOutMarginals->atSite(i)[l] /= sum;
+        }
+    }
     for (ClusterId k = 0; k < numClusters; ++k)
         outClusters[k].m_label = mrfEnergy.GetSolution(nodeIds[numPx + k]);
 }
@@ -373,7 +393,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
         updateClusterFeatures(result.clusters, result.labeling, result.clustering);
 
         // Update labels
-        updateLabels(result.labeling, result.clusters, result.clustering);
+        updateLabels(result.labeling, result.clusters, result.clustering, &result.marginals);
 
         // Compute current energy to check for convergence
         energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
@@ -409,7 +429,8 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
         updateClusterFeatures(clusters, labeling, clustering);
 
         // Update labels
-        updateLabels(labeling, clusters, clustering);
+        FeatureImage marginals;
+        updateLabels(labeling, clusters, clustering, &marginals);
 
         // Compute current energy to check for convergence
         energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
@@ -418,6 +439,7 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
         result.clusters.push_back(clusters);
         result.clusterings.push_back(clustering);
         result.labelings.push_back(labeling);
+        result.marginals.push_back(marginals);
         result.energy.push_back(energy);
     }
 

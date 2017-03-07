@@ -49,6 +49,8 @@ namespace caffe {
         int maxIter_ = 50;
         int const numClasses_ = 21;
 
+        int cropX_ = -1, cropY_ = -1, cropW_ = -1, cropH_ = -1;
+
         std::vector<FeatureImage> features_;
         std::vector<LabelImage> gt_;
         std::vector<InferenceResult> gtResult_;
