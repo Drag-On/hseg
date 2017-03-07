@@ -44,6 +44,7 @@ for i=1:length(list)
 	fprintf('%s',str);
 
     if exist([save_root '/' str '.mat'], 'file')
+        fprintf(' exists\n');
         continue
     end
 
