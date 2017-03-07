@@ -41,7 +41,7 @@ for i=1:length(list)
 	str = strsplit(elem,';');
 	str = str{1};
 
-	fprintf('%s\n',str);
+	fprintf('%s',str);
 
     if exist([save_root '/' str '.mat'], 'file')
         continue
@@ -68,4 +68,6 @@ for i=1:length(list)
     features = permute(features, [2 1 3]);
 
     save([save_root '/' str],'features');
+
+    fprintf(' OK\n');
 end
