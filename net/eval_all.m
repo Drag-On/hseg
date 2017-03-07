@@ -1,14 +1,14 @@
 close all; clc; clear;
-addpath('../../PSPNet/matlab'); %add matcaffe path
+addpath('../../PSPNet_tiptop/matlab'); %add matcaffe path
 %addpath('../visualizationCode');
 
-data_root = '../data/PascalVOC2012/train/rgb';
-eval_list = '../data/PascalVOC2012/train/metadata.txt';
-save_root = '../data/PascalVOC2012/train/feat';
+data_root = '/work/moellerj/dataset/PascalVOC2012/test/rgb';
+eval_list = '/work/moellerj/dataset/PascalVOC2012/test/metadata.txt';
+save_root = '/work/moellerj/dataset/PascalVOC2012/test/feat';
 model_weights = 'model/pspnet101_VOC2012.caffemodel';
 model_deploy = 'prototxt/deploy.prototxt';
 crop_size = 473;
-use_gpu = false;
+use_gpu = true;
 gpu_id = 0;
 img_ext = '.jpg';
 
@@ -44,6 +44,7 @@ for i=1:length(list)
 	fprintf('%s',str);
 
     if exist([save_root '/' str '.mat'], 'file')
+        fprintf(' exists\n');
         continue
     end
 
