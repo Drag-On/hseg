@@ -43,6 +43,10 @@ for i=1:length(list)
 
 	fprintf('%s\n',str);
 
+    if exist([save_root '/' str '.mat'], 'file')
+        continue
+    end
+
     img = imread(fullfile(data_root,strcat(str,img_ext)));
 
     [w, h, c] = size(img);
