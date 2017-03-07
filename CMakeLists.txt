@@ -58,6 +58,9 @@ find_package(MATIO REQUIRED)
 ### trw_s ###
 add_subdirectory(lib/trw_s)
 
+### dense crf ###
+add_subdirectory(lib/densecrf)
+
 ### properties ###
 add_subdirectory(lib/properties)
 

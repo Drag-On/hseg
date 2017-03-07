@@ -41,17 +41,6 @@ namespace caffe {
             futures.emplace_back(
                     std::async(std::launch::async, [&, i]()
                                {
-                                   // Copy over the features
-                                   FeatureImage& featImg = features_[i];
-                                   for (Coord x = 0; x < bottom[0]->width(); ++x)
-                                   {
-                                       for (Coord y = 0; y < bottom[0]->height(); ++y)
-                                       {
-                                           for (Coord c = 0; c < bottom[0]->channels(); ++c)
-                                               featImg.at(x, y)[c] = bottom[0]->data_at(i, c, y, x);
-                                       }
-                                   }
-
                                    // Copy over label image
                                    LabelImage& gt = gt_[i];
                                    gt = LabelImage(bottom[1]->width(), bottom[1]->height()); // Overwrite downscaled version of previous iteration
@@ -63,7 +52,36 @@ namespace caffe {
                                            gt.at(x, y) = std::round(bottom[1]->data_at(i, 0, y, x));
                                        }
                                    }
+                                   // Rescale to feature image dimensions (without interpolation)
+                                   FeatureImage& featImg = features_[i];
                                    gt.rescale(featImg.width(), featImg.height(), false);
+
+                                   // Determine crop box
+                                   for (Coord x = 0; x < gt.width(); ++x)
+                                   {
+                                       for (Coord y = 0; y < gt.height(); ++y)
+                                       {
+                                           if(cropX_ < 0 && cropY_ < 0 && gt.at(x, y) < numClasses_)
+                                           {
+                                               cropX_ = x;
+                                               cropY_ = y;
+                                           }
+                                           if(cropX_ >= 0 && gt.at(x, y) >= numClasses_)
+                                               cropW_ = x - cropX_;
+                                           if(cropY_ >= 0 && gt.at(x, y) >= numClasses_)
+                                               cropH_ = y - cropY_;
+                                       }
+                                   }
+
+                                   // Copy over the features
+                                   for (Coord x = cropX_; x < cropW_; ++x)
+                                   {
+                                       for (Coord y = cropY_; y < cropH_; ++y)
+                                       {
+                                           for (Coord c = 0; c < bottom[0]->channels(); ++c)
+                                               featImg.at(x, y)[c] = bottom[0]->data_at(i, c, y, x);
+                                       }
+                                   }
 
                                    // Find latent variables that best explain the ground truth
                                    EnergyFunction energy(&weights_, numClusters_);
@@ -80,16 +98,18 @@ namespace caffe {
                                                                                             maxIter_);
                                    predResult_[i] = inference.run();
                                    InferenceResult& predResult = predResult_[i];
+
+                                   // Compute energy without weights on the prediction
+                                   auto predEnergy = energy.giveEnergyByWeight(featImg, predResult.labeling,
+                                                                               predResult.clustering,
+                                                                               predResult.clusters);
+
                                    futureGtResult.get(); // Wait until prediction on gt is done
                                    InferenceResult& gtResult = gtResult_[i];
 
                                    // Compute energy without weights on the ground truth
                                    auto gtEnergy = energy.giveEnergyByWeight(featImg, gt, gtResult.clustering,
                                                                              gtResult.clusters);
-                                   // Compute energy without weights on the prediction
-                                   auto predEnergy = energy.giveEnergyByWeight(featImg, predResult.labeling,
-                                                                               predResult.clustering,
-                                                                               predResult.clusters);
 
                                    // Compute upper bound on this image
                                    auto gtEnergyCur = weights_ * gtEnergy;
@@ -107,7 +127,7 @@ namespace caffe {
         float loss = 0;
         for (int j = 0; j < futures.size(); ++j)
             loss += futures[j].get();
-        loss /= futures.size();
+        loss /= bottom[0]->num();
 
         top[0]->mutable_cpu_data()[0] = loss;
     }

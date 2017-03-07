@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <typedefs.h>
+#include <opencv2/core/mat.hpp>
 #include "Feature.h"
 
 class FeatureImage
@@ -15,11 +16,13 @@ class FeatureImage
 public:
     FeatureImage() = default;
 
-    FeatureImage(std::string const& filename);
-
     FeatureImage(Coord width, Coord height, Coord dim);
 
+    FeatureImage(std::string const& filename);
+
     bool read(std::string const& filename);
+
+    bool write(std::string const& filename);
 
     Coord width() const;
 
@@ -44,6 +47,7 @@ public:
     std::vector<Feature> const& data() const;
 
     void subtract(FeatureImage const& other);
+    explicit operator cv::Mat() const;
 
 protected:
     Coord m_width;

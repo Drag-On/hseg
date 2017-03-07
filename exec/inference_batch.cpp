@@ -16,10 +16,12 @@ PROPERTIES_DEFINE(InferenceBatch,
                                GROUP_DEFINE(path,
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
-                               )
+                                            PROP_DEFINE_A(std::string, rgb, "", --rgb)
+                  )
                                GROUP_DEFINE(extension,
                                             PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
                                             PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
                                )
                                GROUP_DEFINE(constants,
                                             PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
@@ -32,6 +34,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                           PROP_DEFINE_A(float, eps, 0, --eps)
                           PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
+                  PROP_DEFINE_A(bool, scaleToRgb, false, --scale_to_rgb)
                   PROP_DEFINE_A(std::string, outDir, "", --out)
                   PROP_DEFINE_A(uint16_t, numThreads, 4, --numThreads)
 )
@@ -48,9 +51,9 @@ struct Result
     std::string filename;
 };
 
-Result process(std::string const& imageFilename, Weights const& weights, std::string const& spOutPath,
-               std::string const& labelOutPath, helper::image::ColorMap const& cmap, ClusterId numClusters, float eps,
-               uint32_t maxIter)
+Result process(std::string const& imageFilename, std::string const& rgbFileName, Weights const& weights, std::string const& spOutPath,
+               std::string const& labelOutPath, std::string const& margOutPath, helper::image::ColorMap const& cmap,
+               ClusterId numClusters, float eps, uint32_t maxIter, bool scaleToRgb)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
@@ -62,6 +65,28 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     {
         std::cerr << "Unable to read features from \"" << imageFilename << "\"" << std::endl;
         return res;
+    }
+
+    // Rescale features if needed
+    if(scaleToRgb)
+    {
+        RGBImage rgb;
+        if(!rgb.read(rgbFileName))
+        {
+            std::cerr << "Couldn't load rgb image \"" << rgbFileName << "\"." << std::endl;
+            return res;
+        }
+        uint32_t width = rgb.width();
+        uint32_t height = rgb.height();
+
+        cv::Mat featMat = static_cast<cv::Mat>(features);
+        cv::Mat featMatResized;
+        cv::resize(featMat, featMatResized, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
+        FeatureImage featuresResized(width, height, features.dim());
+        for(SiteId i = 0; i < featuresResized.width() * featuresResized.height(); ++i)
+            for(uint32_t c = 0; c < featuresResized.dim(); ++c)
+                featuresResized.atSite(i)[c] = ((float*)featMatResized.data)[i * featuresResized.dim() + c];
+        features = featuresResized;
     }
 
     // Create energy function
@@ -76,9 +101,12 @@ Result process(std::string const& imageFilename, Weights const& weights, std::st
     boost::filesystem::create_directories(spPath);
     boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
+    boost::filesystem::path margPath(margOutPath);
+    boost::filesystem::create_directories(margPath);
     helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
     helper::image::writePalettePNG(spPath.string() + filename + ".png", result.clustering, cmap);
     helper::clustering::write(spPath.string() + filename + ".dat", result.clustering, result.clusters);
+    result.marginals.write(margPath.string() + filename + ".mat");
 
     res.okay = true;
     return res;
@@ -128,6 +156,7 @@ int main(int argc, char** argv)
 
     boost::filesystem::path spPath(properties.outDir + "/clustering/");
     boost::filesystem::path labelPath(properties.outDir + "/labeling/");
+    boost::filesystem::path marginalsPath(properties.outDir + "/marginals/");
 
     // Clear output directory
     boost::filesystem::path basePath(properties.outDir);
@@ -138,6 +167,7 @@ int main(int argc, char** argv)
     {
         boost::filesystem::remove_all(spPath);
         boost::filesystem::remove_all(labelPath);
+        boost::filesystem::remove_all(marginalsPath);
     }
 
     ThreadPool pool(properties.numThreads);
@@ -147,17 +177,18 @@ int main(int argc, char** argv)
     for(auto const& f : filenames)
     {
         std::string const& imageFilename = properties.dataset.path.img + f + properties.dataset.extension.img;
+        std::string const& rgbFilename = properties.dataset.path.rgb + f + properties.dataset.extension.rgb;
         std::string filename = boost::filesystem::path(imageFilename).stem().string();
         if(boost::filesystem::exists(spPath / (filename + ".dat")) && boost::filesystem::exists(labelPath / (filename + ".png")))
         {
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, weights, spPath.string(), labelPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter);
+        auto&& fut = pool.enqueue(process, imageFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb);
         futures.push_back(std::move(fut));
 
         // Wait for some threads to finish if the queue gets too long
-        while(pool.queued() > properties.numThreads * 4)
+        while(pool.queued() > properties.numThreads)
         {
             Result res = futures.front().get();
             if(!res.okay)
