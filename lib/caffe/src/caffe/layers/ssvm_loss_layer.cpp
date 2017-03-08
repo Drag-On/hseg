@@ -52,36 +52,35 @@ namespace caffe {
                                            gt.at(x, y) = std::round(bottom[1]->data_at(i, 0, y, x));
                                        }
                                    }
-                                   // Rescale to feature image dimensions (without interpolation)
-                                   FeatureImage& featImg = features_[i];
-                                   gt.rescale(featImg.width(), featImg.height(), false);
-
-                                   // Determine crop box
-                                   for (Coord x = 0; x < gt.width(); ++x)
-                                   {
-                                       for (Coord y = 0; y < gt.height(); ++y)
-                                       {
-                                           if(cropX_ < 0 && cropY_ < 0 && gt.at(x, y) < numClasses_)
-                                           {
-                                               cropX_ = x;
-                                               cropY_ = y;
-                                           }
-                                           if(cropX_ >= 0 && gt.at(x, y) >= numClasses_)
-                                               cropW_ = x - cropX_;
-                                           if(cropY_ >= 0 && gt.at(x, y) >= numClasses_)
-                                               cropH_ = y - cropY_;
-                                       }
-                                   }
 
                                    // Copy over the features
-                                   for (Coord x = cropX_; x < cropW_; ++x)
+                                   FeatureImage& featImg = features_[i];
+                                   for (Coord x = 0; x < bottom[0]->width(); ++x)
                                    {
-                                       for (Coord y = cropY_; y < cropH_; ++y)
+                                       for (Coord y = 0; y < bottom[0]->height(); ++y)
                                        {
                                            for (Coord c = 0; c < bottom[0]->channels(); ++c)
                                                featImg.at(x, y)[c] = bottom[0]->data_at(i, c, y, x);
                                        }
                                    }
+
+                                   // Rescale ground truth to feature image dimensions (without interpolation)
+                                   gt.rescale(featImg.width(), featImg.height(), false);
+
+                                   // Crop to valid region
+                                   cv::Rect bb = computeValidRegion(gt);
+                                   FeatureImage features_cropped(bb.width, bb.height, featImg.dim());
+                                   LabelImage gt_cropped(bb.width, bb.height);
+                                   for(Coord x = bb.x; x < bb.width; ++x)
+                                   {
+                                       for (Coord y = bb.y; y < bb.height; ++y)
+                                       {
+                                           gt_cropped.at(x - bb.x, y - bb.y) = gt.at(x, y);
+                                           features_cropped.at(x - bb.x, y - bb.y) = featImg.at(x, y);
+                                       }
+                                   }
+                                   gt = gt_cropped;
+                                   featImg = features_cropped;
 
                                    // Find latent variables that best explain the ground truth
                                    EnergyFunction energy(&weights_, numClusters_);
@@ -146,10 +145,10 @@ namespace caffe {
             for (int i = 0; i < bottom[0]->num(); ++i)
             {
                 EnergyFunction energy(&weights_, numClusters_);
-                FeatureImage gradGt(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+                FeatureImage gradGt(gtResult_[i].labeling.width(), gtResult_[i].labeling.height(), bottom[0]->channels());
                 energy.computeFeatureGradient(gradGt, gtResult_[i].labeling, gtResult_[i].clustering,
                                               gtResult_[i].clusters, features_[i]);
-                FeatureImage gradPred(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
+                FeatureImage gradPred(predResult_[i].labeling.width(), predResult_[i].labeling.height(), bottom[0]->channels());
                 energy.computeFeatureGradient(gradPred, predResult_[i].labeling, predResult_[i].clustering,
                                               predResult_[i].clusters, features_[i]);
 
@@ -157,15 +156,16 @@ namespace caffe {
                 gradGt.subtract(gradPred);
 
                 // Write back
-                for (Coord x = 0; x < features_[i].width(); ++x)
+                for (Coord x = 0; x < bottom[0]->width(); ++x)
                 {
-                    for (Coord y = 0; y < features_[i].height(); ++y)
+                    for (Coord y = 0; y < bottom[0]->height(); ++y)
                     {
-                        Label l = gt_[i].at(x, y);
+                        cv::Rect const bb = validRegions_[i];
+                        Label l = gt_[i].at(x - bb.x, y - bb.y);
                         for (Coord c = 0; c < features_[i].dim(); ++c)
                         {
-                            if (l < numClasses_)
-                                *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x, y)[c];
+                            if (l < numClasses_ && bb.contains(cv::Point(x, y)))
+                                *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x - bb.x, y - bb.y)[c];
                             else
                                 *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = 0;
                         }
@@ -176,9 +176,64 @@ namespace caffe {
     }
 
 
+
+
 #ifdef CPU_ONLY
 //    STUB_GPU(SSVMLossLayer);
 #endif
+
+    template <typename Dtype>
+    cv::Rect SSVMLossLayer<Dtype>::computeValidRegion(LabelImage const& gt) const
+    {
+        cv::Rect bb(0, 0, gt.width(), gt.height());
+        for(Coord x = 0; x < gt.width(); ++x)
+        {
+            bool columnInvalid = true;
+            for(Coord y = 0; y < gt.height(); ++y)
+            {
+                Label const l = gt.at(x, y);
+                if(l < numClasses_)
+                {
+                    columnInvalid = false;
+                    break;
+                }
+            }
+            if(columnInvalid)
+            {
+                if(x == bb.x + 1)
+                    bb.x++;
+                else
+                {
+                    bb.width = x - bb.x;
+                    break;
+                }
+            }
+        }
+        for(Coord y = 0; y < gt.height(); ++y)
+        {
+            bool rowInvalid = true;
+            for(Coord x = 0; x < gt.height(); ++x)
+            {
+                Label const l = gt.at(x, y);
+                if(l < numClasses_)
+                {
+                    rowInvalid = false;
+                    break;
+                }
+            }
+            if(rowInvalid)
+            {
+                if(y == bb.y + 1)
+                    bb.y++;
+                else
+                {
+                    bb.height = y - bb.y;
+                    break;
+                }
+            }
+        }
+        return bb;
+    }
 
     INSTANTIATE_CLASS(SSVMLossLayer);
     REGISTER_LAYER_CLASS(SSVMLoss);
