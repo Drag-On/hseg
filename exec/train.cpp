@@ -98,12 +98,70 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
         return sampleResult;
     }
+    gt.rescale(features.width(), features.height(), false);
 
-    if(features.height() != gt.height() || features.width() != gt.width())
+    // Crop to valid region
+    cv::Rect bb(0, 0, gt.width(), gt.height());
+    for(Coord x = 0; x < gt.width(); ++x)
     {
-        std::cerr << "Dimensions of \"" << imgFilename << "\" and \"" << gtFilename << "\" don't match." << std::endl;
-        return sampleResult;
+        bool columnInvalid = true;
+        for(Coord y = 0; y < gt.height(); ++y)
+        {
+            Label const l = gt.at(x, y);
+            if(l < properties.dataset.constants.numClasses)
+            {
+                columnInvalid = false;
+                break;
+            }
+        }
+        if(columnInvalid)
+        {
+            if(x == bb.x + 1)
+                bb.x++;
+            else
+            {
+                bb.width = x - bb.x;
+                break;
+            }
+        }
     }
+    for(Coord y = 0; y < gt.height(); ++y)
+    {
+        bool rowInvalid = true;
+        for(Coord x = 0; x < gt.height(); ++x)
+        {
+            Label const l = gt.at(x, y);
+            if(l < properties.dataset.constants.numClasses)
+            {
+                rowInvalid = false;
+                break;
+            }
+        }
+        if(rowInvalid)
+        {
+            if(y == bb.y + 1)
+                bb.y++;
+            else
+            {
+                bb.height = y - bb.y;
+                break;
+            }
+        }
+    }
+    FeatureImage features_cropped(bb.width, bb.height, features.dim());
+    LabelImage gt_cropped(bb.width, bb.height);
+    for(Coord x = bb.x; x < bb.width; ++x)
+    {
+        for (Coord y = bb.y; y < bb.height; ++y)
+        {
+            gt_cropped.at(x - bb.x, y - bb.y) = gt.at(x, y);
+            features_cropped.at(x - bb.x, y - bb.y) = features.at(x, y);
+        }
+    }
+
+    gt = gt_cropped;
+    features = features_cropped;
+
 
     // Find latent variables that best explain the ground truth
     EnergyFunction energy(&curWeights, properties.param.numClusters);
