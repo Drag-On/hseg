@@ -162,6 +162,13 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     gt = gt_cropped;
     features = features_cropped;
 
+    if(gt.height() == 0 || gt.width() == 0 || gt.height() != features.height() || gt.width() != features.width())
+    {
+        std::cerr << "Invalid ground truth or feautures. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
+                  << features.width() << "x" << features.height() << ")." << std::endl;
+        return sampleResult;
+    }
+
 
     // Find latent variables that best explain the ground truth
     EnergyFunction energy(&curWeights, properties.param.numClusters);
