@@ -49,12 +49,14 @@ namespace caffe {
         int maxIter_ = 50;
         int const numClasses_ = 21;
 
-        int cropX_ = -1, cropY_ = -1, cropW_ = -1, cropH_ = -1;
-
+        std::vector<cv::Rect> validRegions_;
         std::vector<FeatureImage> features_;
         std::vector<LabelImage> gt_;
         std::vector<InferenceResult> gtResult_;
         std::vector<InferenceResult> predResult_;
+
+    private:
+        cv::Rect computeValidRegion(LabelImage const& gt) const;
     };
 }
 
