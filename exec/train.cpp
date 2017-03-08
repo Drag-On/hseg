@@ -282,7 +282,7 @@ int main(int argc, char** argv)
             futures.push_back(std::move(fut));
 
             // Wait for some threads to finish if the queue gets too long
-            while(pool.queued() > properties.numThreads * 4)
+            while(pool.queued() > properties.numThreads)
             {
                 auto sampleResult = futures.front().get();
                 if(!sampleResult.valid)
