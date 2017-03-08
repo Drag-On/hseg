@@ -102,51 +102,65 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
 
     // Crop to valid region
     cv::Rect bb(0, 0, gt.width(), gt.height());
-    for(Coord x = 0; x < gt.width(); ++x)
+    for(bb.x = 0; bb.x < gt.width(); ++bb.x)
     {
         bool columnInvalid = true;
         for(Coord y = 0; y < gt.height(); ++y)
         {
-            Label const l = gt.at(x, y);
+            Label const l = gt.at(bb.x, y);
             if(l < properties.dataset.constants.numClasses)
             {
                 columnInvalid = false;
                 break;
             }
         }
-        if(columnInvalid)
+        if(!columnInvalid)
+            break;
+    }
+    for(bb.width = gt.width(); bb.width > 0; --bb.width)
+    {
+        bool columnInvalid = true;
+        for(Coord y = 0; y < gt.height(); ++y)
         {
-            if(x == bb.x + 1)
-                bb.x++;
-            else
+            Label const l = gt.at(bb.x + bb.width, y);
+            if(l < properties.dataset.constants.numClasses)
             {
-                bb.width = x - bb.x;
+                columnInvalid = false;
                 break;
             }
         }
+        if(!columnInvalid)
+            break;
     }
-    for(Coord y = 0; y < gt.height(); ++y)
+    for(bb.y = 0; bb.y < gt.width(); ++bb.y)
     {
         bool rowInvalid = true;
-        for(Coord x = 0; x < gt.height(); ++x)
+        for(Coord x = 0; x < gt.width(); ++x)
         {
-            Label const l = gt.at(x, y);
+            Label const l = gt.at(x, bb.y);
             if(l < properties.dataset.constants.numClasses)
             {
                 rowInvalid = false;
                 break;
             }
         }
-        if(rowInvalid)
+        if(!rowInvalid)
+            break;
+    }
+    for(bb.height = gt.height(); bb.height > 0; --bb.height)
+    {
+        bool rowInvalid = true;
+        for(Coord x = 0; x < gt.width(); ++x)
         {
-            if(y == bb.y + 1)
-                bb.y++;
-            else
+            Label const l = gt.at(x, bb.y + bb.height);
+            if(l < properties.dataset.constants.numClasses)
             {
-                bb.height = y - bb.y;
+                rowInvalid = false;
                 break;
             }
         }
+        if(!rowInvalid)
+            break;
     }
     FeatureImage features_cropped(bb.width, bb.height, features.dim());
     LabelImage gt_cropped(bb.width, bb.height);
@@ -164,7 +178,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
 
     if(gt.height() == 0 || gt.width() == 0 || gt.height() != features.height() || gt.width() != features.width())
     {
-        std::cerr << "Invalid ground truth or feautures. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
+        std::cerr << "Invalid ground truth or features. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
                   << features.width() << "x" << features.height() << ")." << std::endl;
         return sampleResult;
     }
@@ -315,7 +329,7 @@ int main(int argc, char** argv)
             auto sampleResult = futures[n].get();
             if(!sampleResult.valid)
             {
-                std::cerr << "Sample result was invalid. Cannot continue." << std::endl;
+                std::cerr << "Sample result \"" << sampleResult.filename << "\" was invalid. Cannot continue." << std::endl;
                 return INFERRED_INVALID;
             }
 
