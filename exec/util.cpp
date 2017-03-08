@@ -826,19 +826,12 @@ bool prepareDataset(UtilProperties const& properties)
 bool writeLMDB(UtilProperties const& properties)
 {
     // Read in file names
-    std::vector<std::string> rgbList = readLines(properties.job.writeLMDB + "rgb.txt");
-    std::vector<std::string> gtList = readLines(properties.job.writeLMDB + "gt.txt");
+    std::vector<std::string> listfile = readLines(properties.job.writeLMDB);
 
-    if(rgbList.size() != gtList.size())
-    {
-        std::cerr << "RGB list and GT list don't match up." << std::endl;
-        return false;
-    }
-
-    std::cout << rgbList.size() << " crops." << std::endl;
+    std::cout << listfile.size() << " crops." << std::endl;
 
     // Shuffle indices
-    std::vector<size_t> indices(rgbList.size());
+    std::vector<size_t> indices(listfile.size());
     std::iota(indices.begin(), indices.end(), 0);
     std::random_device rd;
     std::mt19937 g(rd());
@@ -854,10 +847,11 @@ bool writeLMDB(UtilProperties const& properties)
 
     for (size_t const& i : indices)
     {
-        std::string filenameRgb = rgbList[i];
-        std::string filenameGt = gtList[i];
+        std::string filename = listfile[i];
+        std::string filenameRgb = properties.dataset.path.rgb + filename + properties.dataset.extension.rgb;
+        std::string filenameGt = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
 
-        std::cout << " > " << i << ": \"" << filenameRgb << "\" / \"" << filenameGt << "\"" << std::flush;
+        std::cout << " > " << i << ": \"" << filename << "\"" << std::flush;
 
         // Load an image
         RGBImage rgb;
