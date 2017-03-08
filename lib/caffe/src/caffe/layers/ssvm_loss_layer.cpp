@@ -186,51 +186,65 @@ namespace caffe {
     cv::Rect SSVMLossLayer<Dtype>::computeValidRegion(LabelImage const& gt) const
     {
         cv::Rect bb(0, 0, gt.width(), gt.height());
-        for(Coord x = 0; x < gt.width(); ++x)
+        for(bb.x = 0; bb.x < gt.width(); ++bb.x)
         {
             bool columnInvalid = true;
             for(Coord y = 0; y < gt.height(); ++y)
             {
-                Label const l = gt.at(x, y);
+                Label const l = gt.at(bb.x, y);
                 if(l < numClasses_)
                 {
                     columnInvalid = false;
                     break;
                 }
             }
-            if(columnInvalid)
+            if(!columnInvalid)
+                break;
+        }
+        for(bb.width = gt.width(); bb.width > 0; --bb.width)
+        {
+            bool columnInvalid = true;
+            for(Coord y = 0; y < gt.height(); ++y)
             {
-                if(x == bb.x + 1)
-                    bb.x++;
-                else
+                Label const l = gt.at(bb.x + bb.width - 1, y);
+                if(l < numClasses_)
                 {
-                    bb.width = x - bb.x;
+                    columnInvalid = false;
                     break;
                 }
             }
+            if(!columnInvalid)
+                break;
         }
-        for(Coord y = 0; y < gt.height(); ++y)
+        for(bb.y = 0; bb.y < gt.width(); ++bb.y)
         {
             bool rowInvalid = true;
-            for(Coord x = 0; x < gt.height(); ++x)
+            for(Coord x = 0; x < gt.width(); ++x)
             {
-                Label const l = gt.at(x, y);
+                Label const l = gt.at(x, bb.y);
                 if(l < numClasses_)
                 {
                     rowInvalid = false;
                     break;
                 }
             }
-            if(rowInvalid)
+            if(!rowInvalid)
+                break;
+        }
+        for(bb.height = gt.height(); bb.height > 0; --bb.height)
+        {
+            bool rowInvalid = true;
+            for(Coord x = 0; x < gt.width(); ++x)
             {
-                if(y == bb.y + 1)
-                    bb.y++;
-                else
+                Label const l = gt.at(x, bb.y + bb.height - 1);
+                if(l < numClasses_)
                 {
-                    bb.height = y - bb.y;
+                    rowInvalid = false;
                     break;
                 }
             }
+            if(!rowInvalid)
+                break;
         }
         return bb;
     }

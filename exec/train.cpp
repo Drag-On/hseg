@@ -122,7 +122,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         bool columnInvalid = true;
         for(Coord y = 0; y < gt.height(); ++y)
         {
-            Label const l = gt.at(bb.x + bb.width, y);
+            Label const l = gt.at(bb.x + bb.width - 1, y);
             if(l < properties.dataset.constants.numClasses)
             {
                 columnInvalid = false;
@@ -152,7 +152,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         bool rowInvalid = true;
         for(Coord x = 0; x < gt.width(); ++x)
         {
-            Label const l = gt.at(x, bb.y + bb.height);
+            Label const l = gt.at(x, bb.y + bb.height - 1);
             if(l < properties.dataset.constants.numClasses)
             {
                 rowInvalid = false;
