@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include <typedefs.h>
-#include <opencv2/core/mat.hpp>
+#include <opencv2/opencv.hpp>
 #include "Feature.h"
 
 class FeatureImage
