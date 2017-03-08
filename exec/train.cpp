@@ -282,7 +282,7 @@ int main(int argc, char** argv)
             futures.push_back(std::move(fut));
 
             // Wait for some threads to finish if the queue gets too long
-            while(pool.queued() > properties.numThreads * 4)
+            while(pool.queued() > properties.numThreads)
             {
                 auto sampleResult = futures.front().get();
                 if(!sampleResult.valid)
@@ -294,7 +294,7 @@ int main(int argc, char** argv)
                 sum += sampleResult.gradient;
                 iterationEnergy += sampleResult.upperBound;
 
-                std::cout << "> " << std::setw(4) << t << ": " << sampleResult.filename << "\t"
+                std::cout << "> " << std::setw(4) << t << ": " << std::setw(10) << sampleResult.filename << "\t"
                           << std::setw(8) << sampleResult.upperBound << "\t"
                           << std::setw(2) << sampleResult.numIter << "\t"
                           << std::setw(2) << sampleResult.numIterGt << std::endl;
@@ -312,7 +312,7 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "> " << std::setw(4) << t << ": " << sampleResult.filename << "\t"
+            std::cout << "> " << std::setw(4) << t << ": " << std::setw(10) << sampleResult.filename << "\t"
                       << std::setw(8) << sampleResult.upperBound << "\t"
                       << std::setw(2) << sampleResult.numIter << "\t"
                       << std::setw(2) << sampleResult.numIterGt << std::endl;
