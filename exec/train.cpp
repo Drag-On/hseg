@@ -98,12 +98,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
         return sampleResult;
     }
-
-    if(features.height() != gt.height() || features.width() != gt.width())
-    {
-        std::cerr << "Dimensions of \"" << imgFilename << "\" and \"" << gtFilename << "\" don't match." << std::endl;
-        return sampleResult;
-    }
+    gt.rescale(features.width(), features.height(), false);
 
     // Find latent variables that best explain the ground truth
     EnergyFunction energy(&curWeights, properties.param.numClusters);
