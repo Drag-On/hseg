@@ -309,7 +309,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 149 (last added: interp_param)
+// LayerParameter next available layer-specific ID: 150 (last added: svm_loss_layer_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -408,6 +408,7 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional WindowDataParameter window_data_param = 129;
+  optional SVMLossLayerParameter svm_loss_layer_param = 149;
 }
 
 // Message that stores parameters used to apply transformation
@@ -460,6 +461,24 @@ message LossParameter {
   // is not specified, then setting this to false will be equivalent to
   // normalization = BATCH_SIZE to be consistent with previous behavior.
   optional bool normalize = 2;
+}
+
+// Parameters for SVM loss layers
+message SVMLossLayerParameter {
+  // Path of the file containing svm weights
+  required string svm_weight_file = 1;
+
+  // Amount of clusters to consider
+  required int32 num_clusters = 2;
+
+  // Amount of classes on the ground truth
+  required int32 num_classes = 3;
+
+  // Eps for termination
+  optional float eps = 4 [default = 10];
+
+  // Maximum number of iterations
+  optional int32 max_iter = 5 [default = 50];
 }
 
 // Messages that store parameters used by individual layer types follow, in

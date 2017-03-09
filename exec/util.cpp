@@ -49,6 +49,7 @@ PROPERTIES_DEFINE(Util,
                           PROP_DEFINE_A(int, baseSize, 512, --base_size)
                           PROP_DEFINE_A(int, cropSize, 473, --crop_size)
                           PROP_DEFINE_A(bool, withGt, true, --with_gt)
+                          PROP_DEFINE_A(bool, cityscapes, false, --cityscapes)
                   )
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
@@ -652,11 +653,42 @@ bool prepareDataset(UtilProperties const& properties)
         cv::Mat gt_cv;
         if(properties.prepareDataset.withGt)
         {
-            helper::image::PNGError err = helper::image::readPalettePNG(pathGt, gt, nullptr);
-            if(err != helper::image::PNGError::Okay)
+            if(properties.prepareDataset.cityscapes)
             {
-                std::cerr << "Unable to load ground truth \"" << pathGt << "\". Error Code: " << (int) err << std::endl;
-                return false;
+                if(!gt.read(pathGt))
+                {
+                    std::cerr << "Unable to load ground truth \"" << pathGt << "\"." << std::endl;
+                    return false;
+                }
+                // Cityscapes has many invalid labels. The valid labels are not in a consecutive order, therefore we
+                // need to fix the labels here.
+                for(SiteId s = 0; s < gt.pixels(); ++s)
+                {
+                    Label const l = gt.atSite(s);
+                    Label newL;
+                    if((l >= 0 && l <= 6) || (l>= 9 && l <= 10) || (l >= 14 && l <= 16) || (l == 18) || (l >=29 && l <= 30))
+                        newL = 255;
+                    else if (l > 30)
+                        newL = l - 15;
+                    else if (l > 18)
+                        newL = l - 13;
+                    else if (l > 16)
+                        newL = l - 12;
+                    else if (l > 10)
+                        newL = l - 9;
+                    else if (l > 6)
+                        newL = l - 7;
+                    gt.atSite(s) = newL;
+                }
+            }
+            else
+            {
+                helper::image::PNGError err = helper::image::readPalettePNG(pathGt, gt, nullptr);
+                if(err != helper::image::PNGError::Okay)
+                {
+                    std::cerr << "Unable to load ground truth \"" << pathGt << "\". Error Code: " << (int) err << std::endl;
+                    return false;
+                }
             }
             gt_cv = static_cast<cv::Mat>(gt);
             gt_cv.convertTo(gt_cv, CV_8UC1);

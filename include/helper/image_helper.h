@@ -32,6 +32,13 @@ namespace helper
         ColorMap generateColorMapVOC(size_t n);
 
         /**
+         * Generates the cityscapes colormap according to https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
+         * @return The generated colormap
+         * @note The colormap has 30 entries, however entries 19 through 29 correspond to objects that should be ignored
+         */
+        ColorMap generateColorMapCityscapes();
+
+        /**
          * Generates a colormap with \p n distinct entries
          * @param n Amount of entries. May not be larger than 556
          * @return The generated colormap

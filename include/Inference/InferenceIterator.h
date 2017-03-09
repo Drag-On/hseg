@@ -85,9 +85,15 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
     for(SiteId i = 0; i < m_pImg->width() * m_pImg->height(); ++i)
     {
         Feature const& f1 = m_pImg->atSite(i);
-        Label const l1 = labeling.atSite(i);
+        Label l1 = labeling.atSite(i);
         Feature const& f2 = clusters[0].m_feature;
         Label const l2 = clusters[0].m_label;
+
+        bool invalidSite = l1 >= m_pEnergy->numClasses();
+
+        // If the pixel label is invalid just pretend that it has the same label as the cluster
+        if(invalidSite)
+            l1 = l2;
 
         Cost minCost = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
         ClusterId minCluster = 0;
@@ -95,6 +101,8 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
         {
             Feature const& f2 = clusters[k].m_feature;
             Label const l2 = clusters[k].m_label;
+            if(invalidSite) // See comment above
+                l1 = l2;
             Cost c = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
             if(c < minCost)
             {
@@ -261,6 +269,10 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
         Label l1 = labeling.atSite(i);
         Label l2 = outClusters[k].m_label;
 
+        // If the pixel label is invalid pretend that it is the same as the cluster label
+        if(l1 >= m_pEnergy->numClasses())
+            l1 = l2;
+
         // Count the number of pixels allocated to each cluster
         clusterSize[k]++;
 
@@ -359,7 +371,12 @@ void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& g
         Feature const& fClus = outClusters[k].m_feature;
 
         for (Label lClus = 0; lClus < numClasses; ++lClus)
-            clusterCost[k][lClus] += m_pEnergy->higherOrderCost(f, fClus, l, lClus) + m_pEnergy->higherOrderSpecialUnaryCost(i, lClus);
+        {
+            if(l < numClasses)
+                clusterCost[k][lClus] += m_pEnergy->higherOrderCost(f, fClus, l, lClus) + m_pEnergy->higherOrderSpecialUnaryCost(i, lClus);
+            else // If the ground truth label is invalid just pretend that cluster and pixel have the same label no matter what
+                clusterCost[k][lClus] += m_pEnergy->higherOrderCost(f, fClus, lClus, lClus) + m_pEnergy->higherOrderSpecialUnaryCost(i, lClus);
+        }
     }
 
     // Find the best label for every cluster
