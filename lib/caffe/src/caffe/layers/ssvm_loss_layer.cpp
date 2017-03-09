@@ -14,8 +14,14 @@ namespace caffe {
     void SSVMLossLayer<Dtype>::LayerSetUp(
             const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
-        bool ok = weights_.read("weights.dat");
-        CHECK(ok) << "Couldn't read \"weights.dat\".";
+        std::string weightsPath = this->layer_param_.svm_loss_layer_param().svm_weight_file();
+        bool ok = weights_.read(weightsPath);
+        CHECK(ok) << "Couldn't read \"" << weightsPath << "\".";
+
+        numClusters_ = this->layer_param_.svm_loss_layer_param().num_clusters();
+        numClasses_ = this->layer_param_.svm_loss_layer_param().num_classes();
+        eps_ = this->layer_param_.svm_loss_layer_param().eps();
+        maxIter_ = this->layer_param_.svm_loss_layer_param().max_iter();
     }
 
     template <typename Dtype>

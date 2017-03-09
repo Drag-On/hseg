@@ -7145,4 +7145,11 @@ layer {
   bottom: "conv5_4"
   bottom: "gt"
   top: "loss"
+  svm_loss_layer_param {
+    svm_weight_file: "weights.dat"
+    num_clusters: 15
+    num_classes: 21
+    eps: 10
+    max_iter: 50
+  }
 }

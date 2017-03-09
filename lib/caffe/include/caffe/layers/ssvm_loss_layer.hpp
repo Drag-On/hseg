@@ -47,7 +47,7 @@ namespace caffe {
         ClusterId numClusters_ = 30;
         float eps_ = 10.f;
         int maxIter_ = 50;
-        int const numClasses_ = 21;
+        int numClasses_ = 21;
 
         std::vector<cv::Rect> validRegions_;
         std::vector<FeatureImage> features_;
