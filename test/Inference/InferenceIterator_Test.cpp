@@ -22,6 +22,11 @@ public:
     {
         return 0;
     }
+
+    inline Label numClasses() const
+    {
+        return 2;
+    }
 };
 
 class TestFeatureImage : public FeatureImage
