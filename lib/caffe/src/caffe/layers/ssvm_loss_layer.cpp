@@ -61,6 +61,7 @@ namespace caffe {
 
                                    // Copy over the features
                                    FeatureImage& featImg = features_[i];
+                                   featImg = FeatureImage(bottom[0]->width(), bottom[0]->height(), bottom[0]->channels());
                                    for (Coord x = 0; x < bottom[0]->width(); ++x)
                                    {
                                        for (Coord y = 0; y < bottom[0]->height(); ++y)
