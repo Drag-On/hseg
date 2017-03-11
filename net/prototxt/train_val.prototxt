@@ -7,6 +7,12 @@ layer {
     batch_size: 4
     backend: LMDB
   }
+  transform_param {
+    mean_value: 103.939
+    mean_value: 116.779
+    mean_value: 123.680
+    mean_value: 0
+  }
 }
 layer {
   name: "slicer_data"
@@ -29,11 +35,6 @@ layer {
   type: "Concat"
   concat_param {
     axis: 1
-  }
-  transform_param {
-    mean_value: 103.939
-    mean_value: 116.779
-    mean_value: 123.680
   }
 }
 layer {
