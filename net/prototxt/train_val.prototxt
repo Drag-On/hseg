@@ -3,7 +3,7 @@ layer {
   type: "Data"
   top: "data"
   data_param {
-    source: "/work/moellerj/featDataset/database_lmdb"
+    source: "/work/moellerj/dataset/PascalVOC2012/train/database_lmdb"
     batch_size: 4
     backend: LMDB
   }
