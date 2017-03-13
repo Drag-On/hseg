@@ -13,6 +13,24 @@ layer {
     mean_value: 123.680
     mean_value: 0
   }
+  include: { phase: TRAIN }
+}
+layer {
+  name: "data"
+  type: "Data"
+  top: "data"
+  data_param {
+    source: "/work/moellerj/dataset/PascalVOC2012/val/database_lmdb"
+    batch_size: 4
+    backend: LMDB
+  }
+  transform_param {
+    mean_value: 103.939
+    mean_value: 116.779
+    mean_value: 123.680
+    mean_value: 0
+  }
+  include: { phase: TEST }
 }
 layer {
   name: "slicer_data"
