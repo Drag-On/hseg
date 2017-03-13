@@ -4,11 +4,11 @@ net: "net/prototxt/train_val.prototxt"
 # Note: 1 iteration = 1 forward pass over all the images in one batch
 
 # Carry out a validation test every 500 training iterations.
-test_interval: 500 
+test_interval: 1499
 
 # test_iter specifies how many forward passes the validation test should carry out
 #  a good number is num_val_imgs / batch_size (see batch_size in Data layer in phase TEST in train_test.prototxt)
-test_iter: 100 
+test_iter: 1475
 
 # Solve. All parameters are from the paper
 type: "Adam"
