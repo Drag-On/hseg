@@ -104,10 +104,88 @@ int main(int argc, char* argv[])
         std::cerr << "Unable to read ground truth from \"" << gtFileName << "\". Error Code: " << (int) errCode << std::endl;
         return CANT_READ_GT;
     }
+    gt.rescale(features.width(), features.height(), false);
 
-    if(features.width() != gt.width() || features.height() != gt.height() || featDim != properties.dataset.constants.featDim)
+    // Crop to valid region
+    cv::Rect bb(0, 0, gt.width(), gt.height());
+    for(bb.x = 0; bb.x < gt.width(); ++bb.x)
     {
-        std::cerr << "Image \"" << properties.img << "\" and its ground truth don't match." << std::endl;
+        bool columnInvalid = true;
+        for(Coord y = 0; y < gt.height(); ++y)
+        {
+            Label const l = gt.at(bb.x, y);
+            if(l < properties.dataset.constants.numClasses)
+            {
+                columnInvalid = false;
+                break;
+            }
+        }
+        if(!columnInvalid)
+            break;
+    }
+    for(bb.width = gt.width(); bb.width > 0; --bb.width)
+    {
+        bool columnInvalid = true;
+        for(Coord y = 0; y < gt.height(); ++y)
+        {
+            Label const l = gt.at(bb.x + bb.width - 1, y);
+            if(l < properties.dataset.constants.numClasses)
+            {
+                columnInvalid = false;
+                break;
+            }
+        }
+        if(!columnInvalid)
+            break;
+    }
+    for(bb.y = 0; bb.y < gt.width(); ++bb.y)
+    {
+        bool rowInvalid = true;
+        for(Coord x = 0; x < gt.width(); ++x)
+        {
+            Label const l = gt.at(x, bb.y);
+            if(l < properties.dataset.constants.numClasses)
+            {
+                rowInvalid = false;
+                break;
+            }
+        }
+        if(!rowInvalid)
+            break;
+    }
+    for(bb.height = gt.height(); bb.height > 0; --bb.height)
+    {
+        bool rowInvalid = true;
+        for(Coord x = 0; x < gt.width(); ++x)
+        {
+            Label const l = gt.at(x, bb.y + bb.height - 1);
+            if(l < properties.dataset.constants.numClasses)
+            {
+                rowInvalid = false;
+                break;
+            }
+        }
+        if(!rowInvalid)
+            break;
+    }
+    FeatureImage features_cropped(bb.width, bb.height, features.dim());
+    LabelImage gt_cropped(bb.width, bb.height);
+    for(Coord x = bb.x; x < bb.width; ++x)
+    {
+        for (Coord y = bb.y; y < bb.height; ++y)
+        {
+            gt_cropped.at(x - bb.x, y - bb.y) = gt.at(x, y);
+            features_cropped.at(x - bb.x, y - bb.y) = features.at(x, y);
+        }
+    }
+
+    gt = gt_cropped;
+    features = features_cropped;
+
+    if(gt.height() == 0 || gt.width() == 0 || gt.height() != features.height() || gt.width() != features.width())
+    {
+        std::cerr << "Invalid ground truth or features. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
+                  << features.width() << "x" << features.height() << ")." << std::endl;
         return IMAGE_GT_DONT_MATCH;
     }
 
