@@ -111,6 +111,7 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
         std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
         return sampleResult;
     }
+    gt.rescale(features.width(), features.height(), false);
 
     LabelImage prediction;
     errCode = helper::image::readPalettePNG(predictionFilename, prediction, nullptr);
