@@ -7,6 +7,7 @@
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <thread>
 #include <future>
+#include <helper/image_helper.h>
 
 namespace caffe {
 
@@ -192,67 +193,7 @@ namespace caffe {
     template <typename Dtype>
     cv::Rect SSVMLossLayer<Dtype>::computeValidRegion(LabelImage const& gt) const
     {
-        cv::Rect bb(0, 0, gt.width(), gt.height());
-        for(bb.x = 0; bb.x < gt.width(); ++bb.x)
-        {
-            bool columnInvalid = true;
-            for(Coord y = 0; y < gt.height(); ++y)
-            {
-                Label const l = gt.at(bb.x, y);
-                if(l < numClasses_)
-                {
-                    columnInvalid = false;
-                    break;
-                }
-            }
-            if(!columnInvalid)
-                break;
-        }
-        for(bb.width = gt.width(); bb.width > 0; --bb.width)
-        {
-            bool columnInvalid = true;
-            for(Coord y = 0; y < gt.height(); ++y)
-            {
-                Label const l = gt.at(bb.x + bb.width - 1, y);
-                if(l < numClasses_)
-                {
-                    columnInvalid = false;
-                    break;
-                }
-            }
-            if(!columnInvalid)
-                break;
-        }
-        for(bb.y = 0; bb.y < gt.width(); ++bb.y)
-        {
-            bool rowInvalid = true;
-            for(Coord x = 0; x < gt.width(); ++x)
-            {
-                Label const l = gt.at(x, bb.y);
-                if(l < numClasses_)
-                {
-                    rowInvalid = false;
-                    break;
-                }
-            }
-            if(!rowInvalid)
-                break;
-        }
-        for(bb.height = gt.height(); bb.height > 0; --bb.height)
-        {
-            bool rowInvalid = true;
-            for(Coord x = 0; x < gt.width(); ++x)
-            {
-                Label const l = gt.at(x, bb.y + bb.height - 1);
-                if(l < numClasses_)
-                {
-                    rowInvalid = false;
-                    break;
-                }
-            }
-            if(!rowInvalid)
-                break;
-        }
+        cv::Rect bb = helper::image::computeValidBox(gt, numClasses_);
         return bb;
     }
 

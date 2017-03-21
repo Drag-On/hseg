@@ -71,6 +71,14 @@ namespace helper
          */
         RGBImage outline(LabelImage const& labelImg, RGBImage const& colorImg, std::array<unsigned short, 3> const& color = {255, 255, 255});
 
+        /**
+         * Computes the smallest box that contains all valid labels
+         * @param gt Ground truth image
+         * @param numClasses Amount of classes
+         * @return The box
+         */
+        cv::Rect computeValidBox(LabelImage const& gt, Label numClasses);
+
         enum class PNGError
         {
             Okay = 0,
