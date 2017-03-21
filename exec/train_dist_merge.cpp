@@ -111,6 +111,7 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
         std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
         return sampleResult;
     }
+    gt.rescale(features.width(), features.height(), false);
 
     LabelImage prediction;
     errCode = helper::image::readPalettePNG(predictionFilename, prediction, nullptr);
@@ -225,6 +226,7 @@ int main(int argc, char* argv[])
     // Iterate over all predictions
     size_t N = list.size();
     size_t t = properties.t;
+    size_t finished = 0;
     Weights sum(numClasses, featDim);
     Cost trainingEnergy = 0;
     ThreadPool pool(properties.numThreads);
@@ -236,7 +238,7 @@ int main(int argc, char* argv[])
         futures.push_back(std::move(fut));
 
         // Wait for some threads to finish if the queue gets too long
-        while(pool.queued() > properties.numThreads * 4)
+        while(pool.queued() > properties.numThreads * 2)
         {
             auto sampleResult = futures.front().get();
             if(!sampleResult.valid)
@@ -247,8 +249,8 @@ int main(int argc, char* argv[])
 
             sum += sampleResult.gradient;
             trainingEnergy += sampleResult.upperBound;
-
-            std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+            finished++;
+            std::cout << "<<< " << std::setw(4) << t << ": " << finished << "/" << N << ": "  << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
             futures.pop_front();
         }
     }
@@ -265,8 +267,8 @@ int main(int argc, char* argv[])
 
         sum += sampleResult.gradient;
         trainingEnergy += sampleResult.upperBound;
-
-        std::cout << "<<< " << std::setw(4) << t << " / " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
+        finished++;
+        std::cout << "<<< " << std::setw(4) << t << ": " << finished << "/" << N << ": " << sampleResult.filename << " >>>\t" << sampleResult.upperBound << std::endl;
     }
 
     // Show current training energy
