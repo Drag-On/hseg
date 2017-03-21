@@ -8,6 +8,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <helper/image_helper.h>
 #include <helper/clustering_helper.h>
+#include <helper/utility.h>
 #include <Energy/EnergyFunction.h>
 #include <Threading/ThreadPool.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
@@ -131,6 +132,31 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     if(!helper::clustering::read(clusteringGtFilename, gt_clustering, gt_clusters))
     {
         std::cerr << "Unable to read ground truth clustering from \"" << clusteringGtFilename << "\"." << std::endl;
+        return sampleResult;
+    }
+
+    // Crop to valid region
+    cv::Rect bb = helper::image::computeValidBox(gt, properties.dataset.constants.numClasses);
+    FeatureImage features_cropped(bb.width, bb.height, features.dim());
+    LabelImage gt_cropped(bb.width, bb.height);
+    for(Coord x = bb.x; x < bb.width; ++x)
+    {
+        for (Coord y = bb.y; y < bb.height; ++y)
+        {
+            gt_cropped.at(x - bb.x, y - bb.y) = gt.at(x, y);
+            features_cropped.at(x - bb.x, y - bb.y) = features.at(x, y);
+        }
+    }
+
+    gt = gt_cropped;
+    features = features_cropped;
+
+    if(gt.height() == 0 || gt.width() == 0 ||
+        !helper::utility::is_equal(gt.height(), features.height(), gt_clustering.height(), prediction.height(), clustering.height()) ||
+        !helper::utility::is_equal(gt.width(), features.width(), gt_clustering.width(), prediction.width(), clustering.width()))
+    {
+        std::cerr << "Invalid ground truth or features. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
+                  << features.width() << "x" << features.height() << ")." << std::endl;
         return sampleResult;
     }
 
