@@ -255,7 +255,7 @@ int main(int argc, char** argv)
                 sum += sampleResult.gradient;
                 iterationEnergy += sampleResult.upperBound;
 
-                std::cout << "> " << std::setw(4) << t << ": " << std::setw(20) << sampleResult.filename << "\t"
+                std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
                           << std::setw(8) << sampleResult.upperBound << "\t"
                           << std::setw(2) << sampleResult.numIter << "\t"
                           << std::setw(2) << sampleResult.numIterGt << std::endl;
@@ -273,7 +273,7 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "> " << std::setw(4) << t << ": " << std::setw(20) << sampleResult.filename << "\t"
+            std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
                       << std::setw(8) << sampleResult.upperBound << "\t"
                       << std::setw(2) << sampleResult.numIter << "\t"
                       << std::setw(2) << sampleResult.numIterGt << std::endl;

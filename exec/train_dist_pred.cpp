@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
     InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
 
     // Check validity
-    if (gtResult.clustering.width() != features.width() || gtResult.clustering.height() != features.height())
+    if (properties.param.numClusters > 0 && (gtResult.clustering.width() != features.width() || gtResult.clustering.height() != features.height()))
     {
         std::cerr << "Predicted ground truth clustering invalid." << std::endl;
         return INVALID_GT_SP;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
         std::cerr << "Predicted labeling invalid." << std::endl;
         return INVALID_PRED_LABELING;
     }
-    if (result.clustering.width() != features.width() || result.clustering.height() != features.height())
+    if (properties.param.numClusters > 0 && (result.clustering.width() != features.width() || result.clustering.height() != features.height()))
     {
         std::cerr << "Predicted clustering invalid." << std::endl;
         return INVALID_PRED_SP;
@@ -167,19 +167,22 @@ int main(int argc, char* argv[])
         return CANT_WRITE_PRED_LABELING;
     }
     // Predicted clustering
-    if(!helper::clustering::write(clusterPath, result.clustering, result.clusters))
+    if(properties.param.numClusters > 0)
     {
-        std::cerr << "Couldn't write predicted clustering to \"" << clusterPath << "\"." << std::endl;
-        return CANT_WRITE_PRED_SP;
+        if(!helper::clustering::write(clusterPath, result.clustering, result.clusters))
+        {
+            std::cerr << "Couldn't write predicted clustering to \"" << clusterPath << "\"." << std::endl;
+            return CANT_WRITE_PRED_SP;
+        }
+        helper::image::colorize(result.clustering, cmap).write(clusterPath + ".png"); // This is just so it can be viewed easily
+        // Groundtruth clustering
+        if(!helper::clustering::write(clusterGtPath, gtResult.clustering, gtResult.clusters))
+        {
+            std::cerr << "Couldn't write predicted clustering to \"" << clusterGtPath << "\"." << std::endl;
+            return CANT_WRITE_GT_SP;
+        }
+        helper::image::colorize(gtResult.clustering, cmap).write(clusterGtPath + ".png");
     }
-    helper::image::colorize(result.clustering, cmap).write(clusterPath + ".png"); // This is just so it can be viewed easily
-    // Groundtruth clustering
-    if(!helper::clustering::write(clusterGtPath, gtResult.clustering, gtResult.clusters))
-    {
-        std::cerr << "Couldn't write predicted clustering to \"" << clusterGtPath << "\"." << std::endl;
-        return CANT_WRITE_GT_SP;
-    }
-    helper::image::colorize(gtResult.clustering, cmap).write(clusterGtPath + ".png");
 
     return SUCCESS;
 }

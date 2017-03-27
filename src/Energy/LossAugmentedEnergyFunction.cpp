@@ -39,7 +39,7 @@ Cost LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelI
         {
             if (groundTruth.atSite(i) != labeling.atSite(i))
                 lossSites++;
-            if (groundTruth.atSite(i) != clusters[clustering.atSite(i)].m_label)
+            if (clusters.size() > 0 && groundTruth.atSite(i) != clusters[clustering.atSite(i)].m_label)
                 hoLossSites++;
         }
     }

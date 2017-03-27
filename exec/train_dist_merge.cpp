@@ -124,15 +124,18 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
 
     LabelImage clustering, gt_clustering;
     std::vector<Cluster> clusters, gt_clusters;
-    if(!helper::clustering::read(clusteringFilename, clustering, clusters))
+    if(properties.param.numClusters > 0)
     {
-        std::cerr << "Unable to read clustering from \"" << clusteringFilename << "\"." << std::endl;
-        return sampleResult;
-    }
-    if(!helper::clustering::read(clusteringGtFilename, gt_clustering, gt_clusters))
-    {
-        std::cerr << "Unable to read ground truth clustering from \"" << clusteringGtFilename << "\"." << std::endl;
-        return sampleResult;
+        if(!helper::clustering::read(clusteringFilename, clustering, clusters))
+        {
+            std::cerr << "Unable to read clustering from \"" << clusteringFilename << "\"." << std::endl;
+            return sampleResult;
+        }
+        if(!helper::clustering::read(clusteringGtFilename, gt_clustering, gt_clusters))
+        {
+            std::cerr << "Unable to read ground truth clustering from \"" << clusteringGtFilename << "\"." << std::endl;
+            return sampleResult;
+        }
     }
 
     // Crop to valid region
@@ -151,9 +154,9 @@ SampleResult processSample(TrainDistMergeProperties const& properties, std::stri
     gt = gt_cropped;
     features = features_cropped;
 
-    if(gt.height() == 0 || gt.width() == 0 ||
+    if(properties.param.numClusters > 0 && (gt.height() == 0 || gt.width() == 0 ||
         !helper::utility::is_equal(gt.height(), features.height(), gt_clustering.height(), prediction.height(), clustering.height()) ||
-        !helper::utility::is_equal(gt.width(), features.width(), gt_clustering.width(), prediction.width(), clustering.width()))
+        !helper::utility::is_equal(gt.width(), features.width(), gt_clustering.width(), prediction.width(), clustering.width())))
     {
         std::cerr << "Invalid ground truth or features. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
                   << features.width() << "x" << features.height() << ")." << std::endl;

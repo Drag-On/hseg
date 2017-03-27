@@ -132,11 +132,14 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
 
     // Figure out unary terms for cluster nodes
     std::vector<std::vector<Cost>> clusterUnary(numClusters, std::vector<Cost>(numClasses, 0));
-    for(SiteId i = 0; i < numPx; ++i)
+    if(numClusters > 0)
     {
-        ClusterId k = clustering.atSite(i);
-        for(Label l_k = 0; l_k < numClasses; ++l_k)
-            clusterUnary[k][l_k] += m_pEnergy->higherOrderSpecialUnaryCost(i, l_k);
+        for (SiteId i = 0; i < numPx; ++i)
+        {
+            ClusterId k = clustering.atSite(i);
+            for (Label l_k = 0; l_k < numClasses; ++l_k)
+                clusterUnary[k][l_k] += m_pEnergy->higherOrderSpecialUnaryCost(i, l_k);
+        }
     }
 
     // Unary term for each pixel
@@ -151,13 +154,16 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
     }
 
     // Unary term for each cluster
-    for (SiteId i = numPx; i < numNodes; ++i)
+    if(numClusters > 0)
     {
-        std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
-        for (Label l = 0; l < numClasses; ++l)
-            confidences[l] = clusterUnary[i - numPx][l];
-        auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
-        nodeIds.push_back(id);
+        for (SiteId i = numPx; i < numNodes; ++i)
+        {
+            std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
+            for (Label l = 0; l < numClasses; ++l)
+                confidences[l] = clusterUnary[i - numPx][l];
+            auto id = mrfEnergy.AddNode(TypeGeneral::LocalSize(numClasses), TypeGeneral::NodeData(confidences.data()));
+            nodeIds.push_back(id);
+        }
     }
 
     // Pairwise term for each combination of adjacent pixels and each pixel to the cluster it is allocated to
@@ -203,20 +209,23 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
         }
 
         // Set up connection to auxiliary nodes
-        ClusterId k = clustering.atSite(i);
-        SiteId auxSite = k + numPx;
-        Feature const& clusFeat = outClusters[k].m_feature;
-        std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
-        for(Label l1 = 0; l1 < numClasses; ++l1)
+        if(numClusters > 0)
         {
-            for(Label l2 = 0; l2 < numClasses; ++l2)
+            ClusterId k = clustering.atSite(i);
+            SiteId auxSite = k + numPx;
+            Feature const& clusFeat = outClusters[k].m_feature;
+            std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
+            for (Label l1 = 0; l1 < numClasses; ++l1)
             {
-                Cost cost = m_pEnergy->higherOrderCost(f, clusFeat, l1, l2);
-                costMat[l1 + l2 * numClasses] = cost;
+                for (Label l2 = 0; l2 < numClasses; ++l2)
+                {
+                    Cost cost = m_pEnergy->higherOrderCost(f, clusFeat, l1, l2);
+                    costMat[l1 + l2 * numClasses] = cost;
+                }
             }
+            TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
+            mrfEnergy.AddEdge(nodeIds[i], nodeIds[auxSite], edgeData);
         }
-        TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
-        mrfEnergy.AddEdge(nodeIds[i], nodeIds[auxSite], edgeData);
     }
 
     // Do the actual minimization
@@ -296,6 +305,10 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
     // Initialize labeling with background (all zeros)
     outLabeling = LabelImage(m_pImg->width(), m_pImg->height());
 
+    // That's enough if no clusters are requested
+    if(m_pEnergy->numClusters() == 0)
+        return;
+
     // Initialize clustering with all zeros as well
     outClustering = LabelImage(m_pImg->width(), m_pImg->height());
 
@@ -360,6 +373,9 @@ void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& g
     Label const numClasses = m_pEnergy->numClasses();
     SiteId const numPx = gt.pixels();
 
+    if(numClusters == 0)
+        return;
+
     std::vector<std::vector<Cost>> clusterCost(numClusters, std::vector<Cost>(numClasses, 0));
 
     // Every auxiliary node has just unary terms, however they are a sum of all allocated pixels
@@ -395,6 +411,13 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
     // Initialize variables
     initialize(result.labeling, result.clustering, result.clusters);
 
+    // If no clusters are required, just do normal TRW-S
+    if(m_pEnergy->numClusters() == 0)
+    {
+        updateLabels(result.labeling, result.clusters, result.clustering, &result.marginals);
+        return result;
+    }
+
     // Iterate until either convergence or the maximum number of iterations has been hit
     Cost energy =  m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
@@ -429,6 +452,23 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
     LabelImage labeling, clustering;
     std::vector<Cluster> clusters;
     initialize(labeling, clustering, clusters);
+
+    // If no clusters are required, just do normal TRW-S
+    if(m_pEnergy->numClusters() == 0)
+    {
+        Cost energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
+        result.energy.push_back(energy);
+
+        FeatureImage marginals;
+        updateLabels(labeling, clusters, clustering, &marginals);
+
+        energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
+
+        result.labelings.push_back(labeling);
+        result.marginals.push_back(marginals);
+        result.energy.push_back(energy);
+        return result;
+    }
 
     // Iterate until either convergence or the maximum number of iterations has been hit
     Cost energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
@@ -468,6 +508,13 @@ template<typename EnergyFun>
 InferenceResult InferenceIterator<EnergyFun>::runOnGroundTruth(LabelImage const& gt, uint32_t numIter)
 {
     InferenceResult result;
+
+    // If no clusters are required, the ground truth is the result
+    if(m_pEnergy->numClusters() == 0)
+    {
+        result.labeling = gt;
+        return result;
+    }
 
     // Initialize variables
     initialize(result.labeling, result.clustering, result.clusters);

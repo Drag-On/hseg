@@ -84,6 +84,9 @@ void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& featur
                                                       LabelImage const& clustering,
                                                       std::vector<Cluster> const& clusters, Weights& energyW) const
 {
+    if(numClusters() == 0)
+        return;
+
     for(SiteId i = 0; i < labeling.pixels(); ++i)
     {
         Feature const& f = features.atSite(i);
