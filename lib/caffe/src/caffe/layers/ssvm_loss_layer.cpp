@@ -179,7 +179,7 @@ namespace caffe {
                             for (Coord c = 0; c < features_[i].dim(); ++c)
                             {
                                 if (l < numClasses_)
-                                    *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x - bb.x, y - bb.y)[c];
+                                    *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x - bb.x, y - bb.y)[c] / bottom[0]->num();
                                 else
                                     *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = 0;
                             }

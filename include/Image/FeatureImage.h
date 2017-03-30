@@ -47,7 +47,10 @@ public:
     std::vector<Feature> const& data() const;
 
     void subtract(FeatureImage const& other);
+
     explicit operator cv::Mat() const;
+
+    void minMax(float* min, float* max) const;
 
 protected:
     Coord m_width;

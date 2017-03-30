@@ -189,3 +189,26 @@ FeatureImage::operator cv::Mat() const
 
     return result;
 }
+
+void FeatureImage::minMax(float* min, float* max) const
+{
+    if(min != nullptr)
+        *min = std::numeric_limits<float>::max();
+    if(max != nullptr)
+        *max = std::numeric_limits<float>::min();
+
+    for (Coord y = 0; y < m_height; ++y)
+    {
+        for (Coord x = 0; x < m_width; ++x)
+        {
+            for (Coord c = 0; c < m_dim; ++c)
+            {
+                float const f = at(x, y)[c];
+                if(min != nullptr && f < *min)
+                    *min = f;
+                if(max != nullptr && f > *max)
+                    *max = f;
+            }
+        }
+    }
+}

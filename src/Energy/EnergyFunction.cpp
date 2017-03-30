@@ -136,30 +136,26 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         if(static_cast<int>(coords.x()) - 1 >= 0)
         {
             Label l2 = labeling.at(coords.x() - 1, coords.y());
-            if(l2 >= numClasses())
-                continue;
-            grad += m_pWeights->pairwise(l2, l).segment(featSize, featSize);
+            if(l2 < numClasses())
+                grad += m_pWeights->pairwise(l2, l).tail(featSize);
         }
         if(coords.x() + 1 < labeling.width())
         {
             Label l2 = labeling.at(coords.x() + 1, coords.y());
-            if(l2 >= numClasses())
-                continue;
-            grad += m_pWeights->pairwise(l, l2).segment(0, featSize);
+            if(l2 < numClasses())
+                grad += m_pWeights->pairwise(l, l2).head(featSize);
         }
         if(static_cast<int>(coords.y()) - 1 >= 0)
         {
             Label l2 = labeling.at(coords.x(), coords.y() - 1);
-            if(l2 >= numClasses())
-                continue;
-            grad += m_pWeights->pairwise(l2, l).segment(featSize, featSize);
+            if(l2 < numClasses())
+                grad += m_pWeights->pairwise(l2, l).tail(featSize);
         }
         if(coords.y() + 1 < labeling.height())
         {
             Label l2 = labeling.at(coords.x(), coords.y() + 1);
-            if(l2 >= numClasses())
-                continue;
-            grad += m_pWeights->pairwise(l, l2).segment(0, featSize);
+            if(l2 < numClasses())
+                grad += m_pWeights->pairwise(l, l2).head(featSize);
         }
 
         // higher-order
