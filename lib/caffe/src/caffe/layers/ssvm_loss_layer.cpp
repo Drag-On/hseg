@@ -23,6 +23,8 @@ namespace caffe {
         numClasses_ = this->layer_param_.svm_loss_layer_param().num_classes();
         eps_ = this->layer_param_.svm_loss_layer_param().eps();
         maxIter_ = this->layer_param_.svm_loss_layer_param().max_iter();
+
+        LossLayer<Dtype>::LayerSetUp(bottom, top);
     }
 
     template <typename Dtype>
@@ -40,6 +42,7 @@ namespace caffe {
         gt_.resize(bottom[0]->num(), LabelImage(bottom[1]->width(), bottom[1]->height()));
         gtResult_.resize(bottom[0]->num());
         predResult_.resize(bottom[0]->num());
+        validRegions_.resize(bottom[0]->num());
 
         std::vector<std::future<float>> futures;
         // For every image in the batch
@@ -77,6 +80,7 @@ namespace caffe {
 
                                    // Crop to valid region
                                    cv::Rect bb = computeValidRegion(gt);
+                                   validRegions_[i] = bb;
                                    FeatureImage features_cropped(bb.width, bb.height, featImg.dim());
                                    LabelImage gt_cropped(bb.width, bb.height);
                                    for(Coord x = bb.x; x < bb.width; ++x)
@@ -169,12 +173,20 @@ namespace caffe {
                     for (Coord y = 0; y < bottom[0]->height(); ++y)
                     {
                         cv::Rect const bb = validRegions_[i];
-                        Label l = gt_[i].at(x - bb.x, y - bb.y);
-                        for (Coord c = 0; c < features_[i].dim(); ++c)
+                        if(bb.contains(cv::Point(x, y)))
                         {
-                            if (l < numClasses_ && bb.contains(cv::Point(x, y)))
-                                *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x - bb.x, y - bb.y)[c];
-                            else
+                            Label l = gt_[i].at(x - bb.x, y - bb.y);
+                            for (Coord c = 0; c < features_[i].dim(); ++c)
+                            {
+                                if (l < numClasses_)
+                                    *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = gradGt.at(x - bb.x, y - bb.y)[c];
+                                else
+                                    *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = 0;
+                            }
+                        }
+                        else
+                        {
+                            for (Coord c = 0; c < features_[i].dim(); ++c)
                                 *(bottom[0]->mutable_cpu_diff_at(i, c, y, x)) = 0;
                         }
                     }
@@ -186,9 +198,9 @@ namespace caffe {
 
 
 
-#ifdef CPU_ONLY
+//#ifdef CPU_ONLY
 //    STUB_GPU(SSVMLossLayer);
-#endif
+//#endif
 
     template <typename Dtype>
     cv::Rect SSVMLossLayer<Dtype>::computeValidRegion(LabelImage const& gt) const
