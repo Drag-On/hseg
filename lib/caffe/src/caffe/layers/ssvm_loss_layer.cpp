@@ -96,7 +96,7 @@ namespace caffe {
 
                                    // Find latent variables that best explain the ground truth
                                    EnergyFunction energy(&weights_, numClusters_);
-                                   std::future<bool> futureGtResult = std::async(std::launch::async, [&]()
+                                   std::future<bool> futureGtResult = std::async(std::launch::async, [&energy, &featImg, this, &gt, i]()
                                    {
                                        InferenceIterator<EnergyFunction> gtInference(&energy, &featImg, eps_, maxIter_);
                                        gtResult_[i] = gtInference.runOnGroundTruth(gt);

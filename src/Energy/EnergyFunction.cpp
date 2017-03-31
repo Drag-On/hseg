@@ -127,7 +127,10 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         auto coords = helper::coord::siteTo2DCoordinate(i, labeling.width());
         Label l = labeling.atSite(i);
         if(l >= numClasses())
+        {
+            grad = Feature::Zero();
             continue;
+        }
 
         // unary
         grad = m_pWeights->unary(l);
