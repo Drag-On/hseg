@@ -128,7 +128,7 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         Label l = labeling.atSite(i);
         if(l >= numClasses())
         {
-            grad = Feature::Zero();
+            grad = Feature::Zero(featSize);
             continue;
         }
 
