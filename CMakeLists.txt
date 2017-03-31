@@ -113,6 +113,9 @@ set_target_properties(hseg_train_dist_merge PROPERTIES COMPILE_FLAGS "-Wall -Wex
 add_executable(hseg_mess exec/messy.cpp)
 target_link_libraries(hseg_mess hseg)
 
+add_custom_target(default)
+add_dependencies(default hseg hseg_train_dist_pred hseg_train_dist_merge hseg_train hseg_accy hseg_infer_batch hseg_infer)
+
 ### Unit tests ###
 enable_testing()
 find_package(GTest)
