@@ -20,7 +20,7 @@ public:
      * @param groundTruth Ground truth image. The pointer must stay valid as long as this object persists.
      * @param numClusters Amount of clusters
      */
-    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters);
+    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters, bool usePairwise = true);
 
     Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
@@ -77,6 +77,7 @@ public:
     using EnergyFunction::higherOrderCost;
     using EnergyFunction::featureCost;
     using EnergyFunction::weights;
+    using EnergyFunction::usePairwise;
 
 private:
     LabelImage const* m_pGroundTruth;

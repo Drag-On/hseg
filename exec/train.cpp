@@ -41,6 +41,7 @@ PROPERTIES_DEFINE(Train,
                   )
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                               PROP_DEFINE_A(bool, usePairwise, false, --usePairwise)
                                PROP_DEFINE_A(float, eps, 0, --eps)
                                PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
@@ -125,13 +126,13 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
 
 
     // Find latent variables that best explain the ground truth
-    EnergyFunction energy(&curWeights, properties.param.numClusters);
+    EnergyFunction energy(&curWeights, properties.param.numClusters, properties.param.usePairwise);
     InferenceIterator<EnergyFunction> gtInference(&energy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult gtResult = gtInference.runOnGroundTruth(gt);
     sampleResult.numIterGt = gtResult.numIter;
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters, properties.param.usePairwise);
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult result = inference.run();
     sampleResult.numIter = result.numIter;
