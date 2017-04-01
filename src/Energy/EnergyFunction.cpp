@@ -5,9 +5,10 @@
 #include <helper/coordinate_helper.h>
 #include "Energy/EnergyFunction.h"
 
-EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters)
+EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters, bool usePairwise)
         : m_pWeights(weights),
-          m_numClusters(numClusters)
+          m_numClusters(numClusters),
+          m_usePairwise(usePairwise)
 {
 }
 
@@ -22,7 +23,8 @@ Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& features, LabelIm
     Weights w(numClasses(), features.dim()); // Zero-initialized weights
 
     computeUnaryEnergyByWeight(features, labeling, w);
-    computePairwiseEnergyByWeight(features, labeling, w);
+    if(m_usePairwise)
+        computePairwiseEnergyByWeight(features, labeling, w);
     computeHigherOrderEnergyByWeight(features, labeling, clustering, clusters, w);
 
     return w;
@@ -136,29 +138,32 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         grad = m_pWeights->unary(l);
 
         // pairwise
-        if(static_cast<int>(coords.x()) - 1 >= 0)
+        if(m_usePairwise)
         {
-            Label l2 = labeling.at(coords.x() - 1, coords.y());
-            if(l2 < numClasses())
-                grad += m_pWeights->pairwise(l2, l).tail(featSize);
-        }
-        if(coords.x() + 1 < labeling.width())
-        {
-            Label l2 = labeling.at(coords.x() + 1, coords.y());
-            if(l2 < numClasses())
-                grad += m_pWeights->pairwise(l, l2).head(featSize);
-        }
-        if(static_cast<int>(coords.y()) - 1 >= 0)
-        {
-            Label l2 = labeling.at(coords.x(), coords.y() - 1);
-            if(l2 < numClasses())
-                grad += m_pWeights->pairwise(l2, l).tail(featSize);
-        }
-        if(coords.y() + 1 < labeling.height())
-        {
-            Label l2 = labeling.at(coords.x(), coords.y() + 1);
-            if(l2 < numClasses())
-                grad += m_pWeights->pairwise(l, l2).head(featSize);
+            if(static_cast<int>(coords.x()) - 1 >= 0)
+            {
+                Label l2 = labeling.at(coords.x() - 1, coords.y());
+                if(l2 < numClasses())
+                    grad += m_pWeights->pairwise(l2, l).tail(featSize);
+            }
+            if(coords.x() + 1 < labeling.width())
+            {
+                Label l2 = labeling.at(coords.x() + 1, coords.y());
+                if(l2 < numClasses())
+                    grad += m_pWeights->pairwise(l, l2).head(featSize);
+            }
+            if(static_cast<int>(coords.y()) - 1 >= 0)
+            {
+                Label l2 = labeling.at(coords.x(), coords.y() - 1);
+                if(l2 < numClasses())
+                    grad += m_pWeights->pairwise(l2, l).tail(featSize);
+            }
+            if(coords.y() + 1 < labeling.height())
+            {
+                Label l2 = labeling.at(coords.x(), coords.y() + 1);
+                if(l2 < numClasses())
+                    grad += m_pWeights->pairwise(l, l2).head(featSize);
+            }
         }
 
         // higher-order

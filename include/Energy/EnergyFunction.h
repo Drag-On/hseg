@@ -21,8 +21,9 @@ public:
      * Constructor
      * @param weights Weights to use. The pointer must stay valid as long as this object persists.
      * @param numClusters Amount of clusters to use
+     * @param usePairwise Indicates whether or not to use the pairwise connections
      */
-    EnergyFunction(Weights const* weights, ClusterId numClusters);
+    EnergyFunction(Weights const* weights, ClusterId numClusters, bool usePairwise = true);
 
     /**
      * Computes the overall energy
@@ -187,9 +188,15 @@ public:
         return *m_pWeights;
     }
 
+    inline bool usePairwise() const
+    {
+        return m_usePairwise;
+    }
+
 protected:
     Weights const* m_pWeights;
     ClusterId m_numClusters;
+    bool m_usePairwise;
 };
 
 #endif //HSEG_ENERGYFUNCTION_H

@@ -173,39 +173,42 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
         Feature const& f = m_pImg->atSite(i);
 
         // Set up pixel neighbor connections
-        decltype(coords) coordsR = {coords.x() + 1, coords.y()};
-        decltype(coords) coordsD = {coords.x(), coords.y() + 1};
-        if (coordsR.x() < outLabeling.width())
+        if(m_pEnergy->usePairwise())
         {
-            SiteId siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), outLabeling.width());
-            Feature const& fR = m_pImg->atSite(siteR);
-            std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
-            for(Label l1 = 0; l1 < numClasses; ++l1)
+            decltype(coords) coordsR = {coords.x() + 1, coords.y()};
+            decltype(coords) coordsD = {coords.x(), coords.y() + 1};
+            if (coordsR.x() < outLabeling.width())
             {
-                for(Label l2 = 0; l2 < numClasses; ++l2)
+                SiteId siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), outLabeling.width());
+                Feature const& fR = m_pImg->atSite(siteR);
+                std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
+                for(Label l1 = 0; l1 < numClasses; ++l1)
                 {
-                    Cost cost = m_pEnergy->pairwiseCost(f, fR, l1, l2);
-                    costMat[l1 + l2 * numClasses] = cost;
+                    for(Label l2 = 0; l2 < numClasses; ++l2)
+                    {
+                        Cost cost = m_pEnergy->pairwiseCost(f, fR, l1, l2);
+                        costMat[l1 + l2 * numClasses] = cost;
+                    }
                 }
+                TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
+                mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteR], edgeData);
             }
-            TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
-            mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteR], edgeData);
-        }
-        if (coordsD.y() < outLabeling.height())
-        {
-            SiteId siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), outLabeling.width());
-            Feature const& fD = m_pImg->atSite(siteD);
-            std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
-            for(Label l1 = 0; l1 < numClasses; ++l1)
+            if (coordsD.y() < outLabeling.height())
             {
-                for(Label l2 = 0; l2 < numClasses; ++l2)
+                SiteId siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), outLabeling.width());
+                Feature const& fD = m_pImg->atSite(siteD);
+                std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
+                for(Label l1 = 0; l1 < numClasses; ++l1)
                 {
-                    Cost cost = m_pEnergy->pairwiseCost(f, fD, l1, l2);
-                    costMat[l1 + l2 * numClasses] = cost;
+                    for(Label l2 = 0; l2 < numClasses; ++l2)
+                    {
+                        Cost cost = m_pEnergy->pairwiseCost(f, fD, l1, l2);
+                        costMat[l1 + l2 * numClasses] = cost;
+                    }
                 }
+                TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
+                mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteD], edgeData);
             }
-            TypeGeneral::EdgeData edgeData(TypeGeneral::GENERAL, costMat.data());
-            mrfEnergy.AddEdge(nodeIds[i], nodeIds[siteD], edgeData);
         }
 
         // Set up connection to auxiliary nodes
