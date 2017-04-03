@@ -9,6 +9,7 @@
 #include <Inference/InferenceIterator.h>
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/operations.hpp>
+#include <helper/math_helper.h>
 
 PROPERTIES_DEFINE(Inference,
                   GROUP_DEFINE(dataset,
@@ -49,6 +50,8 @@ int main(int argc, char** argv)
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
+
+    helper::math::init();
 
     Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
     if(!weights.read(properties.param.weights))
@@ -133,6 +136,8 @@ int main(int argc, char** argv)
 //        cv::imshow("superpixels (" + std::to_string(i) + ")", spMat);
     }
     cv::waitKey();
+
+    helper::math::destroy();
 
 
     return SUCCESS;

@@ -10,6 +10,7 @@
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <helper/math_helper.h>
 
 PROPERTIES_DEFINE(TrainDistPred,
                   GROUP_DEFINE(dataset,
@@ -65,6 +66,8 @@ int main(int argc, char* argv[])
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
+
+    helper::math::init();
 
     // Check if there already is a result file
     boost::filesystem::path imgNamePath(properties.img);
@@ -184,6 +187,8 @@ int main(int argc, char* argv[])
         }
         helper::image::colorize(gtResult.clustering, cmap).write(clusterGtPath + ".png");
     }
+
+    helper::math::destroy();
 
     return SUCCESS;
 }

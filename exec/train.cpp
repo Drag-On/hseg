@@ -8,6 +8,7 @@
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <Threading/ThreadPool.h>
+#include <helper/math_helper.h>
 
 
 PROPERTIES_DEFINE(Train,
@@ -183,6 +184,8 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
+    helper::math::init();
+
 //    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
 
     Weights curWeights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
@@ -328,6 +331,8 @@ int main(int argc, char** argv)
     }
 
     log.close();
+
+    helper::math::destroy();
 
     return SUCCESS;
 }

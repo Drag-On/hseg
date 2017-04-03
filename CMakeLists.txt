@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 project(hseg)
 
 option(FULL_OPTIMIZE "Enable full optimization" ON)
+option(USE_CUDA "Compile with cuda support" OFF)
+if (USE_CUDA)
+    add_definitions(-DUSE_CUDA)
+else ()
+endif ()
 
 set(optimization_flags "-O3 -DEIGEN_NO_DEBUG")
 if (FULL_OPTIMIZE)
@@ -55,6 +60,11 @@ find_package(PNG REQUIRED)
 ### MatIO ###
 find_package(MATIO REQUIRED)
 
+### Cuda ###
+if(USE_CUDA)
+    find_package(CUDA REQUIRED)
+endif()
+
 ### trw_s ###
 add_subdirectory(lib/trw_s)
 
@@ -79,7 +89,7 @@ include(cmake/compile_hseg.cmake)
 
 ### Compile inference executables ###
 add_executable(hseg_infer exec/inference.cpp)
-target_link_libraries(hseg_infer ${LIBS} hseg)
+target_link_libraries(hseg_infer hseg)
 set_target_properties(hseg_infer PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
 add_executable(hseg_infer_batch exec/inference_batch.cpp)
 target_link_libraries(hseg_infer_batch hseg)
