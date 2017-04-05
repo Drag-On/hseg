@@ -169,7 +169,7 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         // higher-order
         if(numClusters() > 0)
         {
-            grad += 2.f / m_pWeights->feature() * (features.atSite(i) - clusters[clustering.atSite(i)].m_feature);
+            grad += 2.f * m_pWeights->feature() * (features.atSite(i) - clusters[clustering.atSite(i)].m_feature);
             grad += m_pWeights->higherOrder(l, clusters[clustering.atSite(i)].m_label).segment(0, featSize);
         }
     }
