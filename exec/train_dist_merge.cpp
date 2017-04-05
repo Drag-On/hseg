@@ -12,7 +12,6 @@
 #include <Energy/EnergyFunction.h>
 #include <Threading/ThreadPool.h>
 #include <Energy/LossAugmentedEnergyFunction.h>
-#include <helper/math_helper.h>
 
 PROPERTIES_DEFINE(TrainDistMerge,
                   GROUP_DEFINE(dataset,
@@ -198,8 +197,6 @@ int main(int argc, char* argv[])
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    helper::math::init();
-
     Label const numClasses = properties.dataset.constants.numClasses;
     uint32_t featDim = properties.dataset.constants.featDim;
 
@@ -359,8 +356,6 @@ int main(int argc, char* argv[])
         std::cerr << "Couldn't write second moment to file \"" << secondMomentFile << "\"" << std::endl;
         return CANT_WRITE_SECOND_MOMENT;
     }
-
-    helper::math::destroy();
 
     return SUCCESS;
 }

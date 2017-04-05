@@ -5,7 +5,7 @@
 #ifndef HSEG_WEIGHTS_H
 #define HSEG_WEIGHTS_H
 
-#include <Eigen/Dense>
+
 #include <vector>
 #include <Image/Image.h>
 #include <typedefs.h>

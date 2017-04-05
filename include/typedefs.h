@@ -6,6 +6,7 @@
 #define HSEG_TYPEDEFS_H
 
 #include <cstdint>
+#include <Eigen/Dense>
 
 using Label = uint16_t;
 using SiteId = uint32_t;

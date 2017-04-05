@@ -7,7 +7,6 @@
 
 #include <Image/FeatureImage.h>
 #include <Inference/Cluster.h>
-#include <helper/math_helper.h>
 #include "Weights.h"
 #include "typedefs.h"
 
@@ -165,7 +164,8 @@ public:
      */
     inline Cost featureCost(Feature const& f1, Feature const& f2) const
     {
-        return helper::math::mahalanobis(f1, f2, m_pWeights->featureSimMat());
+        auto diff = f1 - f2;
+        return diff.transpose() * m_pWeights->featureSimMat() * diff;
     }
 
     /**

@@ -9,7 +9,6 @@
 #include <Inference/InferenceIterator.h>
 #include <boost/filesystem/operations.hpp>
 #include <Threading/ThreadPool.h>
-#include <helper/math_helper.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
                   GROUP_DEFINE(dataset,
@@ -138,8 +137,6 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    helper::math::init();
-
     Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
     if(!weights.read(properties.param.weights))
     {
@@ -211,8 +208,6 @@ int main(int argc, char** argv)
         else
             std::cout << "Done with \"" + res.filename + "\"" << std::endl;
     }
-
-    helper::math::destroy();
 
     return SUCCESS;
 }

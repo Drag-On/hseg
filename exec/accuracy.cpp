@@ -8,7 +8,6 @@
 #include <Accuracy/ConfusionMatrix.h>
 #include <boost/filesystem/path.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
-#include <helper/math_helper.h>
 
 PROPERTIES_DEFINE(Accuracy,
                   GROUP_DEFINE(dataset,
@@ -74,8 +73,6 @@ int main(int argc, char** argv)
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
-
-    helper::math::init();
 
     std::string fileListName = boost::filesystem::path(properties.dataset.list).stem().string();
     auto fileNames = readFileNames(properties.dataset.list);
@@ -195,8 +192,6 @@ int main(int argc, char** argv)
     cv::Mat confusionMat = static_cast<cv::Mat>(accuracy);
     if(!cv::imwrite(properties.outDir + fileListName + "_confusion.png", confusionMat))
         std::cerr << "Couldn't write confusion matrix to \"" + properties.outDir << "\"" << std::endl;
-
-    helper::math::destroy();
 
     return ERR_OK;
 }

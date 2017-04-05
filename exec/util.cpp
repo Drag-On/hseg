@@ -12,7 +12,6 @@
 #include <caffe/util/db.hpp>
 #include <opencv2/core/core.hpp>
 #include <densecrf.h>
-#include <helper/math_helper.h>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -965,8 +964,6 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    helper::math::init();
-
     if (!properties.job.showWeightFile.empty())
         showWeight(properties.job.showWeightFile, properties);
 
@@ -1002,8 +999,6 @@ int main(int argc, char** argv)
 
     if(!properties.job.writeLMDB.empty())
         writeLMDB(properties);
-
-    helper::math::destroy();
 
     return 0;
 }
