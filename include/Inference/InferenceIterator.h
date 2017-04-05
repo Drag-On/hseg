@@ -291,7 +291,7 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
         // Update feature
         Feature& f = outClusters[k].m_feature;
         Feature const& fPx = m_pImg->atSite(i);
-        auto const& sigma = m_pEnergy->weights().featureSimMatInv();
+        auto const& sigma = 1.f/m_pEnergy->weights().feature();
         auto const& w = m_pEnergy->weights().higherOrder(l1, l2);
         auto const& wTail = w.segment(f.size(), f.size());
 

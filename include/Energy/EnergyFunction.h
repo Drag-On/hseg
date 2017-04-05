@@ -165,7 +165,7 @@ public:
     inline Cost featureCost(Feature const& f1, Feature const& f2) const
     {
         auto diff = f1 - f2;
-        return diff.transpose() * m_pWeights->featureSimMat() * diff;
+        return m_pWeights->feature() * diff.dot(diff);
     }
 
     /**

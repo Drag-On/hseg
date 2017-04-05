@@ -12,7 +12,7 @@ Weights::Weights(Label numClasses, uint32_t featDim)
     m_unaryWeights.resize(numClasses, WeightVec::Zero(featDim + 1)); // +1 for the bias
     m_pairwiseWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
     m_higherOrderWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
-    m_featureSimMat = m_featureSimMatInv = FeatSimMat::Identity(featDim, featDim);
+    m_featureWeight = 0;
 }
 
 Weights& Weights::operator+=(Weights const& other)
@@ -25,7 +25,7 @@ Weights& Weights::operator+=(Weights const& other)
         m_pairwiseWeights[i] += other.m_pairwiseWeights[i];
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] += other.m_higherOrderWeights[i];
-    m_featureSimMat += other.m_featureSimMat;
+    m_featureWeight += other.m_featureWeight;
 
     return *this;
 }
@@ -45,7 +45,7 @@ Weights& Weights::operator+=(float bias)
         m_pairwiseWeights[i] = m_pairwiseWeights[i].array() + bias;
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].array() + bias;
-    m_featureSimMat = m_featureSimMat.array() + bias;
+    m_featureWeight = m_featureWeight + bias;
 
     return *this;
 }
@@ -67,7 +67,7 @@ Weights& Weights::operator-=(Weights const& other)
         m_pairwiseWeights[i] -= other.m_pairwiseWeights[i];
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] -= other.m_higherOrderWeights[i];
-    m_featureSimMat -= other.m_featureSimMat;
+    m_featureWeight -= other.m_featureWeight;
 
     return *this;
 }
@@ -80,7 +80,7 @@ Weights& Weights::operator*=(float factor)
         m_pairwiseWeights[i] *= factor;
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] *= factor;
-    m_featureSimMat *= factor;
+    m_featureWeight *= factor;
 
     return *this;
 }
@@ -97,7 +97,7 @@ Weight Weights::operator*(Weights const& other) const
         result += m_pairwiseWeights[i].dot(other.m_pairwiseWeights[i]);
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         result += m_higherOrderWeights[i].dot(other.m_higherOrderWeights[i]);
-    result += m_featureSimMat.cwiseProduct(other.m_featureSimMat).sum();
+    result += m_featureWeight * other.m_featureWeight;
 
     return result;
 }
@@ -119,7 +119,7 @@ Weights& Weights::operator/=(Weights const& other)
         m_pairwiseWeights[i].cwiseQuotient(other.m_pairwiseWeights[i]);
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i].cwiseQuotient(other.m_higherOrderWeights[i]);
-    m_featureSimMat.cwiseQuotient(other.m_featureSimMat);
+    m_featureWeight /= other.m_featureWeight;
 
     return *this;
 }
@@ -139,7 +139,7 @@ void Weights::squareElements()
         m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseProduct(m_pairwiseWeights[i]);
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseProduct(m_higherOrderWeights[i]);
-    m_featureSimMat = m_featureSimMat.cwiseProduct(m_featureSimMat);
+    m_featureWeight = m_featureWeight * m_featureWeight;
 }
 
 void Weights::sqrt()
@@ -150,7 +150,7 @@ void Weights::sqrt()
         m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseSqrt();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseSqrt();
-    m_featureSimMat = m_featureSimMat.cwiseSqrt();
+    m_featureWeight = std::sqrt(m_featureWeight);
 }
 
 Weight Weights::sqNorm() const
@@ -163,7 +163,7 @@ Weight Weights::sqNorm() const
         sqNorm += m_pairwiseWeights[i].squaredNorm();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sqNorm += m_higherOrderWeights[i].squaredNorm();
-    sqNorm += m_featureSimMat.squaredNorm();
+    sqNorm += m_featureWeight * m_featureWeight;
 
     return sqNorm;
 }
@@ -178,7 +178,7 @@ Weight Weights::sum() const
         sum += m_pairwiseWeights[i].sum();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sum += m_higherOrderWeights[i].sum();
-    sum += m_featureSimMat.sum();
+    sum += m_featureWeight;
 
     return sum;
 }
@@ -222,7 +222,7 @@ std::ostream& operator<<(std::ostream& stream, Weights const& weights)
     stream << std::endl << std::endl;
 
     stream << "feature:" << std::endl;
-    stream << weights.m_featureSimMat << std::endl;
+    stream << weights.m_featureWeight << std::endl;
     stream << std::endl << std::endl;
 
     return stream;
@@ -259,7 +259,7 @@ bool Weights::write(std::string const& filename) const
             assert(e.size() == featDim * 2 + 1);
             out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         }
-        out.write(reinterpret_cast<const char*>(m_featureSimMat.data()), sizeof(m_featureSimMat(0,0)) * m_featureSimMat.size());
+        out.write(reinterpret_cast<const char*>(&m_featureWeight), sizeof(m_featureWeight));
         out.close();
         return true;
     }
@@ -294,10 +294,9 @@ bool Weights::read(std::string const& filename)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
         for(auto& e : m_higherOrderWeights)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
-        in.read(reinterpret_cast<char*>(m_featureSimMat.data()), sizeof(m_featureSimMat(0, 0)) * (featDim * featDim));
+        in.read(reinterpret_cast<char*>(&m_featureWeight), sizeof(m_featureWeight));
         in.close();
 
-        updateCachedInverseFeatMat();
         return true;
     }
     return false;
@@ -305,16 +304,6 @@ bool Weights::read(std::string const& filename)
 
 void Weights::clampToFeasible()
 {
-    // Feature weights must be positive definite
-    Eigen::SelfAdjointEigenSolver<FeatSimMat> es(m_featureSimMat);
-    FeatSimMat D = es.eigenvalues().cast<float>().asDiagonal();
-    FeatSimMat V = es.eigenvectors().cast<float>();
-    for(uint16_t i = 0; i < es.eigenvalues().size(); ++i)
-        if(D(i, i) < 1e-5f)
-            D(i, i) = 1e-5f;
-    m_featureSimMat = V * D * V.inverse();
-
-    updateCachedInverseFeatMat();
 }
 
 void Weights::randomize()
@@ -325,11 +314,5 @@ void Weights::randomize()
         m_pairwiseWeights[i] = WeightVec::Random(m_pairwiseWeights[i].size());
     for(size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = WeightVec::Random(m_higherOrderWeights[i].size());
-    m_featureSimMat = FeatSimMat::Random(m_featureSimMat.rows(), m_featureSimMat.cols());
-}
-
-void Weights::updateCachedInverseFeatMat()
-{
-    // Compute inverse of the feature similarity matrix
-    m_featureSimMatInv = m_featureSimMat.inverse();
+    m_featureWeight = rand();
 }
