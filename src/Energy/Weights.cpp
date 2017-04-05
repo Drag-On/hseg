@@ -150,7 +150,7 @@ void Weights::sqrt()
         m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseSqrt();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseSqrt();
-    m_featureWeight = std::sqrt(m_featureWeight);
+    m_featureWeight = std::sqrt(feature());
 }
 
 Weight Weights::sqNorm() const
@@ -178,7 +178,7 @@ Weight Weights::sum() const
         sum += m_pairwiseWeights[i].sum();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sum += m_higherOrderWeights[i].sum();
-    sum += m_featureWeight;
+    sum += feature();
 
     return sum;
 }
@@ -304,6 +304,8 @@ bool Weights::read(std::string const& filename)
 
 void Weights::clampToFeasible()
 {
+    if(m_featureWeight < feature())
+        m_featureWeight = feature();
 }
 
 void Weights::randomize()
