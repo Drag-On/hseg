@@ -29,6 +29,7 @@ PROPERTIES_DEFINE(Accuracy,
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
                   )
+                  PROP_DEFINE_A(bool, scaleGt, false, --scale_gt)
                   PROP_DEFINE_A(std::string, inDir, "", --in)
                   PROP_DEFINE_A(std::string, outDir, "./", --out)
 )
@@ -119,6 +120,9 @@ int main(int argc, char** argv)
             std::cerr << "Couldn't load image \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
             return ERR_IMAGE_LOAD;
         }
+
+        if(properties.scaleGt)
+            gt.rescale(pred.width(), pred.height(), false);
 
         if(pred.width() != gt.width() || pred.height() != gt.height() || pred.pixels() == 0)
         {
