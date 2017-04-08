@@ -25,6 +25,7 @@ PROPERTIES_DEFINE(Accuracy,
                   )
                   GROUP_DEFINE(param,
                                PROP_DEFINE_A(std::string, weights, "", -w)
+                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
                   )
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
@@ -133,7 +134,7 @@ int main(int argc, char** argv)
 
         LabelImage clustering;
         std::vector<Cluster> clusters;
-        if(!helper::clustering::read(cluFilename, clustering, clusters))
+        if(properties.param.numClusters > 0 && !helper::clustering::read(cluFilename, clustering, clusters))
         {
             std::cerr << "Couldn't load clustering from \"" << cluFilename << "\"" << std::endl;
             return ERR_CLUSTERING_LOAD;
