@@ -27,6 +27,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, prepareDataset, "", --prepareDataset)
                                PROP_DEFINE_A(std::string, writeLMDB, "", --writeLMDB)
                                PROP_DEFINE_A(std::string, createFakeMarginals, "", --createFakeMarginals)
+                               PROP_DEFINE_A(std::string, stitchMarginals, "", --stitchMarginals)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -34,6 +35,8 @@ PROPERTIES_DEFINE(Util,
                                             PROP_DEFINE_A(std::string, rgb, "", --rgb)
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
+                                            PROP_DEFINE_A(std::string, rgb_orig, "", --rgb_orig)
+                                            PROP_DEFINE_A(std::string, gt_orig, "", --gt_orig)
                                )
                                GROUP_DEFINE(extension,
                                             PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
@@ -963,8 +966,8 @@ bool createFakeMarginals(UtilProperties const& properties)
     for (std::string const& file : listfile)
     {
         std::string filenameLabeling = file + properties.dataset.extension.gt;
-        std::string pathLabeling = properties.in + "labeling/" + filenameLabeling;
-        std::string outPathMarginals = properties.out + "marginals/";
+        std::string pathLabeling = properties.in + filenameLabeling;
+        std::string outPathMarginals = properties.out;
 
         std::cout << file << " ";
 
@@ -982,7 +985,11 @@ bool createFakeMarginals(UtilProperties const& properties)
         FeatureImage marginals(labeling.height(), labeling.width(), properties.dataset.constants.numClasses); // All zero
 
         for (SiteId i = 0; i < marginals.width() * marginals.height(); ++i)
-            marginals.atSite(i)[labeling.atSite(i)] = 1;
+        {
+            Label l = labeling.atSite(i);
+            if(l < properties.dataset.constants.numClasses)
+                marginals.atSite(i)[l] = 1;
+        }
 
         if(!marginals.write(outPathMarginals + file + ".mat"))
         {
@@ -993,6 +1000,153 @@ bool createFakeMarginals(UtilProperties const& properties)
 
         std::cout << "OK!" << std::endl;
     }
+
+    return true;
+}
+
+bool stitchMarginals(UtilProperties const& properties)
+{
+    // Read in meta data
+    std::vector<std::string> metadata = readLines(properties.job.stitchMarginals);
+    std::cout << metadata.size() << " crops." << std::endl;
+
+    std::string const delimiter = ";";
+    std::string curImageName;
+    int origWidth, origHeight;
+    int baseWidth, baseHeight, baseLongSide;
+    FeatureImage* pCurStitchedMarginals = nullptr;
+    LabelImage curCountImage;
+
+    // Define lambda to finish stitching current marginal map
+    auto finishMarginals = [&]()
+    {
+        if(pCurStitchedMarginals)
+        {
+            // Average marginals
+            for(SiteId i = 0; i < pCurStitchedMarginals->width() * pCurStitchedMarginals->height(); ++i)
+            {
+                if(curCountImage.atSite(i) > 0)
+                {
+                    int c = curCountImage.atSite(i);
+                    if(c > 0)
+                        pCurStitchedMarginals->atSite(i) /= c;
+                }
+            }
+
+            // Scale to original size
+            pCurStitchedMarginals->rescale(origWidth, origHeight, true);
+            pCurStitchedMarginals->normalize();
+
+            // Write to hard disk
+            std::string outFile = properties.out + curImageName + ".mat";
+            if(!pCurStitchedMarginals->write(outFile))
+            {
+                std::cout << "ERROR" << std::endl;
+                std::cerr << "Couldn't write \"" << outFile << "\"." << std::endl;
+                delete pCurStitchedMarginals;
+            }
+            delete pCurStitchedMarginals;
+        }
+    };
+
+    for(std::string const& meta : metadata)
+    {
+        // Split info string
+        auto start = 0U;
+        auto end = meta.find(delimiter);
+        std::vector<std::string> tokens;
+        while (end != std::string::npos)
+        {
+            tokens.push_back(meta.substr(start, end - start));
+            start = end + delimiter.length();
+            end = meta.find(delimiter, start);
+        }
+        tokens.push_back(meta.substr(start, end));
+
+        if(tokens.size() != 7)
+        {
+            std::cout << "ERROR" << std::endl;
+            std::cerr << "Invalid meta file." << std::endl;
+            return false;
+        }
+
+        std::string filename = tokens[0];
+        int s_x = std::stoi(tokens[1]);
+        int s_y = std::stoi(tokens[2]);
+        int patchW = std::stoi(tokens[3]);
+        int patchH = std::stoi(tokens[4]);
+        std::string origFile = tokens[5];
+        bool flipped = (tokens[6] == "true");
+
+        std::cout << filename;
+
+        // If this entry is based on a different image, store previous result and create new marginal image
+        if(curImageName != origFile)
+        {
+            // Write out stitched marginals
+            finishMarginals();
+
+            // Read in new original image to get dimensions
+            RGBImage orig;
+            std::string orig_rgb_file = properties.dataset.path.rgb_orig + origFile + properties.dataset.extension.rgb;
+            if(!orig.read(orig_rgb_file))
+            {
+                std::cout << "ERROR" << std::endl;
+                std::cerr << "Couldn't read \"" << orig_rgb_file << "\"." << std::endl;
+                return false;
+            }
+
+            curImageName = origFile;
+            origWidth = orig.width();
+            origHeight = orig.height();
+
+            // Compute base size
+            int const base_size = properties.prepareDataset.baseSize;
+            baseLongSide = base_size + 1;
+            baseWidth = baseLongSide;
+            baseHeight = baseLongSide;
+            if(origHeight > origWidth)
+                baseWidth = static_cast<int>(std::round(baseLongSide / (float)origHeight * origWidth));
+            else
+                baseHeight = static_cast<int>(std::round(baseLongSide / (float)origWidth * origHeight));
+            pCurStitchedMarginals = new FeatureImage(baseWidth, baseHeight, properties.dataset.constants.numClasses);
+            curCountImage = LabelImage(baseWidth, baseHeight);
+        }
+
+        // Read in marginals
+        FeatureImage marginals;
+        if(!marginals.read(properties.in + filename + ".mat"))
+        {
+            std::cout << "ERROR" << std::endl;
+            std::cerr << "Couldn't read \"" << properties.in + filename + ".mat" << "\"." << std::endl;
+            return false;
+        }
+
+        // Flip back if needed
+        if(flipped)
+            marginals.flipHorizontally();
+
+        // Scale to original crop size
+        marginals.rescale(properties.prepareDataset.cropSize, properties.prepareDataset.cropSize, true);
+        marginals.normalize();
+
+        // Copy marginals into destination (this will ignore padded parts)
+        pCurStitchedMarginals->addFrom(marginals, s_x, s_y, patchW, patchH);
+
+        // Count pixels that have been touched already
+        for(int d_x = s_x; d_x < curCountImage.width() && d_x < s_x + patchW; ++d_x)
+        {
+            for (int d_y = s_y; d_y < curCountImage.height() && d_y < s_y + patchH; ++d_y)
+            {
+                curCountImage.at(d_x, d_y)++;
+            }
+        }
+
+        std::cout << "\tOK!" << std::endl;
+
+    }
+
+    finishMarginals();
 
     return true;
 }
@@ -1045,6 +1199,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.createFakeMarginals.empty())
         createFakeMarginals(properties);
+
+    if(!properties.job.stitchMarginals.empty())
+        stitchMarginals(properties);
 
     return 0;
 }
