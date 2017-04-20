@@ -190,6 +190,46 @@ FeatureImage::operator cv::Mat() const
     return result;
 }
 
+void FeatureImage::rescale(float factor, bool interpolate)
+{
+    cv::Mat img = static_cast<cv::Mat>(*this);
+    cv::Mat resized;
+    cv::resize(img, resized, cv::Size(), factor, factor, interpolate ? cv::INTER_LINEAR : cv::INTER_NEAREST);
+
+    m_width = static_cast<size_t>(resized.cols);
+    m_height = static_cast<size_t>(resized.rows);
+    m_features.resize(m_width * m_height, Feature::Zero(m_dim));
+
+    for (Coord y = 0; y < m_height; ++y)
+    {
+        for (Coord x = 0; x < m_width; ++x)
+        {
+            for (Coord c = 0; c < m_dim; ++c)
+                at(x, y)[c] = ((float*)resized.data)[resized.cols * y * m_dim + x * m_dim + c];
+        }
+    }
+}
+
+void FeatureImage::rescale(Coord width, Coord height, bool interpolate)
+{
+    cv::Mat img = static_cast<cv::Mat>(*this);
+    cv::Mat resized;
+    cv::resize(img, resized, cv::Size(width, height), 0, 0, interpolate ? cv::INTER_LINEAR : cv::INTER_NEAREST);
+
+    m_width = static_cast<size_t>(resized.cols);
+    m_height = static_cast<size_t>(resized.rows);
+    m_features.resize(m_width * m_height, Feature::Zero(m_dim));
+
+    for (Coord y = 0; y < m_height; ++y)
+    {
+        for (Coord x = 0; x < m_width; ++x)
+        {
+            for (Coord c = 0; c < m_dim; ++c)
+                at(x, y)[c] = ((float*)resized.data)[resized.cols * y * m_dim + x * m_dim + c];
+        }
+    }
+}
+
 void FeatureImage::minMax(float* min, float* max) const
 {
     if(min != nullptr)
@@ -210,5 +250,39 @@ void FeatureImage::minMax(float* min, float* max) const
                     *max = f;
             }
         }
+    }
+}
+
+void FeatureImage::flipHorizontally()
+{
+    for (Coord y = 0; y < m_height; ++y)
+    {
+        for (Coord x = 0; x < std::floor(m_width / 2.f); ++x)
+        {
+            Feature f = at(x, y);
+            at(x, y) = at(m_width - x - 1, y);
+            at(m_width - x - 1, y) = f;
+        }
+    }
+}
+
+void FeatureImage::addFrom(FeatureImage const& other, int x, int y, int w, int h)
+{
+    for(int d_x = x; d_x < m_width && d_x < x + w; ++d_x)
+    {
+        for(int d_y = y; d_y < m_height && d_y < y + h; ++d_y)
+        {
+            at(d_x, d_y) += other.at(d_x - x, d_y - y);
+        }
+    }
+}
+
+void FeatureImage::normalize()
+{
+    for (SiteId i = 0; i < m_width * m_height; ++i)
+    {
+        float sum = atSite(i).sum();
+        if (sum > 0)
+            atSite(i) /= sum;
     }
 }

@@ -50,7 +50,39 @@ public:
 
     explicit operator cv::Mat() const;
 
+    /**
+     * Rescales the image
+     * @param factor Factor
+     * @param interpolate Enables or disables interpolation
+     */
+    void rescale(float factor, bool interpolate = false);
+
+    /**
+     * Rescales the image
+     * @param width New width
+     * @param height New height
+     * @param interpolate Enables or disables interpolation
+     */
+    void rescale(Coord width, Coord height, bool interpolate = false);
+
     void minMax(float* min, float* max) const;
+
+    void flipHorizontally();
+
+    /**
+     * Copy features from \p other to destination, adding them to old values. Ignores features that would be out of bounds.
+     * @param other Features to copy from
+     * @param x Destination x
+     * @param y Destination y
+     * @param w Width
+     * @param h Height
+     */
+    void addFrom(FeatureImage const& other, int x, int y, int w, int h);
+
+    /**
+     * Normalizes the feature map such that every feature sums up to one
+     */
+    void normalize();
 
 protected:
     Coord m_width;
