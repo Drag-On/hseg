@@ -10,7 +10,6 @@
 #include <boost/filesystem/operations.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
 #include <caffe/util/db.hpp>
-#include <opencv2/core/core.hpp>
 #include <densecrf.h>
 
 PROPERTIES_DEFINE(Util,
@@ -27,6 +26,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, copyFixPNG, "", --fix_PNG)
                                PROP_DEFINE_A(std::string, prepareDataset, "", --prepareDataset)
                                PROP_DEFINE_A(std::string, writeLMDB, "", --writeLMDB)
+                               PROP_DEFINE_A(std::string, createFakeMarginals, "", --createFakeMarginals)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -954,6 +954,49 @@ bool writeLMDB(UtilProperties const& properties)
     return true;
 }
 
+bool createFakeMarginals(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> listfile = readLines(properties.job.createFakeMarginals);
+    std::cout << listfile.size() << " crops." << std::endl;
+
+    for (std::string const& file : listfile)
+    {
+        std::string filenameLabeling = file + properties.dataset.extension.gt;
+        std::string pathLabeling = properties.in + "labeling/" + filenameLabeling;
+        std::string outPathMarginals = properties.out + "marginals/";
+
+        std::cout << file << " ";
+
+        // Labeling
+        LabelImage labeling;
+        auto ok = helper::image::readPalettePNG(pathLabeling, labeling, nullptr);
+        if (ok != helper::image::PNGError::Okay)
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't read labeling \"" << pathLabeling << "\". Error Code: " << (int) ok << std::endl;
+            return false;
+        }
+
+        // Make up crude "marginals"
+        FeatureImage marginals(labeling.height(), labeling.width(), properties.dataset.constants.numClasses); // All zero
+
+        for (SiteId i = 0; i < marginals.width() * marginals.height(); ++i)
+            marginals.atSite(i)[labeling.atSite(i)] = 1;
+
+        if(!marginals.write(outPathMarginals + file + ".mat"))
+        {
+            std::cout << "\tERROR" << std::endl;
+            std::cerr << " Couldn't write marginals to \"" << outPathMarginals << "\"." << std::endl;
+            return false;
+        }
+
+        std::cout << "OK!" << std::endl;
+    }
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -999,6 +1042,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.writeLMDB.empty())
         writeLMDB(properties);
+
+    if(!properties.job.createFakeMarginals.empty())
+        createFakeMarginals(properties);
 
     return 0;
 }
