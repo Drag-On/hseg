@@ -32,6 +32,7 @@ PROPERTIES_DEFINE(Accuracy,
                   )
                   PROP_DEFINE_A(bool, scaleGt, false, --scale_gt)
                   PROP_DEFINE_A(std::string, inDir, "", --in)
+                  PROP_DEFINE_A(std::string, inClusterDir, "", --in_cluster)
                   PROP_DEFINE_A(std::string, outDir, "./", --out)
 )
 
@@ -84,13 +85,6 @@ int main(int argc, char** argv)
         return ERR_EMPTY_FILE_LIST;
     }
 
-    Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
-    if(!weights.read(properties.param.weights))
-    {
-        std::cerr << "Couldn't read weights file \"" << properties.param.weights << "\"" << std::endl;
-        return ERR_CANT_READ_WEIGHTS;
-    }
-
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
     ConfusionMatrix accuracy(properties.dataset.constants.numClasses);
     float loss = 0;
@@ -102,8 +96,8 @@ int main(int argc, char** argv)
 
     for(auto const& f : fileNames)
     {
-        std::string const& predFilename = properties.inDir + "labeling/" + f + properties.dataset.extension.gt;
-        std::string const& cluFilename = properties.inDir + "clustering/" + f + ".dat";
+        std::string const& predFilename = properties.inDir + f + properties.dataset.extension.gt;
+        std::string const& cluFilename = properties.inClusterDir + f + ".dat";
         std::string const& gtFilename = properties.dataset.path.gt + f + properties.dataset.extension.gt;
 
         // Load images
@@ -134,7 +128,7 @@ int main(int argc, char** argv)
 
         LabelImage clustering;
         std::vector<Cluster> clusters;
-        if(properties.param.numClusters > 0 && !helper::clustering::read(cluFilename, clustering, clusters))
+        if(properties.param.numClusters > 0 && !properties.inClusterDir.empty() && !helper::clustering::read(cluFilename, clustering, clusters))
         {
             std::cerr << "Couldn't load clustering from \"" << cluFilename << "\"" << std::endl;
             return ERR_CLUSTERING_LOAD;
@@ -146,9 +140,13 @@ int main(int argc, char** argv)
         size_t imgRawPxCount = 0;
 
         // Compute loss
-        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-        loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
-                                                         properties.dataset.constants.numClasses);
+        if(clustering.pixels() > 0)
+        {
+            float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+            loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
+                                                             properties.dataset.constants.numClasses);
+        }
+        // Raw percentage
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) < properties.dataset.constants.numClasses)
             {
@@ -171,7 +169,8 @@ int main(int argc, char** argv)
     loss *= properties.train.C / fileNames.size();
 
     std::cout << accuracy << std::endl;
-    std::cout << "Loss: " << loss << std::endl;
+    if(!properties.inClusterDir.empty())
+        std::cout << "Loss: " << loss << std::endl;
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
               << rawPixelCount << ")" << std::endl;
     std::cout << "Mean px percentage: " << (100.f * meanCorrectPercentage) / fileNames.size() << " %" << std::endl;
@@ -180,7 +179,8 @@ int main(int argc, char** argv)
     {
         out << properties << std::endl << std::endl;
         out << accuracy << std::endl;
-        out << "Loss: " << loss << std::endl << std::endl;
+        if(!properties.inClusterDir.empty())
+            out << "Loss: " << loss << std::endl << std::endl;
 
         std::sort(imageAccData.begin(), imageAccData.end(),
                   [](ImageAccuracyData const& a, ImageAccuracyData const& b) { return a.rawAccuracy > b.rawAccuracy; });
