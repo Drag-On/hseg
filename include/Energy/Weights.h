@@ -109,7 +109,7 @@ public:
      */
     inline Weight feature() const
     {
-        return std::max(m_featureWeight, 0.01f);
+        return std::max(m_featureWeight, 0.00001f);
     }
 
     /**
