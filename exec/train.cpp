@@ -228,6 +228,11 @@ int main(int argc, char** argv)
         return CANT_WRITE_LOG;
     }
 
+    // Print header to log file
+    log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;";
+    log << std::setw(12) << "Mean Unary" << "\t;" << std::setw(12) << "Mean Pair" << "\t;" << std::setw(12)
+        << "Mean Label" << "\t;" << std::setw(12) << "Mean Feat" << "\t;" << std::setw(12) << "Mean Total" << std::endl;
+
     // Iterate T times
     for(uint32_t t = properties.train.iter.start; t < T; ++t)
     {
@@ -291,7 +296,12 @@ int main(int argc, char** argv)
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
         // Print upper bound of last iteration
-        log << std::setw(4) << t << "\t" << std::setw(12) << iterationEnergy << std::endl;
+        log << std::setw(4) << t << "\t;" << std::setw(12) << iterationEnergy << "\t;";
+        // Print average weights
+        float meanUnary = 0, meanPairwise = 0, meanLabelCons = 0, meanFeature = 0, meanTotal = 0;
+        std::tie(meanUnary, meanPairwise, meanLabelCons, meanFeature, meanTotal) = curWeights.means();
+        log << std::setw(12) << meanUnary << "\t;" << std::setw(12) << meanPairwise << "\t;" << std::setw(12)
+            << meanLabelCons << "\t;" << std::setw(12) << meanFeature << "\t;" << std::setw(12) << meanTotal << std::endl;
 
         // Compute gradient
         sum *= properties.train.C / N;

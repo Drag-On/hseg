@@ -152,6 +152,12 @@ public:
     bool read(std::string const& filename);
 
     /**
+     * Provides the mean values of the unary, pairwise, label consistency, feature similarity, and total weights
+     * @return Mean weights
+     */
+    std::tuple<float, float, float, float, float> means() const;
+
+    /**
      * Add element-wise
      * @param other Weight vector to add
      * @return Reference to this

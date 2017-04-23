@@ -1,0 +1,8 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="ClangTidyInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="clangTidyChecks" value="*,-cert-env33-c,-google-*,google-default-arguments,google-explicit-constructor,google-runtime-member-string-references,google-runtime-memset,google-runtime-operator,-llvm-*,-readability-braces-around-statements,-readability-identifier-naming,-safety-no-assembler,-clang-diagnostic-*,-clang-analyzer-*" />
+    </inspection_tool>
+  </profile>
+</component>

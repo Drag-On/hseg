@@ -302,6 +302,31 @@ bool Weights::read(std::string const& filename)
     return false;
 }
 
+std::tuple<float, float, float, float, float> Weights::means() const
+{
+    float meanUnary = 0, meanPairwise = 0, meanLabelCons = 0, meanFeature = 0, meanTotal = 0;
+
+    for(size_t i = 0; i < m_unaryWeights.size(); ++i)
+        meanUnary += m_unaryWeights[i].mean();
+
+    for(size_t i = 0; i < m_pairwiseWeights.size(); ++i)
+        meanPairwise += m_pairwiseWeights[i].mean();
+
+    for(size_t i = 0; i < m_higherOrderWeights.size(); ++i)
+        meanLabelCons += m_higherOrderWeights[i].mean();
+
+    meanFeature = m_featureWeight;
+
+    meanTotal = meanUnary + meanPairwise + meanLabelCons + meanFeature;
+
+    meanUnary /= m_unaryWeights.size();
+    meanPairwise /= m_pairwiseWeights.size();
+    meanLabelCons /= m_higherOrderWeights.size();
+    meanTotal /= m_unaryWeights.size() + m_pairwiseWeights.size() + m_higherOrderWeights.size() + 1;
+
+    return std::tie(meanUnary, meanPairwise, meanLabelCons, meanFeature, meanTotal);
+}
+
 void Weights::clampToFeasible()
 {
     if(m_featureWeight < feature())
