@@ -1131,10 +1131,10 @@ bool createBasicFeatures(UtilProperties const& properties)
 
         // Load rgb
         RGBImage rgb;
-        if(!rgb.read(properties.in + file))
+        if(!rgb.read(properties.in + filenameRgb))
         {
             std::cout << "ERROR" << std::endl;
-            std::cerr << "Unable to load rgb image \"" << properties.in + file << "\"." << std::endl;
+            std::cerr << "Unable to load rgb image \"" << properties.in + filenameRgb << "\"." << std::endl;
             return false;
         }
 
