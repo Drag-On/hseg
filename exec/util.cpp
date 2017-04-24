@@ -29,6 +29,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, writeLMDB, "", --writeLMDB)
                                PROP_DEFINE_A(std::string, createFakeMarginals, "", --createFakeMarginals)
                                PROP_DEFINE_A(std::string, stitchMarginals, "", --stitchMarginals)
+                               PROP_DEFINE_A(std::string, createBasicFeatures, "", --createBasicFeatures)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -1115,6 +1116,55 @@ bool stitchMarginals(UtilProperties const& properties)
     return true;
 }
 
+bool createBasicFeatures(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> listfile = readLines(properties.job.createFakeMarginals);
+    std::cout << listfile.size() << " crops." << std::endl;
+
+    for (std::string const& file : listfile)
+    {
+        std::string filenameRgb = file + properties.dataset.extension.rgb;
+        std::string outPathFeatures = properties.out;
+
+        std::cout << file << " ";
+
+        // Load rgb
+        RGBImage rgb;
+        if(!rgb.read(properties.in + file))
+        {
+            std::cout << "ERROR" << std::endl;
+            std::cerr << "Unable to load rgb image \"" << properties.in + file << "\"." << std::endl;
+            return false;
+        }
+
+        // Convert to CieLAB
+        auto cielab = rgb.getCieLabImg();
+
+        // Create feature map
+        FeatureImage features(rgb.width(), rgb.height(), 5);
+        for(SiteId i = 0; i < rgb.pixels(); ++i)
+        {
+            auto coords = helper::coord::siteTo2DCoordinate(i, rgb.width());
+
+            features.atSite(i)[0] = cielab.atSite(i, 0);
+            features.atSite(i)[1] = cielab.atSite(i, 1);
+            features.atSite(i)[2] = cielab.atSite(i, 2);
+            features.atSite(i)[3] = coords.x();
+            features.atSite(i)[4] = coords.y();
+        }
+
+        // Write to disk
+        if(!features.write(properties.out + file + properties.dataset.extension.img))
+        {
+            std::cout << "ERROR" << std::endl;
+            std::cerr << "Unable to write feature map \"" << properties.out + file + properties.dataset.extension.img << "\"." << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -1166,6 +1216,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.stitchMarginals.empty())
         stitchMarginals(properties);
+
+    if(!properties.job.createBasicFeatures.empty())
+        createBasicFeatures(properties);
 
     return 0;
 }
