@@ -1119,7 +1119,7 @@ bool stitchMarginals(UtilProperties const& properties)
 bool createBasicFeatures(UtilProperties const& properties)
 {
     // Read in file names
-    std::vector<std::string> listfile = readLines(properties.job.createFakeMarginals);
+    std::vector<std::string> listfile = readLines(properties.job.createBasicFeatures);
     std::cout << listfile.size() << " crops." << std::endl;
 
     for (std::string const& file : listfile)
