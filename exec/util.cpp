@@ -1161,6 +1161,8 @@ bool createBasicFeatures(UtilProperties const& properties)
             std::cerr << "Unable to write feature map \"" << properties.out + file + properties.dataset.extension.img << "\"." << std::endl;
             return false;
         }
+
+        std::cout << " OK!" << std::endl;
     }
     return true;
 }
