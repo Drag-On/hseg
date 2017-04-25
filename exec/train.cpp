@@ -50,6 +50,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE_A(std::string, outDir, "", --outDir)
                   PROP_DEFINE_A(std::string, log, "train.log", --log)
                   PROP_DEFINE_A(uint32_t, numThreads, 4, --numThreads)
+                  PROP_DEFINE_A(std::string, propertiesFile, "properties/hseg_train.info", -p)
 )
 
 std::vector<std::string> readFileNames(std::string const& listFile)
@@ -176,8 +177,11 @@ int main(int argc, char** argv)
 {
     // Read properties
     TrainProperties properties;
-    properties.read("properties/hseg_train.info");
     properties.fromCmd(argc, argv);
+    properties.read(properties.propertiesFile);
+    properties.fromCmd(argc, argv); // This is so the property file location can be read via command line. However,
+                                    // the command line arguments should overwrite anything written in the file,
+                                    // therefore read it in again.
     std::cout << "----------------------------------------------------------------" << std::endl;
     std::cout << "Used properties: " << std::endl;
     std::cout << properties << std::endl;
