@@ -1147,11 +1147,12 @@ bool createBasicFeatures(UtilProperties const& properties)
         {
             auto coords = helper::coord::siteTo2DCoordinate(i, rgb.width());
 
-            features.atSite(i)[0] = cielab.atSite(i, 0);
-            features.atSite(i)[1] = cielab.atSite(i, 1);
-            features.atSite(i)[2] = cielab.atSite(i, 2);
-            features.atSite(i)[3] = coords.x();
-            features.atSite(i)[4] = coords.y();
+            // Normalize features into the range [0, 1]
+            features.atSite(i)[0] = cielab.atSite(i, 0) / 100.f;
+            features.atSite(i)[1] = (cielab.atSite(i, 1) + 127) / (2 * 127 + 1);
+            features.atSite(i)[2] = (cielab.atSite(i, 2) + 127) / (2 * 127 + 1);
+            features.atSite(i)[3] = coords.x() / static_cast<float>(rgb.width());
+            features.atSite(i)[4] = coords.y() / static_cast<float>(rgb.height());
         }
 
         // Write to disk
