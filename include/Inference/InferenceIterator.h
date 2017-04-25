@@ -291,11 +291,11 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
         // Update feature
         Feature& f = outClusters[k].m_feature;
         Feature const& fPx = m_pImg->atSite(i);
-        auto const& sigma = m_pEnergy->weights().feature();
+        auto const& sigma = m_pEnergy->weights().feature().asDiagonal();
         auto const& w = m_pEnergy->weights().higherOrder(l1, l2);
         auto const& wTail = w.segment(f.size(), f.size());
 
-        f += fPx - 1.f / (2 * sigma) * wTail;
+        f += fPx - (1.f / 2.f) * sigma.inverse() * wTail;
     }
     // Normalize all cluster features
     for (ClusterId k = 0; k < outClusters.size(); ++k)

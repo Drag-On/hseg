@@ -23,7 +23,7 @@ private:
     std::vector<WeightVec> m_unaryWeights;
     std::vector<WeightVec> m_pairwiseWeights;
     std::vector<WeightVec> m_higherOrderWeights;
-    Weight m_featureWeight;
+    WeightVec m_featureWeights;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, Weights const& weights);
@@ -94,7 +94,7 @@ public:
      * Weight of the higher order linear classifier
      * @param l1 First label
      * @param l2 Second label
-     * @return The approriate weight
+     * @return The appropriate weight
      */
     inline WeightVec const& higherOrder(Label l1, Label l2) const
     {
@@ -107,9 +107,9 @@ public:
     /**
      * @return Feature similarity weight
      */
-    inline Weight feature() const
+    inline WeightVec const& feature() const
     {
-        return std::max(m_featureWeight, 0.00001f);
+        return m_featureWeights;
     }
 
     /**

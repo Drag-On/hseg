@@ -102,7 +102,7 @@ void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& featur
 
         // Feature similarity
         auto diff = f - fClus;
-        energyW.m_featureWeight = diff.dot(diff);
+        energyW.m_featureWeights = diff.cwiseProduct(diff);
 
         // Linear classifier
         Feature combinedFeat(f.size() + fClus.size() + 1);

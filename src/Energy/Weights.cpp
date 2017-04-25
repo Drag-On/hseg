@@ -12,7 +12,9 @@ Weights::Weights(Label numClasses, uint32_t featDim)
     m_unaryWeights.resize(numClasses, WeightVec::Zero(featDim + 1)); // +1 for the bias
     m_pairwiseWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
     m_higherOrderWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
-    m_featureWeight = 0;
+    m_featureWeights = WeightVec::Zero(featDim);
+
+    clampToFeasible();
 }
 
 Weights& Weights::operator+=(Weights const& other)
@@ -25,7 +27,7 @@ Weights& Weights::operator+=(Weights const& other)
         m_pairwiseWeights[i] += other.m_pairwiseWeights[i];
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] += other.m_higherOrderWeights[i];
-    m_featureWeight += other.m_featureWeight;
+    m_featureWeights += other.m_featureWeights;
 
     return *this;
 }
@@ -45,7 +47,7 @@ Weights& Weights::operator+=(float bias)
         m_pairwiseWeights[i] = m_pairwiseWeights[i].array() + bias;
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].array() + bias;
-    m_featureWeight = m_featureWeight + bias;
+    m_featureWeights = m_featureWeights.array() + bias;
 
     return *this;
 }
@@ -67,7 +69,7 @@ Weights& Weights::operator-=(Weights const& other)
         m_pairwiseWeights[i] -= other.m_pairwiseWeights[i];
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] -= other.m_higherOrderWeights[i];
-    m_featureWeight -= other.m_featureWeight;
+    m_featureWeights -= other.m_featureWeights;
 
     return *this;
 }
@@ -80,7 +82,7 @@ Weights& Weights::operator*=(float factor)
         m_pairwiseWeights[i] *= factor;
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] *= factor;
-    m_featureWeight *= factor;
+    m_featureWeights *= factor;
 
     return *this;
 }
@@ -97,7 +99,7 @@ Weight Weights::operator*(Weights const& other) const
         result += m_pairwiseWeights[i].dot(other.m_pairwiseWeights[i]);
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         result += m_higherOrderWeights[i].dot(other.m_higherOrderWeights[i]);
-    result += m_featureWeight * other.m_featureWeight;
+    result += m_featureWeights.dot(other.m_featureWeights);
 
     return result;
 }
@@ -119,7 +121,7 @@ Weights& Weights::operator/=(Weights const& other)
         m_pairwiseWeights[i].cwiseQuotient(other.m_pairwiseWeights[i]);
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i].cwiseQuotient(other.m_higherOrderWeights[i]);
-    m_featureWeight /= other.m_featureWeight;
+    m_featureWeights.cwiseQuotient(other.m_featureWeights);
 
     return *this;
 }
@@ -139,7 +141,7 @@ void Weights::squareElements()
         m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseProduct(m_pairwiseWeights[i]);
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseProduct(m_higherOrderWeights[i]);
-    m_featureWeight = m_featureWeight * m_featureWeight;
+    m_featureWeights = m_featureWeights.cwiseProduct(m_featureWeights);
 }
 
 void Weights::sqrt()
@@ -150,7 +152,7 @@ void Weights::sqrt()
         m_pairwiseWeights[i] =  m_pairwiseWeights[i].cwiseSqrt();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = m_higherOrderWeights[i].cwiseSqrt();
-    m_featureWeight = std::sqrt(feature());
+    m_featureWeights = m_featureWeights.cwiseSqrt();
 }
 
 Weight Weights::sqNorm() const
@@ -163,7 +165,7 @@ Weight Weights::sqNorm() const
         sqNorm += m_pairwiseWeights[i].squaredNorm();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sqNorm += m_higherOrderWeights[i].squaredNorm();
-    sqNorm += m_featureWeight * m_featureWeight;
+    sqNorm += m_featureWeights.squaredNorm();
 
     return sqNorm;
 }
@@ -178,7 +180,7 @@ Weight Weights::sum() const
         sum += m_pairwiseWeights[i].sum();
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sum += m_higherOrderWeights[i].sum();
-    sum += feature();
+    sum += m_featureWeights.sum();
 
     return sum;
 }
@@ -222,7 +224,7 @@ std::ostream& operator<<(std::ostream& stream, Weights const& weights)
     stream << std::endl << std::endl;
 
     stream << "feature:" << std::endl;
-    stream << weights.m_featureWeight << std::endl;
+    stream << weights.m_featureWeights << std::endl;
     stream << std::endl << std::endl;
 
     return stream;
@@ -233,12 +235,12 @@ bool Weights::write(std::string const& filename) const
     std::ofstream out(filename, std::ios::out | std::ios::binary | std::ios::trunc);
     if(out.is_open())
     {
-        out.write("WEIGHT01", 8);
+        out.write("WEIGHT02", 8);
         uint32_t featDim = m_unaryWeights[0].size() - 1;
         uint32_t noUnaries = m_unaryWeights.size();
         uint32_t noPairwise = m_pairwiseWeights.size();
         uint32_t noHigherOrder = m_higherOrderWeights.size();
-        uint32_t noFeature = 1;
+        uint32_t noFeature = m_featureWeights.size();
         out.write(reinterpret_cast<const char*>(&featDim), sizeof(featDim));
         out.write(reinterpret_cast<const char*>(&noUnaries), sizeof(noUnaries));
         out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
@@ -259,7 +261,7 @@ bool Weights::write(std::string const& filename) const
             assert(e.size() == featDim * 2 + 1);
             out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         }
-        out.write(reinterpret_cast<const char*>(&m_featureWeight), sizeof(m_featureWeight));
+        out.write(reinterpret_cast<const char*>(m_featureWeights.data()), sizeof(m_featureWeights(0)) * m_featureWeights.size());
         out.close();
         return true;
     }
@@ -273,7 +275,7 @@ bool Weights::read(std::string const& filename)
     {
         char id[8];
         in.read(id, 8);
-        if(std::strncmp(id, "WEIGHT01", 8) != 0)
+        if(std::strncmp(id, "WEIGHT02", 8) != 0)
         {
             in.close();
             return false;
@@ -284,17 +286,19 @@ bool Weights::read(std::string const& filename)
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
         in.read(reinterpret_cast<char*>(&noHigherOrder), sizeof(noHigherOrder));
         in.read(reinterpret_cast<char*>(&noFeature), sizeof(noFeature));
-        assert(noFeature == 1);
         m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDim + 1));
         m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDim * 2 + 1));
         m_higherOrderWeights.resize(noPairwise, WeightVec::Zero(featDim * 2 + 1));
+        m_featureWeights = WeightVec::Zero(featDim);
+        if(noFeature != featDim)
+            return false;
         for(auto& e : m_unaryWeights)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim + 1));
         for(auto& e : m_pairwiseWeights)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
         for(auto& e : m_higherOrderWeights)
             in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
-        in.read(reinterpret_cast<char*>(&m_featureWeight), sizeof(m_featureWeight));
+        in.read(reinterpret_cast<char*>(m_featureWeights.data()), sizeof(m_featureWeights(0)) * featDim);
         in.close();
 
         return true;
@@ -315,7 +319,7 @@ std::tuple<float, float, float, float, float> Weights::means() const
     for(size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         meanLabelCons += m_higherOrderWeights[i].mean();
 
-    meanFeature = m_featureWeight;
+    meanFeature = m_featureWeights.mean();
 
     meanTotal = meanUnary + meanPairwise + meanLabelCons + meanFeature;
 
@@ -329,8 +333,15 @@ std::tuple<float, float, float, float, float> Weights::means() const
 
 void Weights::clampToFeasible()
 {
-    if(m_featureWeight < feature())
-        m_featureWeight = feature();
+    static const float threshold = 1e-6;
+    for(size_t i = 0; i < m_featureWeights.size(); ++i)
+    {
+        if(m_featureWeights(i) >= 0 && m_featureWeights(i) < threshold)
+            m_featureWeights(i) = threshold;
+        else if(m_featureWeights(i) < 0 && m_featureWeights(i) >-threshold)
+            m_featureWeights(i) = -threshold;
+    }
+
 }
 
 void Weights::randomize()
@@ -341,5 +352,5 @@ void Weights::randomize()
         m_pairwiseWeights[i] = WeightVec::Random(m_pairwiseWeights[i].size());
     for(size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         m_higherOrderWeights[i] = WeightVec::Random(m_higherOrderWeights[i].size());
-    m_featureWeight = rand();
+    m_featureWeights = WeightVec::Random(m_featureWeights.size());
 }
