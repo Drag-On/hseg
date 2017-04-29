@@ -11,6 +11,7 @@
 #include <typeGeneral.h>
 #include <Image/Image.h>
 #include <helper/coordinate_helper.h>
+#include <Timer.h>
 #include "InferenceResult.h"
 #include "InferenceResultDetails.h"
 #include "Cluster.h"
@@ -81,6 +82,8 @@ InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage
 template<typename EnergyFun>
 void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClustering, LabelImage const& labeling, std::vector<Cluster> const& clusters)
 {
+    PROFILE_THIS
+
     // Exhaustive search
     for(SiteId i = 0; i < m_pImg->width() * m_pImg->height(); ++i)
     {
@@ -118,6 +121,8 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
 template<typename EnergyFun>
 void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::vector<Cluster>& outClusters, LabelImage const& clustering, FeatureImage* pOutMarginals)
 {
+    PROFILE_THIS
+
     ClusterId const numClusters = m_pEnergy->numClusters();
     Label const numClasses = m_pEnergy->numClasses();
     SiteId const numPx = outLabeling.pixels();
@@ -233,9 +238,11 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
 
     // Do the actual minimization
     MRFEnergy<TypeGeneral>::Options options;
-    options.m_eps = 0.0f;
+    options.m_eps = 0.01f;
     MRFEnergy<TypeGeneral>::REAL lowerBound = 0, energy = 0;
     mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
+
+//    std::cout << "TRW-S : lower bound = " << lowerBound << ", energy = " << energy << std::endl;
 
     // Copy over result
     if(pOutMarginals != nullptr)
@@ -267,6 +274,8 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
 template<typename EnergyFun>
 void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& outClusters, LabelImage const& labeling, LabelImage const& clustering)
 {
+    PROFILE_THIS
+
     uint32_t const numClusters = m_pEnergy->numClusters();
     std::vector<uint32_t> clusterSize(numClusters, 0);
 
@@ -305,6 +314,8 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
 template<typename EnergyFun>
 void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImage& outClustering, std::vector<Cluster>& outClusters)
 {
+    PROFILE_THIS
+
     // Initialize labeling with background (all zeros)
     outLabeling = LabelImage(m_pImg->width(), m_pImg->height());
 
@@ -380,6 +391,8 @@ template<typename EnergyFun>
 void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& gt, std::vector<Cluster>& outClusters,
                                                              LabelImage const& clustering)
 {
+    PROFILE_THIS
+
     ClusterId const numClusters = m_pEnergy->numClusters();
     Label const numClasses = m_pEnergy->numClasses();
     SiteId const numPx = gt.pixels();

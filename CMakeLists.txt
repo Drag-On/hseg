@@ -33,6 +33,11 @@ if (USAN)
     set (CMAKE_CXX_FLAGS "-fsanitize=undefined")
 endif()
 
+option(USE_PROFILER "Enable custom profiler" OFF)
+if(USE_PROFILER)
+    add_definitions("-DUSE_PROFILER")
+endif()
+
 # Configure cmake to also look for non-standard modules in the local directory
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -65,7 +70,7 @@ add_subdirectory(lib/densecrf)
 add_subdirectory(lib/properties)
 
 ### Set general gcc flags ###
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC")
 
 set(HSEG_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 

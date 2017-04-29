@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <ostream>
+#include <map>
 
 /**
  * Can be used to measure time intervals
@@ -100,6 +101,49 @@ T Timer::elapsed() const
         duration += std::chrono::high_resolution_clock::now() - m_start;
     return std::chrono::duration_cast<T>(duration);
 }
+
+namespace Profiler
+{
+    class FunctionTracer
+    {
+    private:
+        Timer m_timer;
+        std::string m_funcName;
+    public:
+        explicit FunctionTracer(std::string const& funcName) noexcept;
+        ~FunctionTracer() noexcept;
+    };
+
+    class ProfilerLog
+    {
+    private:
+        struct Record
+        {
+            size_t m_numCalled = 0;
+            std::chrono::milliseconds m_totalTime{0};
+        };
+        std::map<std::string,Record> m_records;
+    public:
+        ~ProfilerLog() noexcept;
+        void log(std::string const& funcName, std::chrono::milliseconds const& time) noexcept;
+    };
+
+    extern ProfilerLog g_profiler_log;
+}
+
+#if defined(__PRETTY_FUNCTION__)
+#define CUR_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__FUNCTION__)
+#define CUR_FUNCTION __FUNCTION__
+#else
+#define CUR_FUNCTION __func__
+#endif
+
+#if defined(USE_PROFILER)
+#define PROFILE_THIS volatile Profiler::FunctionTracer profiler_tracer_(CUR_FUNCTION);
+#else
+#define PROFILE_THIS
+#endif
 
 
 #endif //HSEG_TIMER_H
