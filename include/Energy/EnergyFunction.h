@@ -160,12 +160,14 @@ public:
      * Computes the cost of clustering two features together
      * @param f1 First feature
      * @param f2 Second feature
+     * @param l1 First label
+     * @param l2 Second label
      * @return The cost
      */
-    inline Cost featureCost(Feature const& f1, Feature const& f2) const
+    inline Cost featureCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
     {
         auto diff = f1 - f2;
-        return diff.transpose() * m_pWeights->feature().asDiagonal() * diff;
+        return diff.transpose() * m_pWeights->feature(l1, l2).asDiagonal() * diff;
     }
 
     /**

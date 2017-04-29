@@ -102,9 +102,9 @@ void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& featur
 
         // Feature similarity
         auto diff = f - fClus;
-        energyW.m_featureWeights = diff.cwiseProduct(diff);
+        energyW.feature(l, lClus) += diff.cwiseProduct(diff);
 
-        // Linear classifier
+        // Label consistency
         Feature combinedFeat(f.size() + fClus.size() + 1);
         combinedFeat << f, fClus, 1.f;
         energyW.higherOrder(l, lClus) += combinedFeat;
@@ -169,8 +169,9 @@ void EnergyFunction::computeFeatureGradient(FeatureImage& outGradients, LabelIma
         // higher-order
         if(numClusters() > 0)
         {
-            grad += 2.f * m_pWeights->feature() * (features.atSite(i) - clusters[clustering.atSite(i)].m_feature);
-            grad += m_pWeights->higherOrder(l, clusters[clustering.atSite(i)].m_label).segment(0, featSize);
+            Label l_clus = clusters[clustering.atSite(i)].m_label;
+            grad += 2.f * m_pWeights->feature(l, l_clus) * (features.atSite(i) - clusters[clustering.atSite(i)].m_feature);
+            grad += m_pWeights->higherOrder(l, l_clus).segment(0, featSize);
         }
     }
 }

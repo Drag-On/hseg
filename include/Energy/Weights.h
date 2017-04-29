@@ -12,8 +12,6 @@
 
 using Weight = Cost;
 using WeightVec = Eigen::VectorXf;
-using FeatSimMat = Eigen::MatrixXf;
-
 /**
  * Contains all (trainable) weights needed by the energy function
  */
@@ -23,14 +21,13 @@ private:
     std::vector<WeightVec> m_unaryWeights;
     std::vector<WeightVec> m_pairwiseWeights;
     std::vector<WeightVec> m_higherOrderWeights;
-    WeightVec m_featureWeights;
+    std::vector<WeightVec> m_featureWeights;
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, Weights const& weights);
 
     inline WeightVec& pairwise(Label l1, Label l2)
     {
-        // Pairwise indices are stored as upper triangular matrix
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_pairwiseWeights.size());
         return m_pairwiseWeights[index];
@@ -38,10 +35,16 @@ private:
 
     inline WeightVec& higherOrder(Label l1, Label l2)
     {
-        // Pairwise indices are stored as upper triangular matrix
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_higherOrderWeights.size());
         return m_higherOrderWeights[index];
+    }
+
+    inline WeightVec& feature(Label l1, Label l2)
+    {
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_featureWeights.size());
+        return m_featureWeights[index];
     }
 
 public:
@@ -84,7 +87,6 @@ public:
      */
     inline WeightVec const& pairwise(Label l1, Label l2) const
     {
-        // Pairwise indices are stored as upper triangular matrix
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_pairwiseWeights.size());
         return m_pairwiseWeights[index];
@@ -98,18 +100,22 @@ public:
      */
     inline WeightVec const& higherOrder(Label l1, Label l2) const
     {
-        // Pairwise indices are stored as upper triangular matrix
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_higherOrderWeights.size());
         return m_higherOrderWeights[index];
     }
 
     /**
+     * Diagonal matrix of weights that act as covariance matrix
+     * @param l1 Pixel label
+     * @param l2 Cluster label
      * @return Feature similarity weight
      */
-    inline WeightVec const& feature() const
+    inline WeightVec const& feature(Label l1, Label l2) const
     {
-        return m_featureWeights;
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_featureWeights.size());
+        return m_featureWeights[index];
     }
 
     /**

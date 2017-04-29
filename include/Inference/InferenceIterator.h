@@ -95,7 +95,7 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
         if(invalidSite)
             l1 = l2;
 
-        Cost minCost = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
+        Cost minCost = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2, l1, l2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
         ClusterId minCluster = 0;
         for(ClusterId k = 1; k < clusters.size(); ++k)
         {
@@ -103,7 +103,7 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
             Label const l2 = clusters[k].m_label;
             if(invalidSite) // See comment above
                 l1 = l2;
-            Cost c = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
+            Cost c = m_pEnergy->higherOrderCost(f1, f2, l1, l2) + m_pEnergy->featureCost(f1, f2, l1, l2) + m_pEnergy->higherOrderSpecialUnaryCost(i, l2);
             if(c < minCost)
             {
                 minCost = c;
@@ -233,7 +233,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
 
     // Do the actual minimization
     MRFEnergy<TypeGeneral>::Options options;
-    options.m_eps = 0.01f;
+    options.m_eps = 0.0f;
     MRFEnergy<TypeGeneral>::REAL lowerBound = 0, energy = 0;
     mrfEnergy.Minimize_TRW_S(options, lowerBound, energy);
 
@@ -291,7 +291,7 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
         // Update feature
         Feature& f = outClusters[k].m_feature;
         Feature const& fPx = m_pImg->atSite(i);
-        auto const& sigma = m_pEnergy->weights().feature().asDiagonal();
+        auto const& sigma = m_pEnergy->weights().feature(l1, l2).asDiagonal();
         auto const& w = m_pEnergy->weights().higherOrder(l1, l2);
         auto const& wTail = w.segment(f.size(), f.size());
 
@@ -339,7 +339,11 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
     // Compute the distance between each pixel and the newly created cluster center
     for(SiteId i = 0; i < outLabeling.pixels(); ++i)
     {
-        Cost const dist = m_pEnergy->featureCost(m_pImg->atSite(i), outClusters.back().m_feature);
+        Feature const& f1 = m_pImg->atSite(i);
+        Feature const& f2 = outClusters.back().m_feature;
+        Label l1 = outLabeling.atSite(i);
+        Label l2 = outClusters.back().m_label;
+        Cost const dist = m_pEnergy->featureCost(f1, f2, l1, l2);
         clAlloc.emplace_back(0, dist);
     }
 
@@ -358,7 +362,11 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
         // Recompute cluster distances
         for(SiteId i = 0; i < outLabeling.pixels(); ++i)
         {
-            Cost const dist = m_pEnergy->featureCost(m_pImg->atSite(i), outClusters.back().m_feature);
+            Feature const& f1 = m_pImg->atSite(i);
+            Feature const& f2 = outClusters.back().m_feature;
+            Label l1 = outLabeling.atSite(i);
+            Label l2 = outClusters.back().m_label;
+            Cost const dist = m_pEnergy->featureCost(f1, f2, l1, l2);
             if(dist < clAlloc[i].distance)
             {
                 clAlloc[i].distance = dist;
