@@ -2,7 +2,8 @@
 // Created by jan on 20.08.16.
 //
 
-#include <helper/coordinate_helper.h>
+#include "helper/coordinate_helper.h"
+#include "Timer.h"
 #include "Energy/EnergyFunction.h"
 
 EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters, bool usePairwise)
@@ -20,6 +21,8 @@ Cost EnergyFunction::giveEnergy(FeatureImage const& features, LabelImage const& 
 
 Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
 {
+    PROFILE_THIS
+
     Weights w(numClasses(), features.dim()); // Zero-initialized weights
 
     computeUnaryEnergyByWeight(features, labeling, w);

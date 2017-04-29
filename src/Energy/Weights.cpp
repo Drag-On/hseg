@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <cmath>
+#include <iostream>
 #include "Energy/Weights.h"
 
 Weights::Weights(Label numClasses, uint32_t featDim)
@@ -381,4 +382,39 @@ void Weights::randomize()
         m_higherOrderWeights[i] = WeightVec::Random(m_higherOrderWeights[i].size());
     for(size_t i = 0; i < m_featureWeights.size(); ++i)
         m_featureWeights[i] = WeightVec::Random(m_featureWeights[i].size());
+}
+
+void Weights::printStats(std::ostream& out) const
+{
+    auto printer = [&out] (std::string const& type, std::vector<WeightVec> const& w)
+    {
+        float mean = w[0].mean();
+        float max = w[0].maxCoeff();
+        float min = w[0].minCoeff();
+        float mag = w[0].norm();
+
+        for(size_t i = 1; i < w.size(); ++i)
+        {
+            mean += w[i].mean();
+            float m = w[i].maxCoeff();
+            if(m > max)
+                max = m;
+            m = w[i].minCoeff();
+            if(m < min)
+                min = m;
+            mag += w[i].norm();
+        }
+        mean /= w.size();
+        mag /= w.size();
+        out << type << std::endl;
+        out << " mean = " << mean << std::endl;
+        out << " max = " << max << std::endl;
+        out << " min = " << min << std::endl;
+        out << " mag = " << mag << std::endl;
+    };
+
+    printer("UNARY", m_unaryWeights);
+    printer("PAIRWISE", m_pairwiseWeights);
+    printer("LABELCON", m_higherOrderWeights);
+    printer("FEATURE", m_featureWeights);
 }

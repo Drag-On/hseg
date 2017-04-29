@@ -8,6 +8,9 @@
 #include <helper/image_helper.h>
 #include <Inference/InferenceIterator.h>
 #include <Threading/ThreadPool.h>
+#include <Energy/IStepSizeRule.h>
+#include <Energy/DiminishingStepSizeRule.h>
+#include <Energy/AdamStepSizeRule.h>
 
 
 PROPERTIES_DEFINE(Train,
@@ -171,6 +174,7 @@ enum ERROR_CODE
     INFERRED_INVALID,
     CANT_WRITE_RESULT,
     CANT_WRITE_RESULT_BACKUP,
+    NO_VALID_SAMPLES,
 };
 
 int main(int argc, char** argv)
@@ -187,8 +191,6 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-//    helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
-
     Weights curWeights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
@@ -200,9 +202,6 @@ int main(int argc, char** argv)
         return CANT_WRITE_RESULT_BACKUP;
     }
 
-    std::random_device rd;
-    std::default_random_engine random(rd());
-
     // Load filenames of all images
     std::vector<std::string> filenames = readFileNames(properties.dataset.list);
     if (filenames.empty())
@@ -211,19 +210,18 @@ int main(int argc, char** argv)
         return FILE_LIST_EMPTY;
     }
     uint32_t T = properties.train.iter.end - properties.train.iter.start;
-    uint32_t N = filenames.size();
-
 
     ThreadPool pool(properties.numThreads);
     std::deque<std::future<SampleResult>> futures;
 
-    // Initialize moment vectors (adam step size rule)
-    Weights curFirstMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
-    Weights curSecondMomentVector(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
-    float const adam_alpha = properties.train.rate.alpha;
-    float const adam_beta1 = properties.train.rate.beta1;
-    float const adam_beta2 = properties.train.rate.beta2;
-    float const adam_eps = properties.train.rate.eps;
+    // Initialize step size rule
+    std::unique_ptr<IStepSizeRule> pStepSizeRule(new AdamStepSizeRule(properties.train.rate.alpha,
+                                                                      properties.train.rate.beta1,
+                                                                      properties.train.rate.beta2,
+                                                                      properties.train.rate.eps,
+                                                                      properties.dataset.constants.numClasses,
+                                                                      properties.dataset.constants.featDim,
+                                                                      properties.train.iter.start));
 
     std::ofstream log(properties.log);
     if(!log.is_open())
@@ -240,15 +238,14 @@ int main(int argc, char** argv)
     // Iterate T times
     for(uint32_t t = properties.train.iter.start; t < T; ++t)
     {
+        uint32_t N = 0;
         Weights sum(properties.dataset.constants.numClasses, properties.dataset.constants.featDim); // All zeros
         Cost iterationEnergy = 0;
         futures.clear();
 
         // Iterate over all images
-        for (size_t n = 0; n < N; ++n)
+        for (std::string const filename : filenames)
         {
-            std::string const filename = filenames[n];
-
             auto&& fut = pool.enqueue(processSample, filename, curWeights, properties);
             futures.push_back(std::move(fut));
 
@@ -262,8 +259,13 @@ int main(int argc, char** argv)
                     return INFERRED_INVALID;
                 }
 
-                sum += sampleResult.gradient;
-                iterationEnergy += sampleResult.upperBound;
+                // Filter out bad results
+                if (sampleResult.upperBound >= 0)
+                {
+                    sum += sampleResult.gradient;
+                    iterationEnergy += sampleResult.upperBound;
+                    N++;
+                }
 
                 std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
                           << std::setw(12) << sampleResult.upperBound << "\t"
@@ -288,8 +290,19 @@ int main(int argc, char** argv)
                       << std::setw(2) << sampleResult.numIter << "\t"
                       << std::setw(2) << sampleResult.numIterGt << std::endl;
 
-            sum += sampleResult.gradient;
-            iterationEnergy += sampleResult.upperBound;
+            // Filter out bad results
+            if (sampleResult.upperBound >= 0)
+            {
+                sum += sampleResult.gradient;
+                iterationEnergy += sampleResult.upperBound;
+                N++;
+            }
+        }
+
+        if(N <= 0)
+        {
+            std::cerr << "There were no valid samples. Terminating..." << std::endl;
+            return NO_VALID_SAMPLES;
         }
 
         // Show current training energy
@@ -310,18 +323,8 @@ int main(int argc, char** argv)
         // Compute gradient
         sum *= properties.train.C / N;
         sum += curWeights;
-
-        // Update biased 1st and 2nd moment estimates
-        curFirstMomentVector = curFirstMomentVector * adam_beta1 + sum * (1 - adam_beta1);
-        sum.squareElements();
-        curSecondMomentVector = curSecondMomentVector * adam_beta2 + sum * (1 - adam_beta2);
-
-        // Update weights
-        float const curAlpha =
-                adam_alpha * std::sqrt(1 - std::pow(adam_beta2, t + 1)) / (1 - std::pow(adam_beta1, t + 1));
-        auto sqrtSecondMomentVector = curSecondMomentVector;
-        sqrtSecondMomentVector.sqrt();
-        curWeights -= (curFirstMomentVector * curAlpha) / (sqrtSecondMomentVector + adam_eps);
+        // ... and update
+        pStepSizeRule->update(curWeights, sum);
 
         // Project onto the feasible set
         curWeights.clampToFeasible();

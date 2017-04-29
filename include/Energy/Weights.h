@@ -5,7 +5,7 @@
 #ifndef HSEG_WEIGHTS_H
 #define HSEG_WEIGHTS_H
 
-
+#include <iostream>
 #include <vector>
 #include <Image/Image.h>
 #include <typedefs.h>
@@ -25,27 +25,6 @@ private:
 
     friend class EnergyFunction;
     friend std::ostream& operator<<(std::ostream& stream, Weights const& weights);
-
-    inline WeightVec& pairwise(Label l1, Label l2)
-    {
-        size_t const index = l1 + l2 * numClasses();
-        assert(index < m_pairwiseWeights.size());
-        return m_pairwiseWeights[index];
-    }
-
-    inline WeightVec& higherOrder(Label l1, Label l2)
-    {
-        size_t const index = l1 + l2 * numClasses();
-        assert(index < m_higherOrderWeights.size());
-        return m_higherOrderWeights[index];
-    }
-
-    inline WeightVec& feature(Label l1, Label l2)
-    {
-        size_t const index = l1 + l2 * numClasses();
-        assert(index < m_featureWeights.size());
-        return m_featureWeights[index];
-    }
 
 public:
     /**
@@ -73,7 +52,7 @@ public:
      * @param l Class label
      * @return The approriate weight
      */
-    inline WeightVec unary(Label l) const
+    inline WeightVec const& unary(Label l) const
     {
         assert(l < m_unaryWeights.size());
         return m_unaryWeights[l];
@@ -112,6 +91,33 @@ public:
      * @return Feature similarity weight
      */
     inline WeightVec const& feature(Label l1, Label l2) const
+    {
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_featureWeights.size());
+        return m_featureWeights[index];
+    }
+
+    inline WeightVec& unary(Label l)
+    {
+        assert(l < m_unaryWeights.size());
+        return m_unaryWeights[l];
+    }
+
+    inline WeightVec& pairwise(Label l1, Label l2)
+    {
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_pairwiseWeights.size());
+        return m_pairwiseWeights[index];
+    }
+
+    inline WeightVec& higherOrder(Label l1, Label l2)
+    {
+        size_t const index = l1 + l2 * numClasses();
+        assert(index < m_higherOrderWeights.size());
+        return m_higherOrderWeights[index];
+    }
+
+    inline WeightVec& feature(Label l1, Label l2)
     {
         size_t const index = l1 + l2 * numClasses();
         assert(index < m_featureWeights.size());
@@ -231,6 +237,12 @@ public:
      * @return Resulting weight vector
      */
     Weights operator/(Weights const& other) const;
+
+    /**
+     * Prints some statistics about the weight vector to a stream
+     * @param out Output stream, defaults to std::cout
+     */
+    void printStats(std::ostream& out = std::cout) const;
 };
 
 std::ostream& operator<<(std::ostream& stream, Weights const& weights);
