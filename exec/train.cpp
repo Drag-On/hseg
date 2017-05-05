@@ -326,7 +326,7 @@ int main(int argc, char** argv)
 
         // Compute gradient
         sum *= properties.train.C / N;
-        sum += curWeights;
+        sum += curWeights.regularized();
         // ... and update
         pStepSizeRule->update(curWeights, sum);
 

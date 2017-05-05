@@ -140,6 +140,11 @@ public:
     Weight sqNorm() const;
 
     /**
+     * @return Weights for the regularizer
+     */
+    Weights regularized() const;
+
+    /**
      * @return The sum of all vector elements
      */
     Weight sum() const;

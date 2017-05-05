@@ -180,6 +180,14 @@ Weight Weights::sqNorm() const
     return sqNorm;
 }
 
+Weights Weights::regularized() const
+{
+    Weights regularized = *this;
+    for (size_t i = 0; i < m_featureWeights.size(); ++i)
+        regularized.m_featureWeights[i] = (m_featureWeights[i] - Eigen::VectorXf::Ones(m_featureWeights[i].size()));
+    return regularized;
+}
+
 Weight Weights::sum() const
 {
     Weight sum = 0;
