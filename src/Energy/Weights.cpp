@@ -13,7 +13,7 @@ Weights::Weights(Label numClasses, uint32_t featDim)
     m_unaryWeights.resize(numClasses, WeightVec::Zero(featDim + 1)); // +1 for the bias
     m_pairwiseWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
     m_higherOrderWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
-    m_featureWeights.resize(numClasses * numClasses, WeightVec::Zero(featDim));
+    m_featureWeights.resize(numClasses * numClasses, WeightVec::Ones(featDim));
 
     clampToFeasible();
 }
@@ -175,7 +175,7 @@ Weight Weights::sqNorm() const
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sqNorm += m_higherOrderWeights[i].squaredNorm();
     for (size_t i = 0; i < m_featureWeights.size(); ++i)
-        sqNorm += m_featureWeights[i].squaredNorm();
+        sqNorm += (m_featureWeights[i] - Eigen::VectorXf::Ones(m_featureWeights[i].size())).squaredNorm();
 
     return sqNorm;
 }
@@ -357,7 +357,7 @@ std::tuple<float, float, float, float, float> Weights::means() const
 
 void Weights::clampToFeasible()
 {
-    static const float threshold = 1e-6;
+    static const float threshold = 1e-3f;
     for(size_t i = 0; i < m_featureWeights.size(); ++i)
     {
         WeightVec& w = m_featureWeights[i];

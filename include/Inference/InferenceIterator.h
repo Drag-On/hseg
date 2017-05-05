@@ -300,15 +300,18 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
         // Update feature
         Feature& f = outClusters[k].m_feature;
         Feature const& fPx = m_pImg->atSite(i);
-        auto const& sigma = m_pEnergy->weights().feature(l1, l2).asDiagonal();
+        auto const sigmaInv = m_pEnergy->weights().feature(l1, l2).cwiseInverse().asDiagonal();
         auto const& w = m_pEnergy->weights().higherOrder(l1, l2);
-        auto const& wTail = w.segment(f.size(), f.size());
+        auto const wTail = w.segment(f.size(), f.size());
 
-        f += fPx - (1.f / 2.f) * sigma.inverse() * wTail;
+        f += fPx - 0.5f * sigmaInv * wTail;
     }
     // Normalize all cluster features
     for (ClusterId k = 0; k < outClusters.size(); ++k)
-        outClusters[k].m_feature *= 1.f / clusterSize[k];
+    {
+        if(clusterSize[k] > 0)
+            outClusters[k].m_feature /= clusterSize[k];
+    }
 }
 
 template<typename EnergyFun>
@@ -430,6 +433,8 @@ void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& g
 template<typename EnergyFun>
 InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
 {
+    PROFILE_THIS
+
     InferenceResult result;
 
     // Initialize variables
@@ -443,10 +448,20 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
     }
 
     // Iterate until either convergence or the maximum number of iterations has been hit
+    auto converged = [&](uint32_t iter, Cost last, Cost cur)
+    {
+        if(numIter > 0)
+            return iter < numIter;
+        else
+        {
+            Cost diff = last - cur;
+            return diff <= m_eps;
+        }
+    };
     Cost energy =  m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0) && iter < m_maxIter; ++iter)
+    for (; iter < m_maxIter && !converged(iter, lastEnergy, energy); ++iter)
     {
         lastEnergy = energy;
 
@@ -495,11 +510,21 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
     }
 
     // Iterate until either convergence or the maximum number of iterations has been hit
+    auto converged = [&](uint32_t iter, Cost last, Cost cur)
+    {
+        if(numIter > 0)
+            return iter < numIter;
+        else
+        {
+            Cost diff = last - cur;
+            return diff <= m_eps;
+        }
+    };
     Cost energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
     result.energy.push_back(energy);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0) && iter < m_maxIter; ++iter)
+    for (; iter < m_maxIter && !converged(iter, lastEnergy, energy); ++iter)
     {
         lastEnergy = energy;
 
@@ -546,10 +571,20 @@ InferenceResult InferenceIterator<EnergyFun>::runOnGroundTruth(LabelImage const&
     result.labeling = gt;
 
     // Iterate until either convergence or the maximum number of iterations has been hit
+    auto converged = [&](uint32_t iter, Cost last, Cost cur)
+    {
+        if(numIter > 0)
+            return iter < numIter;
+        else
+        {
+            Cost diff = last - cur;
+            return diff <= m_eps;
+        }
+    };
     Cost energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
-    for (; (numIter > 0) ? (iter < numIter) : (lastEnergy - energy >= m_eps || iter == 0) && iter < m_maxIter; ++iter)
+    for (; iter < m_maxIter && !converged(iter, lastEnergy, energy); ++iter)
     {
         lastEnergy = energy;
 
