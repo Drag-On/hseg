@@ -4,9 +4,10 @@
 
 #include "Energy/LossAugmentedEnergyFunction.h"
 
-LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters, bool usePairwise)
+LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters, bool usePairwise, bool useClusterLoss)
         : EnergyFunction(weights, numClusters, usePairwise),
-          m_pGroundTruth(groundTruth)
+          m_pGroundTruth(groundTruth),
+          m_useClusterLoss(useClusterLoss)
 {
     m_lossFactor = computeLossFactor(*groundTruth, weights->numClasses());
 }
@@ -17,7 +18,7 @@ Cost LossAugmentedEnergyFunction::giveEnergy(FeatureImage const& features, Label
     Cost normalCost = EnergyFunction::giveEnergy(features, labeling, clustering, clusters);
 
     // Also account for the loss
-    Cost loss = computeLoss(labeling, clustering, *m_pGroundTruth, clusters, m_lossFactor, numClasses());
+    Cost loss = computeLoss(labeling, clustering, *m_pGroundTruth, clusters, m_lossFactor, numClasses(), m_useClusterLoss);
 
     return normalCost - loss;
 }
@@ -29,7 +30,7 @@ Cost LossAugmentedEnergyFunction::lossFactor()
 
 Cost LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelImage const& clustering,
                                               LabelImage const& groundTruth, std::vector<Cluster> const& clusters,
-                                              Cost lossFactor, Label numClasses)
+                                              Cost lossFactor, Label numClasses, bool useClusterLoss)
 {
     SiteId lossSites = 0;
     SiteId hoLossSites = 0;
@@ -39,7 +40,7 @@ Cost LossAugmentedEnergyFunction::computeLoss(LabelImage const& labeling, LabelI
         {
             if (groundTruth.atSite(i) != labeling.atSite(i))
                 lossSites++;
-            if (clusters.size() > 0 && groundTruth.atSite(i) != clusters[clustering.atSite(i)].m_label)
+            if (useClusterLoss && clusters.size() > 0 && groundTruth.atSite(i) != clusters[clustering.atSite(i)].m_label)
                 hoLossSites++;
         }
     }

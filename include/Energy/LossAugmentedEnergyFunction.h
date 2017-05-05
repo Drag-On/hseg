@@ -19,8 +19,10 @@ public:
      * @param weights Weights to use. The pointer must stay valid as long as this object persists.
      * @param groundTruth Ground truth image. The pointer must stay valid as long as this object persists.
      * @param numClusters Amount of clusters
+     * @param usePairwise Indicates whether to use fixed pairwise potentials
+     * @param useClusterLoss Indicates whether to use the cluster loss
      */
-    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters, bool usePairwise = true);
+    LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters, bool usePairwise = true, bool useClusterLoss = true);
 
     Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
@@ -36,7 +38,7 @@ public:
     inline Cost higherOrderSpecialUnaryCost(SiteId i, Label l_k) const
     {
         Cost loss = 0;
-        if(m_pGroundTruth->atSite(i) != l_k)
+        if(m_useClusterLoss && m_pGroundTruth->atSite(i) != l_k)
             loss = m_lossFactor;
         return -loss;
     }
@@ -52,13 +54,14 @@ public:
      * @param groundTruth Ground truth image
      * @param lossFactor Loss factor as computed by computeLossFactor()
      * @param numClasses Amount of classes
+     * @param useClusterLoss Indicates whether to use the cluster loss
      * @return The loss
      */
     static Cost
     computeLoss(LabelImage const& labeling, LabelImage const& clustering,
                 LabelImage const& groundTruth,
                 std::vector<Cluster> const& clusters, Cost lossFactor,
-                Label numClasses);
+                Label numClasses, bool useClusterLoss = true);
 
     /**
      * Computes the loss factor on an image
@@ -82,6 +85,7 @@ public:
 private:
     LabelImage const* m_pGroundTruth;
     Cost m_lossFactor;
+    bool m_useClusterLoss;
 };
 
 

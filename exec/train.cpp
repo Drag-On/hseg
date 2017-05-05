@@ -31,6 +31,7 @@ PROPERTIES_DEFINE(Train,
                   )
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
+                               PROP_DEFINE_A(bool, useClusterLoss, true, --useClusterLoss)
                                GROUP_DEFINE(iter,
                                             PROP_DEFINE_A(uint32_t, start, 0, --start)
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
@@ -136,7 +137,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     sampleResult.numIterGt = gtResult.numIter;
 
     // Predict with loss-augmented energy
-    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters, properties.param.usePairwise);
+    LossAugmentedEnergyFunction lossEnergy(&curWeights, &gt, properties.param.numClusters, properties.param.usePairwise, properties.train.useClusterLoss);
     InferenceIterator<LossAugmentedEnergyFunction> inference(&lossEnergy, &features, properties.param.eps, properties.param.maxIter);
     InferenceResult result = inference.run();
     sampleResult.numIter = result.numIter;
@@ -153,7 +154,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     auto predEnergyCur = curWeights * predEnergy;
     float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
     float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.clustering, gt, result.clusters,
-                                                          lossFactor, properties.dataset.constants.numClasses);
+                                                          lossFactor, properties.dataset.constants.numClasses, properties.train.useClusterLoss);
     sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
 
     //std::cout << "Upper bound: (" << loss << " - " << predEnergyCur << ") + " << gtEnergyCur << " = " << loss - predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;
