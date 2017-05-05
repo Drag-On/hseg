@@ -232,7 +232,7 @@ int main(int argc, char** argv)
     }
 
     // Print header to log file
-    log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;" << "Regularizer" << "\t" << "Upper Bound" << "\t";
+    log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;" << "Regularizer" << "\t;" << "Upper Bound" << "\t;";
     log << std::setw(12) << "Mean Unary" << "\t;" << std::setw(12) << "Mean Pair" << "\t;" << std::setw(12)
         << "Mean Label" << "\t;" << std::setw(12) << "Mean Feat" << "\t;" << std::setw(12) << "Mean Total" << std::endl;
 
