@@ -232,7 +232,7 @@ int main(int argc, char** argv)
     }
 
     // Print header to log file
-    log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;";
+    log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;" << "Regularizer" << "\t" << "Upper Bound" << "\t";
     log << std::setw(12) << "Mean Unary" << "\t;" << std::setw(12) << "Mean Pair" << "\t;" << std::setw(12)
         << "Mean Label" << "\t;" << std::setw(12) << "Mean Feat" << "\t;" << std::setw(12) << "Mean Total" << std::endl;
 
@@ -314,7 +314,10 @@ int main(int argc, char** argv)
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
         // Print upper bound of last iteration
-        log << std::setw(4) << t << "\t;" << std::setw(12) << iterationEnergy << "\t;";
+        log << std::setw(4) << t << "\t;"
+            << std::setw(12) << iterationEnergy << "\t;"
+            << std::setw(12) << regularizerCost << "\t;"
+            << std::setw(12) << upperBoundCost << "\t;";
         // Print average weights
         float meanUnary = 0, meanPairwise = 0, meanLabelCons = 0, meanFeature = 0, meanTotal = 0;
         std::tie(meanUnary, meanPairwise, meanLabelCons, meanFeature, meanTotal) = curWeights.means();
