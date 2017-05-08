@@ -140,12 +140,9 @@ int main(int argc, char** argv)
         size_t imgRawPxCount = 0;
 
         // Compute loss
-        if(clustering.pixels() > 0)
-        {
-            float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
-            loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
-                                                             properties.dataset.constants.numClasses);
-        }
+        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+        loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
+                                                             properties.dataset.constants.numClasses, clustering.pixels() > 0);
         // Raw percentage
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) < properties.dataset.constants.numClasses)
@@ -169,8 +166,7 @@ int main(int argc, char** argv)
     loss *= properties.train.C / fileNames.size();
 
     std::cout << accuracy << std::endl;
-    if(!properties.inClusterDir.empty())
-        std::cout << "Loss: " << loss << std::endl;
+    std::cout << "Loss: " << loss << std::endl;
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
               << rawPixelCount << ")" << std::endl;
     std::cout << "Mean px percentage: " << (100.f * meanCorrectPercentage) / fileNames.size() << " %" << std::endl;
@@ -179,8 +175,7 @@ int main(int argc, char** argv)
     {
         out << properties << std::endl << std::endl;
         out << accuracy << std::endl;
-        if(!properties.inClusterDir.empty())
-            out << "Loss: " << loss << std::endl << std::endl;
+        out << "Loss: " << loss << std::endl << std::endl;
 
         std::sort(imageAccData.begin(), imageAccData.end(),
                   [](ImageAccuracyData const& a, ImageAccuracyData const& b) { return a.rawAccuracy > b.rawAccuracy; });
