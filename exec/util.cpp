@@ -1282,6 +1282,22 @@ bool testIterationProgress(UtilProperties const& properties)
         std::cout << std::setw(12) << meanCostPerIter[i] << "\t;";
         std::cout << std::setw(12) << varCostPerIter[i] << std::endl;
     }
+
+    // Try to write results to file
+    for(size_t i = 0; i < results.size(); ++i)
+    {
+        boost::filesystem::path folder = properties.out + listfile[i];
+
+        auto labelingsFolder = folder / "labeling";
+        boost::filesystem::create_directories(labelingsFolder);
+        for(size_t j = 0; j < results[i].labelings.size(); ++j)
+            results[i].labelings[j].write(labelingsFolder.string() + "/" + std::to_string(j) + ".png");
+
+        auto clusteringsFolder = folder / "clustering";
+        boost::filesystem::create_directories(clusteringsFolder);
+        for(size_t j = 0; j < results[i].clusterings.size(); ++j)
+            results[i].clusterings[j].write(clusteringsFolder.string() + "/" + std::to_string(j) + ".png");
+    }
 }
 
 int main(int argc, char** argv)
