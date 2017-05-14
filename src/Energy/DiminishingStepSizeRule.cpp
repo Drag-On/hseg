@@ -24,3 +24,13 @@ void DiminishingStepSizeRule::update(Weights& w, Weights const& gradient)
     m_t++;
 }
 
+bool DiminishingStepSizeRule::write(std::string const& /*folder*/)
+{
+    return true;
+}
+
+bool DiminishingStepSizeRule::read(std::string const& /*folder*/, size_t /*t*/)
+{
+    return true;
+}
+

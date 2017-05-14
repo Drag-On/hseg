@@ -37,3 +37,22 @@ void AdamStepSizeRule::update(Weights& w, Weights const& gradient)
 
     m_t++;
 }
+
+bool AdamStepSizeRule::write(std::string const& folder)
+{
+    std::string filename1 = folder + std::to_string(m_t) + "_first_moment.dat";
+    std::string filename2 = folder + std::to_string(m_t) + "_second_moment.dat";
+    bool success = true;
+    success = success && m_firstMoment.write(filename1);
+    success = success && m_secondMoment.write(filename2);
+    return success;
+}
+
+bool AdamStepSizeRule::read(std::string const& folder, size_t t)
+{
+    bool success = true;
+    success = success && m_firstMoment.read(folder + std::to_string(t) + "_first_moment.dat");
+    success = success && m_secondMoment.read(folder + std::to_string(t) + "_second_moment.dat");
+    m_t = t;
+    return success;
+}

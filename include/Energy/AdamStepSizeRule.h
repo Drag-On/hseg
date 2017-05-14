@@ -21,6 +21,10 @@ public:
 
     void update(Weights& w, Weights const& gradient) override;
 
+    bool write(std::string const& folder) override;
+
+    bool read(std::string const& folder, size_t t) override;
+
 private:
     float const m_alpha;
     float const m_beta1;

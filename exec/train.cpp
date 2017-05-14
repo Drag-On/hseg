@@ -9,7 +9,6 @@
 #include <Inference/InferenceIterator.h>
 #include <Threading/ThreadPool.h>
 #include <Energy/IStepSizeRule.h>
-#include <Energy/DiminishingStepSizeRule.h>
 #include <Energy/AdamStepSizeRule.h>
 
 
@@ -216,13 +215,15 @@ int main(int argc, char** argv)
     std::deque<std::future<SampleResult>> futures;
 
     // Initialize step size rule
-    std::unique_ptr<IStepSizeRule> pStepSizeRule(new AdamStepSizeRule(properties.train.rate.alpha,
-                                                                      properties.train.rate.beta1,
-                                                                      properties.train.rate.beta2,
-                                                                      properties.train.rate.eps,
-                                                                      properties.dataset.constants.numClasses,
-                                                                      properties.dataset.constants.featDim,
-                                                                      properties.train.iter.start));
+    auto pStepSizeRule = std::make_unique<AdamStepSizeRule>(properties.train.rate.alpha,
+                                                            properties.train.rate.beta1,
+                                                            properties.train.rate.beta2,
+                                                            properties.train.rate.eps,
+                                                            properties.dataset.constants.numClasses,
+                                                            properties.dataset.constants.featDim,
+                                                            properties.train.iter.start);
+    if(!pStepSizeRule->read(properties.outDir, properties.train.iter.start))
+        std::cout << "Couldn't read in initial step size meta data from \"" << properties.outDir << "\". Using default." << std::endl;
 
     std::ofstream log(properties.log);
     if(!log.is_open())
@@ -346,6 +347,7 @@ int main(int argc, char** argv)
             log.close();
             return CANT_WRITE_RESULT_BACKUP;
         }
+        pStepSizeRule->write(properties.outDir);
     }
 
     log.close();
