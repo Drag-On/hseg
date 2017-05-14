@@ -12,6 +12,7 @@
 #include <caffe/util/db.hpp>
 #include <densecrf.h>
 #include <helper/utility.h>
+#include <Inference/InferenceIterator.h>
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -30,6 +31,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, createFakeMarginals, "", --createFakeMarginals)
                                PROP_DEFINE_A(std::string, stitchMarginals, "", --stitchMarginals)
                                PROP_DEFINE_A(std::string, createBasicFeatures, "", --createBasicFeatures)
+                               PROP_DEFINE_A(std::string, testIterationProgress, "", --testIterationProgress)
                   )
                   GROUP_DEFINE(dataset,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -57,7 +59,10 @@ PROPERTIES_DEFINE(Util,
                           PROP_DEFINE_A(bool, cityscapes, false, --cityscapes)
                   )
                   GROUP_DEFINE(param,
-                               PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                          PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                          PROP_DEFINE_A(bool, usePairwise, false, --usePairwise)
+                          PROP_DEFINE_A(float, eps, 0, --eps)
+                          PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
@@ -1168,6 +1173,117 @@ bool createBasicFeatures(UtilProperties const& properties)
     return true;
 }
 
+bool testIterationProgress(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> listfile = readLines(properties.job.testIterationProgress);
+    std::cout << listfile.size() << " images." << std::endl;
+
+    // Read in weights
+    Weights w(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    if(!w.read(properties.in))
+        std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
+
+    // Gather inference data
+    std::vector<InferenceResultDetails> results;
+    for(auto const& filename : listfile)
+    {
+        // Read images
+        std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
+        std::string gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
+
+        FeatureImage features;
+        if(!features.read(imgFilename))
+        {
+            std::cerr << "Unable to read features from \"" << imgFilename << "\"" << std::endl;
+            return false;
+        }
+
+        LabelImage gt;
+        auto errCode = helper::image::readPalettePNG(gtFilename, gt, nullptr);
+        if(errCode != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
+            return false;
+        }
+        gt.rescale(features.width(), features.height(), false);
+
+        // Crop to valid region
+        cv::Rect bb = helper::image::computeValidBox(gt, properties.dataset.constants.numClasses);
+        FeatureImage features_cropped(bb.width, bb.height, features.dim());
+        LabelImage gt_cropped(bb.width, bb.height);
+        for(Coord x = bb.x; x < bb.width; ++x)
+        {
+            for (Coord y = bb.y; y < bb.height; ++y)
+            {
+                gt_cropped.at(x - bb.x, y - bb.y) = gt.at(x, y);
+                features_cropped.at(x - bb.x, y - bb.y) = features.at(x, y);
+            }
+        }
+
+        gt = gt_cropped;
+        features = features_cropped;
+
+        if(gt.height() == 0 || gt.width() == 0 || gt.height() != features.height() || gt.width() != features.width())
+        {
+            std::cerr << "Invalid ground truth or features. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
+                      << features.width() << "x" << features.height() << ")." << std::endl;
+            return false;
+        }
+
+        // Predict
+        EnergyFunction energy(&w, properties.param.numClusters, properties.param.usePairwise);
+        InferenceIterator<EnergyFunction> inference(&energy, &features, properties.param.eps, properties.param.maxIter);
+        results.push_back(inference.runDetailed());
+    }
+
+    // Analyze data
+    std::vector<size_t> count;
+    std::vector<Cost> meanCostPerIter;
+    std::vector<Cost> varCostPerIter;
+    // Compute means
+    for(auto const& r : results)
+    {
+        for(size_t i = 0; i < r.energy.size(); ++i)
+        {
+            if(count.size() <= i)
+                count.push_back(1);
+            else
+                count[i]++;
+            if(meanCostPerIter.size() <= i)
+                meanCostPerIter.push_back(r.energy[i]);
+            else
+                meanCostPerIter[i] += r.energy[i];
+        }
+    }
+    for(size_t i = 0; i < count.size(); ++i)
+        meanCostPerIter[i] /= count[i];
+
+    // Compute variances
+    for(auto const& r : results)
+    {
+        for(size_t i = 0; i < r.energy.size(); ++i)
+        {
+            Cost curVal = std::pow(r.energy[i] - meanCostPerIter[i], 2);
+            if(varCostPerIter.size() <= i)
+                varCostPerIter.push_back(curVal);
+            else
+                varCostPerIter[i] += curVal;
+        }
+    }
+    for(size_t i = 0; i < count.size(); ++i)
+        varCostPerIter[i] /= count[i];
+
+    // Output results
+    std::cout << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Mean" << "\t;" << std::setw(12) << "Variance" << std::endl;
+    for(size_t i = 0; i < count.size(); ++i)
+    {
+        std::cout << std::setw(4) << i << "\t;";
+        std::cout << std::setw(12) << meanCostPerIter[i] << "\t;";
+        std::cout << std::setw(12) << varCostPerIter[i] << std::endl;
+    }
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -1222,6 +1338,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.createBasicFeatures.empty())
         createBasicFeatures(properties);
+
+    if(!properties.job.testIterationProgress.empty())
+        testIterationProgress(properties);
 
     return 0;
 }
