@@ -225,7 +225,12 @@ int main(int argc, char** argv)
     if(!pStepSizeRule->read(properties.outDir, properties.train.iter.start))
         std::cout << "Couldn't read in initial step size meta data from \"" << properties.outDir << "\". Using default." << std::endl;
 
-    std::ofstream log(properties.log);
+    auto mode = std::ios::out;
+    if(properties.train.iter.start == 0)
+        mode |= std::ios::trunc;
+    else
+        mode |= std::ios::app;
+    std::ofstream log(properties.log, mode);
     if(!log.is_open())
     {
         std::cerr << "Cannot write to log file \"" << properties.log << "\"" << std::endl;
@@ -233,9 +238,12 @@ int main(int argc, char** argv)
     }
 
     // Print header to log file
-    log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;" << std::setw(12) << "Regularizer" << "\t;" << std::setw(12) << "Upper Bound" << "\t;";
-    log << std::setw(12) << "Mean Unary" << "\t;" << std::setw(12) << "Mean Pair" << "\t;" << std::setw(12)
-        << "Mean Label" << "\t;" << std::setw(12) << "Mean Feat" << "\t;" << std::setw(12) << "Mean Total" << std::endl;
+    if(properties.train.iter.start == 0)
+    {
+        log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;" << std::setw(12) << "Regularizer" << "\t;" << std::setw(12) << "Upper Bound" << "\t;";
+        log << std::setw(12) << "Mean Unary" << "\t;" << std::setw(12) << "Mean Pair" << "\t;" << std::setw(12)
+            << "Mean Label" << "\t;" << std::setw(12) << "Mean Feat" << "\t;" << std::setw(12) << "Mean Total" << std::endl;
+    }
 
     // Iterate T times
     for(uint32_t t = properties.train.iter.start; t < T; ++t)
