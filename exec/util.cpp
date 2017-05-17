@@ -1185,11 +1185,14 @@ bool testIterationProgress(UtilProperties const& properties)
         std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
 
     w.printStats(std::cout);
+    auto cmap = helper::image::generateColorMapVOC(256);
 
     // Gather inference data
     std::vector<InferenceResultDetails> results;
     for(auto const& filename : listfile)
     {
+        std::cout << filename << std::endl;
+
         // Read images
         std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
         std::string gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
@@ -1236,7 +1239,29 @@ bool testIterationProgress(UtilProperties const& properties)
         // Predict
         EnergyFunction energy(&w, properties.param.numClusters, properties.param.usePairwise);
         InferenceIterator<EnergyFunction> inference(&energy, &features, properties.param.eps, properties.param.maxIter);
-        results.push_back(inference.runDetailed());
+        auto result = inference.runDetailed();
+
+        // Try to write results to file
+        boost::filesystem::path folder = properties.out + filename;
+
+        auto labelingsFolder = folder / "labeling";
+        boost::filesystem::create_directories(labelingsFolder);
+        for(size_t j = 0; j < result.labelings.size(); ++j)
+            helper::image::writePalettePNG(labelingsFolder.string() + "/" + std::to_string(j) + ".png", result.labelings[j], cmap);
+
+        auto clusteringsFolder = folder / "clustering";
+        boost::filesystem::create_directories(clusteringsFolder);
+        for(size_t j = 0; j < result.clusterings.size(); ++j)
+            helper::image::writePalettePNG(clusteringsFolder.string() + "/" + std::to_string(j) + ".png", result.clusterings[j], cmap);
+
+        // Clear memory that is not needed anymore
+        result.labelings.clear();
+        std::vector<LabelImage>(result.labelings).swap(result.labelings); // Shrink vector to zero
+        result.clusterings.clear();
+        std::vector<LabelImage>(result.clusterings).swap(result.clusterings);
+        result.marginals.clear();
+        std::vector<FeatureImage>(result.marginals).swap(result.marginals);
+        results.push_back(result);
     }
 
     // Analyze data
@@ -1283,23 +1308,6 @@ bool testIterationProgress(UtilProperties const& properties)
         std::cout << std::setw(4) << i << "\t;";
         std::cout << std::setw(12) << meanCostPerIter[i] << "\t;";
         std::cout << std::setw(12) << varCostPerIter[i] << std::endl;
-    }
-
-    // Try to write results to file
-    auto cmap = helper::image::generateColorMapVOC(256);
-    for(size_t i = 0; i < results.size(); ++i)
-    {
-        boost::filesystem::path folder = properties.out + listfile[i];
-
-        auto labelingsFolder = folder / "labeling";
-        boost::filesystem::create_directories(labelingsFolder);
-        for(size_t j = 0; j < results[i].labelings.size(); ++j)
-            helper::image::writePalettePNG(labelingsFolder.string() + "/" + std::to_string(j) + ".png", results[i].labelings[j], cmap);
-
-        auto clusteringsFolder = folder / "clustering";
-        boost::filesystem::create_directories(clusteringsFolder);
-        for(size_t j = 0; j < results[i].clusterings.size(); ++j)
-            helper::image::writePalettePNG(clusteringsFolder.string() + "/" + std::to_string(j) + ".png", results[i].clusterings[j], cmap);
     }
 }
 
