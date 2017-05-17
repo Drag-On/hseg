@@ -443,7 +443,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
     // If no clusters are required, just do normal TRW-S
     if(m_pEnergy->numClusters() == 0)
     {
-        updateLabels(result.labeling, result.clusters, result.clustering, &result.marginals);
+        updateLabels(result.labeling, result.clusters, result.clustering/*, &result.marginals*/);
         return result;
     }
 
@@ -472,7 +472,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
         updateClusterFeatures(result.clusters, result.labeling, result.clustering);
 
         // Update labels
-        updateLabels(result.labeling, result.clusters, result.clustering, &result.marginals);
+        updateLabels(result.labeling, result.clusters, result.clustering/*, &result.marginals*/);
 
         // Compute current energy to check for convergence
         energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
