@@ -8,12 +8,12 @@
 class TestEnergyFunction
 {
 public:
-    inline Cost higherOrderCost(Feature const& f1, Feature const& f2, Label l1, Label l2) const
+    inline Cost higherOrderCost(Feature const& /*f1*/, Feature const& /*f2*/, Label l1, Label l2) const
     {
         return l1 == l2 ? 0 : 1;
     }
 
-    inline Cost featureCost(Feature const& f1, Feature const& f2) const
+    inline Cost featureCost(Feature const& f1, Feature const& f2, Label /*l1*/, Label /*l2*/) const
     {
         return std::abs((f1 - f2)(0));
     }

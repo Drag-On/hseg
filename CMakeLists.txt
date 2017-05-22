@@ -38,6 +38,11 @@ if(USE_PROFILER)
     add_definitions("-DUSE_PROFILER")
 endif()
 
+option(WITH_CAFFE "Build custom caffe" OFF)
+if(WITH_CAFFE)
+    add_definitions("-DWITH_CAFFE")
+endif()
+
 # Configure cmake to also look for non-standard modules in the local directory
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -75,7 +80,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC")
 set(HSEG_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 ### caffe ###
-add_subdirectory(lib/caffe)
+if (WITH_CAFFE)
+    add_subdirectory(lib/caffe)
+endif ()
 
 add_definitions(${PNG_DEFINITIONS})
 
@@ -102,9 +109,12 @@ set_target_properties(hseg_train PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedan
 
 ### Compile utility executable ###
 add_executable(hseg_util exec/util.cpp)
-target_include_directories(hseg_util SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/caffe/include ${CMAKE_BINARY_DIR}/lib/caffe/include)
-target_link_libraries(hseg_util hseg caffe)
+target_link_libraries(hseg_util hseg)
 set_target_properties(hseg_util PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+if(WITH_CAFFE)
+    target_include_directories(hseg_util SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/caffe/include ${CMAKE_BINARY_DIR}/lib/caffe/include)
+    target_link_libraries(hseg_util caffe)
+endif()
 
 ### Compile distributed training executables ###
 add_executable(hseg_train_dist_pred exec/train_dist_pred.cpp)

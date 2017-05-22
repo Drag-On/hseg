@@ -9,10 +9,13 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <Energy/LossAugmentedEnergyFunction.h>
-#include <caffe/util/db.hpp>
 #include <densecrf.h>
 #include <helper/utility.h>
 #include <Inference/InferenceIterator.h>
+
+#ifdef WITH_CAFFE
+#include <caffe/util/db.hpp>
+#endif
 
 PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(job,
@@ -830,6 +833,7 @@ bool prepareDataset(UtilProperties const& properties)
 
 bool writeLMDB(UtilProperties const& properties)
 {
+#ifdef WITH_CAFFE
     // Read in file names
     std::vector<std::string> listfile = readLines(properties.job.writeLMDB);
 
@@ -924,6 +928,7 @@ bool writeLMDB(UtilProperties const& properties)
     transaction->Commit();
     db->Close();
 
+#endif
     return true;
 }
 
@@ -1309,6 +1314,8 @@ bool testIterationProgress(UtilProperties const& properties)
         std::cout << std::setw(12) << meanCostPerIter[i] << "\t;";
         std::cout << std::setw(12) << varCostPerIter[i] << std::endl;
     }
+
+    return true;
 }
 
 int main(int argc, char** argv)

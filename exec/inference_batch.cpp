@@ -101,15 +101,15 @@ Result process(std::string const& imageFilename, std::string const& rgbFileName,
     boost::filesystem::create_directories(spPath);
     boost::filesystem::path labelPath(labelOutPath);
     boost::filesystem::create_directories(labelPath);
-    boost::filesystem::path margPath(margOutPath);
-    boost::filesystem::create_directories(margPath);
+//    boost::filesystem::path margPath(margOutPath);
+//    boost::filesystem::create_directories(margPath);
     helper::image::writePalettePNG(labelPath.string() + filename + ".png", result.labeling, cmap);
     if(numClusters > 0)
     {
         helper::image::writePalettePNG(spPath.string() + filename + ".png", result.clustering, cmap);
         helper::clustering::write(spPath.string() + filename + ".dat", result.clustering, result.clusters);
     }
-    result.marginals.write(margPath.string() + filename + ".mat");
+//    result.marginals.write(margPath.string() + filename + ".mat");
 
     res.okay = true;
     return res;
