@@ -29,6 +29,7 @@ PROPERTIES_DEFINE(Accuracy,
                   )
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
+                               PROP_DEFINE_A(bool, useClusterLoss, true, --useClusterLoss)
                   )
                   PROP_DEFINE_A(bool, scaleGt, false, --scale_gt)
                   PROP_DEFINE_A(std::string, inDir, "", --in)
@@ -142,7 +143,7 @@ int main(int argc, char** argv)
         // Compute loss
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
         loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
-                                                             properties.dataset.constants.numClasses, clustering.pixels() > 0);
+                                                             properties.dataset.constants.numClasses, properties.train.useClusterLoss);
         // Raw percentage
         for (size_t i = 0; i < gt.pixels(); ++i)
             if (gt.atSite(i) < properties.dataset.constants.numClasses)
