@@ -410,14 +410,14 @@ void Weights::printStats(std::ostream& out) const
             return stdev;
         };
 
-        float mean = w[0].mean();
+        float mean = w[0].sum();
         float max = w[0].maxCoeff();
         float min = w[0].minCoeff();
         float mag = w[0].squaredNorm();
 
         for(size_t i = 1; i < w.size(); ++i)
         {
-            mean += w[i].mean();
+            mean += w[i].sum();
             float m = w[i].maxCoeff();
             if(m > max)
                 max = m;
@@ -426,7 +426,7 @@ void Weights::printStats(std::ostream& out) const
                 min = m;
             mag += w[i].squaredNorm();
         }
-
+        mean /= w.size() * w[0].size();
         float stdev = compStdDev(w, mean);
         mag = std::sqrt(mag);
         out << type << std::endl;
