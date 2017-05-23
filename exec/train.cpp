@@ -238,11 +238,37 @@ int main(int argc, char** argv)
     }
 
     // Print header to log file
-    if(properties.train.iter.start == 0)
+    if (properties.train.iter.start == 0)
     {
-        log << std::setw(4) << "Iter" << "\t;" << std::setw(12) << "Objective" << "\t;" << std::setw(12) << "Regularizer" << "\t;" << std::setw(12) << "Upper Bound" << "\t;";
-        log << std::setw(12) << "Mean Unary" << "\t;" << std::setw(12) << "Mean Pair" << "\t;" << std::setw(12)
-            << "Mean Label" << "\t;" << std::setw(12) << "Mean Feat" << "\t;" << std::setw(12) << "Mean Total" << std::endl;
+        log << std::setw(4) << "iter" << "\t;"
+            << std::setw(12) << "objective" << "\t;"
+            << std::setw(12) << "regularizer" << "\t;"
+            << std::setw(12) << "upper bound" << "\t;"
+            << std::setw(12) << "unary mean" << "\t;"
+            << std::setw(12) << "unary stdev" << "\t;"
+            << std::setw(12) << "unary max" << "\t;"
+            << std::setw(12) << "unary min" << "\t;"
+            << std::setw(12) << "unary mag" << "\t;"
+            << std::setw(12) << "pair mean" << "\t;"
+            << std::setw(12) << "pair stdev" << "\t;"
+            << std::setw(12) << "pair max" << "\t;"
+            << std::setw(12) << "pair min" << "\t;"
+            << std::setw(12) << "pair mag" << "\t;"
+            << std::setw(12) << "label mean" << "\t;"
+            << std::setw(12) << "label stdev" << "\t;"
+            << std::setw(12) << "label max" << "\t;"
+            << std::setw(12) << "label min" << "\t;"
+            << std::setw(12) << "label mag" << "\t;"
+            << std::setw(12) << "feat mean" << "\t;"
+            << std::setw(12) << "feat stdev" << "\t;"
+            << std::setw(12) << "feat max" << "\t;"
+            << std::setw(12) << "feat min" << "\t;"
+            << std::setw(12) << "feat mag" << "\t;"
+            << std::setw(12) << "total mean" << "\t;"
+            << std::setw(12) << "total stdev" << "\t;"
+            << std::setw(12) << "total max" << "\t;"
+            << std::setw(12) << "total min" << "\t;"
+            << std::setw(12) << "total mag" << "\t;";
     }
 
     // Iterate T times
@@ -322,16 +348,37 @@ int main(int argc, char** argv)
         iterationEnergy += regularizerCost;
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
-        // Print upper bound of last iteration
+        // Log results of last iteration
+        auto stats = curWeights.computeStats();
         log << std::setw(4) << t << "\t;"
             << std::setw(12) << iterationEnergy << "\t;"
             << std::setw(12) << regularizerCost << "\t;"
-            << std::setw(12) << upperBoundCost << "\t;";
-        // Print average weights
-        float meanUnary = 0, meanPairwise = 0, meanLabelCons = 0, meanFeature = 0, meanTotal = 0;
-        std::tie(meanUnary, meanPairwise, meanLabelCons, meanFeature, meanTotal) = curWeights.means();
-        log << std::setw(12) << meanUnary << "\t;" << std::setw(12) << meanPairwise << "\t;" << std::setw(12)
-            << meanLabelCons << "\t;" << std::setw(12) << meanFeature << "\t;" << std::setw(12) << meanTotal << std::endl;
+            << std::setw(12) << upperBoundCost << "\t;"
+            << std::setw(12) << stats.unary.mean << "\t;"
+            << std::setw(12) << stats.unary.stdev << "\t;"
+            << std::setw(12) << stats.unary.max << "\t;"
+            << std::setw(12) << stats.unary.min << "\t;"
+            << std::setw(12) << stats.unary.mag << "\t;"
+            << std::setw(12) << stats.pairwise.mean << "\t;"
+            << std::setw(12) << stats.pairwise.stdev << "\t;"
+            << std::setw(12) << stats.pairwise.max << "\t;"
+            << std::setw(12) << stats.pairwise.min << "\t;"
+            << std::setw(12) << stats.pairwise.mag << "\t;"
+            << std::setw(12) << stats.label.mean << "\t;"
+            << std::setw(12) << stats.label.stdev << "\t;"
+            << std::setw(12) << stats.label.max << "\t;"
+            << std::setw(12) << stats.label.min << "\t;"
+            << std::setw(12) << stats.label.mag << "\t;"
+            << std::setw(12) << stats.feature.mean << "\t;"
+            << std::setw(12) << stats.feature.stdev << "\t;"
+            << std::setw(12) << stats.feature.max << "\t;"
+            << std::setw(12) << stats.feature.min << "\t;"
+            << std::setw(12) << stats.feature.mag << "\t;"
+            << std::setw(12) << stats.total.mean << "\t;"
+            << std::setw(12) << stats.total.stdev << "\t;"
+            << std::setw(12) << stats.total.max << "\t;"
+            << std::setw(12) << stats.total.min << "\t;"
+            << std::setw(12) << stats.total.mag << "\t;";
 
         // Compute gradient
         sum *= properties.train.C / N;
