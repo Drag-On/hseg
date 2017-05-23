@@ -318,7 +318,7 @@ int main(int argc, char** argv)
         // Show current training energy
         iterationEnergy *= properties.train.C / N;
         auto upperBoundCost = iterationEnergy;
-        auto regularizerCost = curWeights.sqNorm() / 2.f;
+        auto regularizerCost = curWeights.regularized().sqNorm() / 2.f;
         iterationEnergy += regularizerCost;
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 

@@ -175,7 +175,7 @@ Weight Weights::sqNorm() const
     for (size_t i = 0; i < m_higherOrderWeights.size(); ++i)
         sqNorm += m_higherOrderWeights[i].squaredNorm();
     for (size_t i = 0; i < m_featureWeights.size(); ++i)
-        sqNorm += (m_featureWeights[i] - Eigen::VectorXf::Ones(m_featureWeights[i].size())).squaredNorm();
+        sqNorm += m_featureWeights[i].squaredNorm();
 
     return sqNorm;
 }
