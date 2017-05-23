@@ -12,6 +12,25 @@
 
 using Weight = Cost;
 using WeightVec = Eigen::VectorXf;
+
+struct Stat
+{
+    float mean = 0;
+    float stdev = 0;
+    float max = 0;
+    float min = 0;
+    float mag = 0;
+};
+
+struct WeightStats
+{
+    Stat unary;
+    Stat pairwise;
+    Stat label;
+    Stat feature;
+    Stat total;
+};
+
 /**
  * Contains all (trainable) weights needed by the energy function
  */
@@ -242,6 +261,12 @@ public:
      * @return Resulting weight vector
      */
     Weights operator/(Weights const& other) const;
+
+    /**
+     * Compute statistics about these weights
+     * @return The statistics
+     */
+    WeightStats computeStats() const;
 
     /**
      * Prints some statistics about the weight vector to a stream

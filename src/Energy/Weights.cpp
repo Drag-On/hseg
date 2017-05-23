@@ -392,53 +392,102 @@ void Weights::randomize()
         m_featureWeights[i] = WeightVec::Random(m_featureWeights[i].size());
 }
 
-void Weights::printStats(std::ostream& out) const
+WeightStats Weights::computeStats() const
 {
-    auto printer = [&out] (std::string const& type, std::vector<WeightVec> const& w)
-    {
-        auto compStdDev = [] (std::vector<WeightVec> const& w, float mean)
-        {
-            unsigned int n = 0;
-            float sq_sum = 0;
-            for(size_t i = 0; i < w.size(); ++i)
-            {
-                n += w[i].size();
-                for(size_t j = 0; j < w[i].size(); ++j)
-                    sq_sum += std::pow(w[i](j) - mean, 2);
-            }
-            float stdev = std::sqrt(sq_sum / n);
-            return stdev;
-        };
+    WeightStats stats;
 
-        float mean = w[0].sum();
-        float max = w[0].maxCoeff();
-        float min = w[0].minCoeff();
-        float mag = w[0].squaredNorm();
+    auto computeInit = [] (std::vector<WeightVec> const& w)
+    {
+        Stat s;
+        s.mean = w[0].sum();
+        s.max = w[0].maxCoeff();
+        s.min = w[0].minCoeff();
+        s.mag = w[0].squaredNorm();
 
         for(size_t i = 1; i < w.size(); ++i)
         {
-            mean += w[i].sum();
+            s.mean += w[i].sum();
             float m = w[i].maxCoeff();
-            if(m > max)
-                max = m;
+            if(m > s.max)
+                s.max = m;
             m = w[i].minCoeff();
-            if(m < min)
-                min = m;
-            mag += w[i].squaredNorm();
+            if(m < s.min)
+                s.min = m;
+            s.mag += w[i].squaredNorm();
         }
-        mean /= w.size() * w[0].size();
-        float stdev = compStdDev(w, mean);
-        mag = std::sqrt(mag);
-        out << type << std::endl;
-        out << " mean = " << mean << std::endl;
-        out << " stdev = " << stdev << std::endl;
-        out << " max = " << max << std::endl;
-        out << " min = " << min << std::endl;
-        out << " mag = " << mag << std::endl;
+        return s;
     };
 
-    printer("UNARY", m_unaryWeights);
-    printer("PAIRWISE", m_pairwiseWeights);
-    printer("LABELCON", m_higherOrderWeights);
-    printer("FEATURE", m_featureWeights);
+    auto stdevInit = [] (std::vector<WeightVec> const& w, float mean)
+    {
+        float sq_sum = 0;
+        for(size_t i = 0; i < w.size(); ++i)
+        {
+            for(size_t j = 0; j < w[i].size(); ++j)
+                sq_sum += std::pow(w[i](j) - mean, 2);
+        }
+        return sq_sum;
+    };
+
+    auto combine = [](WeightStats& wS)
+    {
+        wS.total.mean = wS.unary.mean + wS.pairwise.mean + wS.label.mean + wS.feature.mean;
+        wS.total.stdev = wS.unary.stdev + wS.pairwise.stdev + wS.label.stdev + wS.feature.stdev;
+        wS.total.mag = wS.unary.mag + wS.pairwise.mag + wS.label.mag + wS.feature.mag;
+        wS.total.max = std::max({wS.unary.max, wS.pairwise.max, wS.label.max, wS.feature.max});
+        wS.total.min = std::min({wS.unary.min, wS.pairwise.min, wS.label.min, wS.feature.min});
+    };
+
+    auto finish = [](Stat& s, size_t num)
+    {
+        s.mean /= num;
+        s.stdev = std::sqrt(s.stdev / num);
+        s.mag = std::sqrt(s.mag);
+    };
+
+    stats.unary = computeInit(m_unaryWeights);
+    stats.pairwise = computeInit(m_pairwiseWeights);
+    stats.label = computeInit(m_higherOrderWeights);
+    stats.feature = computeInit(m_featureWeights);
+
+    size_t numUnary = m_unaryWeights.size() * m_unaryWeights[0].size();
+    size_t numPairwise = m_pairwiseWeights.size() * m_pairwiseWeights[0].size();
+    size_t numLabelCon = m_higherOrderWeights.size() * m_higherOrderWeights[0].size();
+    size_t numFeature = m_featureWeights.size() * m_featureWeights[0].size();
+
+    stats.unary.stdev = stdevInit(m_unaryWeights, stats.unary.mean / numUnary);
+    stats.pairwise.stdev = stdevInit(m_pairwiseWeights, stats.pairwise.mean / numPairwise);
+    stats.label.stdev = stdevInit(m_higherOrderWeights, stats.label.mean / numLabelCon);
+    stats.feature.stdev = stdevInit(m_featureWeights, stats.feature.mean / numFeature);
+
+    combine(stats);
+
+    finish(stats.unary, numUnary);
+    finish(stats.pairwise, numPairwise);
+    finish(stats.label, numLabelCon);
+    finish(stats.feature, numFeature);
+    finish(stats.total, numUnary + numPairwise + numLabelCon + numFeature);
+
+    return stats;
+}
+
+void Weights::printStats(std::ostream& out) const
+{
+    auto printer = [&out] (std::string const& type, Stat const& s)
+    {
+        out << type << std::endl;
+        out << " mean = " << s.mean << std::endl;
+        out << " stdev = " << s.stdev << std::endl;
+        out << " max = " << s.max << std::endl;
+        out << " min = " << s.min << std::endl;
+        out << " mag = " << s.mag << std::endl;
+    };
+
+    WeightStats wS = computeStats();
+
+    printer("UNARY", wS.unary);
+    printer("PAIRWISE", wS.pairwise);
+    printer("LABELCON", wS.label);
+    printer("FEATURE", wS.feature);
+    printer("TOTAL", wS.total);
 }
