@@ -268,7 +268,7 @@ int main(int argc, char** argv)
             << std::setw(12) << "total stdev" << "\t;"
             << std::setw(12) << "total max" << "\t;"
             << std::setw(12) << "total min" << "\t;"
-            << std::setw(12) << "total mag" << "\t;";
+            << std::setw(12) << "total mag" << std::endl;
     }
 
     // Iterate T times
@@ -378,7 +378,7 @@ int main(int argc, char** argv)
             << std::setw(12) << stats.total.stdev << "\t;"
             << std::setw(12) << stats.total.max << "\t;"
             << std::setw(12) << stats.total.min << "\t;"
-            << std::setw(12) << stats.total.mag << "\t;";
+            << std::setw(12) << stats.total.mag << std::endl;
 
         // Compute gradient
         sum *= properties.train.C / N;
