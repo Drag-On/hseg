@@ -396,13 +396,17 @@ void Weights::printStats(std::ostream& out) const
 {
     auto printer = [&out] (std::string const& type, std::vector<WeightVec> const& w)
     {
-        auto compStdDev = [] (WeightVec const& w, float mean)
+        auto compStdDev = [] (std::vector<WeightVec> const& w, float mean)
         {
-            WeightVec diff(w.size());
+            unsigned int n = 0;
             float sq_sum = 0;
             for(size_t i = 0; i < w.size(); ++i)
-                sq_sum += std::pow(w(i) - mean, 2);
-            float stdev = std::sqrt(sq_sum / w.size());
+            {
+                n += w[i].size();
+                for(size_t j = 0; j < w[i].size(); ++j)
+                    sq_sum += std::pow(w[i](j) - mean, 2);
+            }
+            float stdev = std::sqrt(sq_sum / n);
             return stdev;
         };
 
@@ -423,11 +427,7 @@ void Weights::printStats(std::ostream& out) const
             mag += w[i].squaredNorm();
         }
 
-        float stdev = compStdDev(w[0], mean);
-        for(size_t i = 1; i < w.size(); ++i)
-        {
-            stdev += compStdDev(w[i], mean);
-        }
+        float stdev = compStdDev(w, mean);
         mag = std::sqrt(mag);
         out << type << std::endl;
         out << " mean = " << mean << std::endl;
