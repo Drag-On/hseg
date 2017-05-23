@@ -81,18 +81,11 @@ bool showWeight(std::string const& weightFile, UtilProperties const& properties)
         std::cerr << "Couldn't read weight file \"" << weightFile << "\"" << std::endl;
         return false;
     }
-    float meanUnary = 0, meanPairwise = 0, meanLabelCons = 0, meanFeature = 0, meanTotal = 0;
-    std::tie(meanUnary, meanPairwise, meanLabelCons, meanFeature, meanTotal) = w.means();
     std::cout << "==========" << std::endl;
-    std::cout << weightFile << ":" << std::endl;
-    std::cout << w << std::endl;
-    std::cout << std::endl;
-    std::cout << "Means:" << std::endl;
-    std::cout << " Unary: " << meanUnary << std::endl;
-    std::cout << " Pairwise: " << meanPairwise << std::endl;
-    std::cout << " Label Consistency: " << meanLabelCons << std::endl;
-    std::cout << " Feature Similarity: " << meanFeature << std::endl;
-    std::cout << " Total: " << meanTotal << std::endl;
+//    std::cout << weightFile << ":" << std::endl;
+//    std::cout << w << std::endl;
+//    std::cout << std::endl;
+    w.printStats();
     std::cout << "==========" << std::endl;
     return true;
 }
