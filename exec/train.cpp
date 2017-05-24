@@ -10,6 +10,7 @@
 #include <Threading/ThreadPool.h>
 #include <Energy/IStepSizeRule.h>
 #include <Energy/AdamStepSizeRule.h>
+#include <Energy/DiminishingStepSizeRule.h>
 
 
 PROPERTIES_DEFINE(Train,
@@ -40,6 +41,7 @@ PROPERTIES_DEFINE(Train,
                                             PROP_DEFINE_A(float, beta1, 0.9f, --beta1)
                                             PROP_DEFINE_A(float, beta2, 0.999f, --beta2)
                                             PROP_DEFINE_A(float, eps, 10e-8f, --rate_eps)
+                                            PROP_DEFINE_A(bool, useAdam, true, --use_adam)
                                )
                   )
                   GROUP_DEFINE(param,
@@ -215,13 +217,18 @@ int main(int argc, char** argv)
     std::deque<std::future<SampleResult>> futures;
 
     // Initialize step size rule
-    auto pStepSizeRule = std::make_unique<AdamStepSizeRule>(properties.train.rate.alpha,
-                                                            properties.train.rate.beta1,
-                                                            properties.train.rate.beta2,
-                                                            properties.train.rate.eps,
-                                                            properties.dataset.constants.numClasses,
-                                                            properties.dataset.constants.featDim,
-                                                            properties.train.iter.start);
+    std::unique_ptr<IStepSizeRule> pStepSizeRule;
+    if (properties.train.rate.useAdam)
+        pStepSizeRule = std::make_unique<AdamStepSizeRule>(properties.train.rate.alpha,
+                                                           properties.train.rate.beta1,
+                                                           properties.train.rate.beta2,
+                                                           properties.train.rate.eps,
+                                                           properties.dataset.constants.numClasses,
+                                                           properties.dataset.constants.featDim,
+                                                           properties.train.iter.start);
+    else
+        pStepSizeRule = std::make_unique<DiminishingStepSizeRule>(properties.train.rate.alpha,
+                                                                  properties.train.iter.start);
     if(!pStepSizeRule->read(properties.outDir, properties.train.iter.start))
         std::cout << "Couldn't read in initial step size meta data from \"" << properties.outDir << "\". Using default." << std::endl;
 
