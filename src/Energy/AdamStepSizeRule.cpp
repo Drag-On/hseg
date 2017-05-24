@@ -18,6 +18,8 @@ AdamStepSizeRule::AdamStepSizeRule(float alpha, float beta1, float beta2, float 
       m_firstMoment(numClasses, featDim),
       m_secondMoment(numClasses, featDim)
 {
+    m_firstMoment = m_firstMoment.regularized();
+    m_secondMoment = m_secondMoment.regularized();
 }
 
 void AdamStepSizeRule::update(Weights& w, Weights const& gradient)
