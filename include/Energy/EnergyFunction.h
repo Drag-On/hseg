@@ -27,24 +27,24 @@ public:
 
     /**
      * Computes the overall energy
-     * @param features Feature image
+     * @param pxFeat Feature image
      * @param labeling Labeling of the image
      * @param clustering Clustering of the image
      * @param clusters Cluster data
      * @return The energy of the given configuration
      */
-    Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
+    Cost giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     /**
      * Computes the overall energy by weights. I.e. to compute the actual energy, the result needs to be multiplied by
      * the weights vector.
-     * @param features Feature image
+     * @param pxFeat Feature image
      * @param labeling Labeling of the image
      * @param clustering Clustering of the image
      * @param clusters Cluster data
      * @return The energy of the given configuration by weights
      */
-    Weights giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
+    Weights giveEnergyByWeight(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     /**
     * Computes the unary energy by weights

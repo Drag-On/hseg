@@ -13,22 +13,22 @@ EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters, bo
 {
 }
 
-Cost EnergyFunction::giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
+Cost EnergyFunction::giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
 {
-    Weights energy = giveEnergyByWeight(features, labeling, clustering, clusters);
+    Weights energy = giveEnergyByWeight(pxFeat, clusterFeat, labeling, clustering, clusters);
     return (*m_pWeights) * energy;
 }
 
-Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
+Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
 {
     PROFILE_THIS
 
-    Weights w(numClasses(), features.dim()); // Zero-initialized weights
+    Weights w(numClasses(), pxFeat.dim(), clusterFeat.dim()); // Zero-initialized weights
 
-    computeUnaryEnergyByWeight(features, labeling, w);
+    computeUnaryEnergyByWeight(pxFeat, labeling, w);
     if(m_usePairwise)
-        computePairwiseEnergyByWeight(features, labeling, w);
-    computeHigherOrderEnergyByWeight(features, labeling, clustering, clusters, w);
+        computePairwiseEnergyByWeight(pxFeat, labeling, w);
+    computeHigherOrderEnergyByWeight(clusterFeat, labeling, clustering, clusters, w);
 
     return w;
 }

@@ -26,9 +26,10 @@ public:
     /**
      * Constructor
      * @param e Energy function
-     * @param pImg Color image
+     * @param pPxFeat Pixel features
+     * @param pClusterFeat Cluster features
      */
-    InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps = 1e-5f, uint32_t maxIter = 50);
+    InferenceIterator(EnergyFun const* e, FeatureImage const* pPxFeat, FeatureImage const* pClusterFeat, float eps = 1e-5f, uint32_t maxIter = 50);
 
     /**
      * Does the actual inference
@@ -54,7 +55,8 @@ public:
 
 protected:
     EnergyFun const* m_pEnergy;
-    FeatureImage const* m_pImg;
+    FeatureImage const* m_pPxFeat;
+    FeatureImage const* m_pClusterFeat;
     float m_eps;
     uint32_t m_maxIter;
 
@@ -71,9 +73,10 @@ protected:
 };
 
 template<typename EnergyFun>
-InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pImg, float eps, uint32_t maxIter)
+InferenceIterator<EnergyFun>::InferenceIterator(EnergyFun const* e, FeatureImage const* pPxFeat, FeatureImage const* pClusterFeat, float eps, uint32_t maxIter)
         : m_pEnergy(e),
-          m_pImg(pImg),
+          m_pPxFeat(pPxFeat),
+          m_pClusterFeat(pClusterFeat),
           m_eps(eps),
           m_maxIter(maxIter)
 {
@@ -85,9 +88,9 @@ void InferenceIterator<EnergyFun>::updateClusterAffiliation(LabelImage& outClust
     PROFILE_THIS
 
     // Exhaustive search
-    for(SiteId i = 0; i < m_pImg->width() * m_pImg->height(); ++i)
+    for(SiteId i = 0; i < m_pClusterFeat->width() * m_pClusterFeat->height(); ++i)
     {
-        Feature const& f1 = m_pImg->atSite(i);
+        Feature const& f1 = m_pClusterFeat->atSite(i);
         Label l1 = labeling.atSite(i);
         Feature const& f2 = clusters[0].m_feature;
         Label const l2 = clusters[0].m_label;
@@ -150,7 +153,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
     // Unary term for each pixel
     for (SiteId i = 0; i < numPx; ++i)
     {
-        Feature const& f = m_pImg->atSite(i);
+        Feature const& f = m_pPxFeat->atSite(i);
         std::vector<TypeGeneral::REAL> confidences(numClasses, 0.f);
         for (Label l = 0; l < numClasses; ++l)
             confidences[l] = m_pEnergy->unaryCost(i, f, l);
@@ -175,7 +178,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
     for (SiteId i = 0; i < numPx; ++i)
     {
         auto coords = helper::coord::siteTo2DCoordinate(i, outLabeling.width());
-        Feature const& f = m_pImg->atSite(i);
+        Feature const& f = m_pPxFeat->atSite(i);
 
         // Set up pixel neighbor connections
         if(m_pEnergy->usePairwise())
@@ -185,7 +188,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
             if (coordsR.x() < outLabeling.width())
             {
                 SiteId siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), outLabeling.width());
-                Feature const& fR = m_pImg->atSite(siteR);
+                Feature const& fR = m_pPxFeat->atSite(siteR);
                 std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
                 for(Label l1 = 0; l1 < numClasses; ++l1)
                 {
@@ -201,7 +204,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
             if (coordsD.y() < outLabeling.height())
             {
                 SiteId siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), outLabeling.width());
-                Feature const& fD = m_pImg->atSite(siteD);
+                Feature const& fD = m_pPxFeat->atSite(siteD);
                 std::vector<TypeGeneral::REAL> costMat(numClasses * numClasses, 0.f);
                 for(Label l1 = 0; l1 < numClasses; ++l1)
                 {
@@ -217,6 +220,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
         }
 
         // Set up connection to auxiliary nodes
+        Feature const& fClus = m_pClusterFeat->atSite(i);
         if(numClusters > 0)
         {
             ClusterId k = clustering.atSite(i);
@@ -227,7 +231,7 @@ void InferenceIterator<EnergyFun>::updateLabels(LabelImage& outLabeling, std::ve
             {
                 for (Label l2 = 0; l2 < numClasses; ++l2)
                 {
-                    Cost cost = m_pEnergy->higherOrderCost(f, clusFeat, l1, l2);
+                    Cost cost = m_pEnergy->higherOrderCost(fClus, clusFeat, l1, l2);
                     costMat[l1 + l2 * numClasses] = cost;
                 }
             }
@@ -299,7 +303,7 @@ void InferenceIterator<EnergyFun>::updateClusterFeatures(std::vector<Cluster>& o
 
         // Update feature
         Feature& f = outClusters[k].m_feature;
-        Feature const& fPx = m_pImg->atSite(i);
+        Feature const& fPx = m_pClusterFeat->atSite(i);
         auto const sigmaInv = m_pEnergy->weights().feature(l1, l2).cwiseInverse().asDiagonal();
         auto const& w = m_pEnergy->weights().higherOrder(l1, l2);
         auto const wTail = w.segment(f.size(), f.size());
@@ -320,14 +324,14 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
     PROFILE_THIS
 
     // Initialize labeling with background (all zeros)
-    outLabeling = LabelImage(m_pImg->width(), m_pImg->height());
+    outLabeling = LabelImage(m_pPxFeat->width(), m_pPxFeat->height());
 
     // That's enough if no clusters are requested
     if(m_pEnergy->numClusters() == 0)
         return;
 
     // Initialize clustering with all zeros as well
-    outClustering = LabelImage(m_pImg->width(), m_pImg->height());
+    outClustering = LabelImage(m_pPxFeat->width(), m_pPxFeat->height());
 
     struct allocation
     {
@@ -348,12 +352,12 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
     SiteId const site = distribution(generator);
     outClusters.emplace_back();
     outClusters.back().m_label = 0;
-    outClusters.back().m_feature = m_pImg->atSite(site);
+    outClusters.back().m_feature = m_pClusterFeat->atSite(site);
 
     // Compute the distance between each pixel and the newly created cluster center
     for(SiteId i = 0; i < outLabeling.pixels(); ++i)
     {
-        Feature const& f1 = m_pImg->atSite(i);
+        Feature const& f1 = m_pClusterFeat->atSite(i);
         Feature const& f2 = outClusters.back().m_feature;
         Label l1 = outLabeling.atSite(i);
         Label l2 = outClusters.back().m_label;
@@ -372,11 +376,11 @@ void InferenceIterator<EnergyFun>::initialize(LabelImage& outLabeling, LabelImag
         SiteId const site = distribution(generator);
         outClusters.emplace_back();
         outClusters.back().m_label = 0;
-        outClusters.back().m_feature = m_pImg->atSite(site);
+        outClusters.back().m_feature = m_pClusterFeat->atSite(site);
         // Recompute cluster distances
         for(SiteId i = 0; i < outLabeling.pixels(); ++i)
         {
-            Feature const& f1 = m_pImg->atSite(i);
+            Feature const& f1 = m_pClusterFeat->atSite(i);
             Feature const& f2 = outClusters.back().m_feature;
             Label l1 = outLabeling.atSite(i);
             Label l2 = outClusters.back().m_label;
@@ -410,7 +414,7 @@ void InferenceIterator<EnergyFun>::updateLabelsOnGroundTruth(LabelImage const& g
     {
         Label const l = gt.atSite(i);
         ClusterId const k = clustering.atSite(i);
-        Feature const& f = m_pImg->atSite(i);
+        Feature const& f = m_pClusterFeat->atSite(i);
         Feature const& fClus = outClusters[k].m_feature;
 
         for (Label lClus = 0; lClus < numClasses; ++lClus)
@@ -458,7 +462,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
             return diff <= m_eps;
         }
     };
-    Cost energy =  m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
+    Cost energy =  m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
     for (; iter < m_maxIter && !converged(iter, lastEnergy, energy); ++iter)
@@ -475,7 +479,7 @@ InferenceResult InferenceIterator<EnergyFun>::run(uint32_t numIter)
         updateLabels(result.labeling, result.clusters, result.clustering/*, &result.marginals*/);
 
         // Compute current energy to check for convergence
-        energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
+        energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, result.labeling, result.clustering, result.clusters);
     }
 
     result.numIter = iter;
@@ -495,13 +499,13 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
     // If no clusters are required, just do normal TRW-S
     if(m_pEnergy->numClusters() == 0)
     {
-        Cost energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
+        Cost energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, labeling, clustering, clusters);
         result.energy.push_back(energy);
 
         FeatureImage marginals;
         updateLabels(labeling, clusters, clustering, &marginals);
 
-        energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
+        energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, labeling, clustering, clusters);
 
         result.labelings.push_back(labeling);
         result.marginals.push_back(marginals);
@@ -520,7 +524,7 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
             return diff <= m_eps;
         }
     };
-    Cost energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
+    Cost energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, labeling, clustering, clusters);
     result.energy.push_back(energy);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
@@ -539,7 +543,7 @@ InferenceResultDetails InferenceIterator<EnergyFun>::runDetailed(uint32_t numIte
         updateLabels(labeling, clusters, clustering, &marginals);
 
         // Compute current energy to check for convergence
-        energy = m_pEnergy->giveEnergy(*m_pImg, labeling, clustering, clusters);
+        energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, labeling, clustering, clusters);
 
         // Store intermediate results
         result.clusters.push_back(clusters);
@@ -581,7 +585,7 @@ InferenceResult InferenceIterator<EnergyFun>::runOnGroundTruth(LabelImage const&
             return diff <= m_eps;
         }
     };
-    Cost energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
+    Cost energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, result.labeling, result.clustering, result.clusters);
     Cost lastEnergy = std::numeric_limits<Cost>::max();
     uint32_t iter = 0;
     for (; iter < m_maxIter && !converged(iter, lastEnergy, energy); ++iter)
@@ -598,7 +602,7 @@ InferenceResult InferenceIterator<EnergyFun>::runOnGroundTruth(LabelImage const&
         updateLabelsOnGroundTruth(result.labeling, result.clusters, result.clustering);
 
         // Compute current energy to check for convergence
-        energy = m_pEnergy->giveEnergy(*m_pImg, result.labeling, result.clustering, result.clusters);
+        energy = m_pEnergy->giveEnergy(*m_pPxFeat, *m_pClusterFeat, result.labeling, result.clustering, result.clusters);
     }
 
     result.numIter = iter;

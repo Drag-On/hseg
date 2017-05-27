@@ -16,7 +16,7 @@
 class AdamStepSizeRule : public IStepSizeRule
 {
 public:
-    AdamStepSizeRule(float alpha, float beta1, float beta2, float eps, size_t numClasses, size_t featDim,
+    AdamStepSizeRule(float alpha, float beta1, float beta2, float eps, size_t numClasses, size_t featDimPx, size_t featDimCluster,
                      size_t t = 0) noexcept;
 
     void update(Weights& w, Weights const& gradient) override;

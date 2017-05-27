@@ -8,15 +8,15 @@
  **********************************************************/
 #include "Energy/AdamStepSizeRule.h"
 
-AdamStepSizeRule::AdamStepSizeRule(float alpha, float beta1, float beta2, float eps, size_t numClasses, size_t featDim,
-                                   size_t t) noexcept
+AdamStepSizeRule::AdamStepSizeRule(float alpha, float beta1, float beta2, float eps, size_t numClasses, size_t featDimPx,
+                                   size_t featDimCluster, size_t t) noexcept
     : m_alpha(alpha),
       m_beta1(beta1),
       m_beta2(beta2),
       m_eps(eps),
       m_t(t),
-      m_firstMoment(numClasses, featDim),
-      m_secondMoment(numClasses, featDim)
+      m_firstMoment(numClasses, featDimPx, featDimCluster),
+      m_secondMoment(numClasses, featDimPx, featDimCluster)
 {
     m_firstMoment = m_firstMoment.regularized();
     m_secondMoment = m_secondMoment.regularized();

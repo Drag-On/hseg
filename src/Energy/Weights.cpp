@@ -8,12 +8,12 @@
 #include <iostream>
 #include "Energy/Weights.h"
 
-Weights::Weights(Label numClasses, uint32_t featDim)
+Weights::Weights(Label numClasses, uint32_t featDimPx, uint32_t featDimCluster)
 {
-    m_unaryWeights.resize(numClasses, WeightVec::Zero(featDim + 1)); // +1 for the bias
-    m_pairwiseWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
-    m_higherOrderWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDim + 1));
-    m_featureWeights.resize(numClasses * numClasses, WeightVec::Ones(featDim));
+    m_unaryWeights.resize(numClasses, WeightVec::Zero(featDimPx + 1)); // +1 for the bias
+    m_pairwiseWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDimPx + 1));
+    m_higherOrderWeights.resize(numClasses * numClasses, WeightVec::Zero(2 * featDimCluster + 1));
+    m_featureWeights.resize(numClasses * numClasses, WeightVec::Ones(featDimCluster));
 
     clampToFeasible();
 }
@@ -262,35 +262,37 @@ bool Weights::write(std::string const& filename) const
     std::ofstream out(filename, std::ios::out | std::ios::binary | std::ios::trunc);
     if(out.is_open())
     {
-        out.write("WEIGHT03", 8);
-        uint32_t featDim = m_unaryWeights[0].size() - 1;
+        out.write("WEIGHT04", 8);
+        uint32_t featDimPx = m_unaryWeights[0].size() - 1;
+        uint32_t featDimCluster = m_featureWeights[0].size();
         uint32_t noUnaries = m_unaryWeights.size();
         uint32_t noPairwise = m_pairwiseWeights.size();
         uint32_t noHigherOrder = m_higherOrderWeights.size();
         uint32_t noFeature = m_featureWeights.size();
-        out.write(reinterpret_cast<const char*>(&featDim), sizeof(featDim));
+        out.write(reinterpret_cast<const char*>(&featDimPx), sizeof(featDimPx));
+        out.write(reinterpret_cast<const char*>(&featDimCluster), sizeof(featDimCluster));
         out.write(reinterpret_cast<const char*>(&noUnaries), sizeof(noUnaries));
         out.write(reinterpret_cast<const char*>(&noPairwise), sizeof(noPairwise));
         out.write(reinterpret_cast<const char*>(&noHigherOrder), sizeof(noHigherOrder));
         out.write(reinterpret_cast<const char*>(&noFeature), sizeof(noFeature));
         for(auto const& e : m_unaryWeights)
         {
-            assert(e.size() == featDim + 1);
+            assert(e.size() == featDimPx + 1);
             out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         }
         for(auto const& e : m_pairwiseWeights)
         {
-            assert(e.size() == featDim * 2 + 1);
+            assert(e.size() == featDimPx * 2 + 1);
             out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         }
         for(auto const& e : m_higherOrderWeights)
         {
-            assert(e.size() == featDim * 2 + 1);
+            assert(e.size() == featDimCluster * 2 + 1);
             out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         }
         for(auto const& e : m_featureWeights)
         {
-            assert(e.size() == featDim);
+            assert(e.size() == featDimCluster);
             out.write(reinterpret_cast<const char*>(e.data()), sizeof(e(0)) * e.size());
         }
         out.close();
@@ -306,29 +308,30 @@ bool Weights::read(std::string const& filename)
     {
         char id[8];
         in.read(id, 8);
-        if(std::strncmp(id, "WEIGHT03", 8) != 0)
+        if(std::strncmp(id, "WEIGHT04", 8) != 0)
         {
             in.close();
             return false;
         }
-        uint32_t featDim, noUnaries, noPairwise, noHigherOrder, noFeature;
-        in.read(reinterpret_cast<char*>(&featDim), sizeof(featDim));
+        uint32_t featDimPx, featDimCluster, noUnaries, noPairwise, noHigherOrder, noFeature;
+        in.read(reinterpret_cast<char*>(&featDimPx), sizeof(featDimPx));
+        in.read(reinterpret_cast<char*>(&featDimCluster), sizeof(featDimCluster));
         in.read(reinterpret_cast<char*>(&noUnaries), sizeof(noUnaries));
         in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
         in.read(reinterpret_cast<char*>(&noHigherOrder), sizeof(noHigherOrder));
         in.read(reinterpret_cast<char*>(&noFeature), sizeof(noFeature));
-        m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDim + 1));
-        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDim * 2 + 1));
-        m_higherOrderWeights.resize(noHigherOrder, WeightVec::Zero(featDim * 2 + 1));
-        m_featureWeights.resize(noFeature, WeightVec::Zero(featDim));
+        m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDimPx + 1));
+        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDimPx * 2 + 1));
+        m_higherOrderWeights.resize(noHigherOrder, WeightVec::Zero(featDimCluster * 2 + 1));
+        m_featureWeights.resize(noFeature, WeightVec::Zero(featDimCluster));
         for(auto& e : m_unaryWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim + 1));
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimPx + 1));
         for(auto& e : m_pairwiseWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimPx * 2 + 1));
         for(auto& e : m_higherOrderWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim * 2 + 1));
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimCluster * 2 + 1));
         for(auto& e : m_featureWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDim));
+            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimCluster));
         in.close();
 
         return true;

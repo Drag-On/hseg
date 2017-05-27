@@ -49,9 +49,10 @@ public:
     /**
      * Default-constructs a weights vector (all zeros)
      * @param numLabels Amount of class labels
-     * @param featDim Feature dimensionality
+     * @param featDimPx Feature dimensionality of pixel features
+     * @param featDimCluster Feature dimensionality of cluster features
      */
-    explicit Weights(Label numClasses, uint32_t featDim);
+    explicit Weights(Label numClasses, uint32_t featDimPx, uint32_t featDimCluster);
 
     /**
      * Assigns random values between -1 and 1 to all weights

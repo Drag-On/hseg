@@ -12,10 +12,10 @@ LossAugmentedEnergyFunction::LossAugmentedEnergyFunction(Weights const* weights,
     m_lossFactor = computeLossFactor(*groundTruth, weights->numClasses());
 }
 
-Cost LossAugmentedEnergyFunction::giveEnergy(FeatureImage const& features, LabelImage const& labeling,
+Cost LossAugmentedEnergyFunction::giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling,
                                              LabelImage const& clustering, std::vector<Cluster> const& clusters) const
 {
-    Cost normalCost = EnergyFunction::giveEnergy(features, labeling, clustering, clusters);
+    Cost normalCost = EnergyFunction::giveEnergy(pxFeat, clusterFeat, labeling, clustering, clusters);
 
     // Also account for the loss
     Cost loss = computeLoss(labeling, clustering, *m_pGroundTruth, clusters, m_lossFactor, numClasses(), m_useClusterLoss);

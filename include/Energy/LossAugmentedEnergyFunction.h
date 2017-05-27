@@ -24,7 +24,7 @@ public:
      */
     LossAugmentedEnergyFunction(Weights const* weights, LabelImage const* groundTruth, ClusterId numClusters, bool usePairwise = true, bool useClusterLoss = true);
 
-    Cost giveEnergy(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
+    Cost giveEnergy(FeatureImage const& pxFeatures, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
 
     inline Cost unaryCost(SiteId i, Feature const& f, Label l) const
     {
