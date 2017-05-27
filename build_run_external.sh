@@ -4,7 +4,7 @@ server=atcremers50
 directory=/work/moellerj/external
 
 echo " => Updating project on $server..."
-rsync -a --info=progress2 cmake exec include lib net properties src test CMakeLists.txt "$server:$directory"
+rsync -a --info=progress2 cmake exec include lib net src test CMakeLists.txt "$server:$directory"
 ssh -o StrictHostkeyChecking=no -x "$server" bash << 'EOF'
 	directory=/work/moellerj/external
 	build_type=RelWithDebInfo
@@ -22,10 +22,10 @@ ssh -o StrictHostkeyChecking=no -x "$server" bash << 'EOF'
 		mkdir "$directory/out"
 	fi
 	echo " => Building..."
-    $(cd "$directory/build" ; make "$make_target" -j"$build_threads")
+    cd "$directory/build" ; make "$make_target" -j"$build_threads"
     if [[ $? -ne 0 ]] ; then
     	echo " => Make failed, try again."
-    	$(cd "$directory/build" ; make "$make_target" -j"$build_threads")
+    	cd "$directory/build" ; make "$make_target" -j"$build_threads"
     	if [[ $? -ne 0 ]] ; then
     		echo " => Make failed again :("
     		exit 1
