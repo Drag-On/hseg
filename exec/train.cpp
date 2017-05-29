@@ -81,12 +81,14 @@ struct SampleResult
     uint32_t numIter = 0;
     uint32_t numIterGt = 0;
     std::string filename;
+    size_t num = 0;
 };
 
-SampleResult processSample(std::string const& filename, Weights const& curWeights, TrainProperties const& properties)
+SampleResult processSample(std::string const& filename, Weights const& curWeights, size_t num, TrainProperties const& properties)
 {
     SampleResult sampleResult;
     sampleResult.filename = filename;
+    sampleResult.num = num;
 
     // Load images etc...
     std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
@@ -305,7 +307,7 @@ int main(int argc, char** argv)
         for (size_t i = 0; i < properties.train.batchSize; ++i)
         {
             std::string const& filename = nextFile();
-            auto&& fut = pool.enqueue(processSample, filename, curWeights, properties);
+            auto&& fut = pool.enqueue(processSample, filename, curWeights, i, properties);
             futures.push_back(std::move(fut));
 
             // Wait for some threads to finish if the queue gets too long
@@ -326,7 +328,8 @@ int main(int argc, char** argv)
                     N++;
                 }
 
-                std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
+                std::cout << "> " << std::setw(4) << t << " (" << sampleResult.num << "/" << properties.train.batchSize << "): "
+                          << std::setw(30) << sampleResult.filename << "\t"
                           << std::setw(12) << sampleResult.upperBound << "\t"
                           << std::setw(2) << sampleResult.numIter << "\t"
                           << std::setw(2) << sampleResult.numIterGt << std::endl;
@@ -344,7 +347,8 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
+            std::cout << "> " << std::setw(4) << t << " (" << sampleResult.num << "/" << properties.train.batchSize << "): "
+                      << std::setw(30) << sampleResult.filename << "\t"
                       << std::setw(12) << sampleResult.upperBound << "\t"
                       << std::setw(2) << sampleResult.numIter << "\t"
                       << std::setw(2) << sampleResult.numIterGt << std::endl;
