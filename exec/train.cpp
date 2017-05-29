@@ -32,6 +32,7 @@ PROPERTIES_DEFINE(Train,
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
                                PROP_DEFINE_A(bool, useClusterLoss, true, --useClusterLoss)
+                               PROP_DEFINE_A(size_t, batchSize, 0, --batchSize)
                                GROUP_DEFINE(iter,
                                             PROP_DEFINE_A(uint32_t, start, 0, --start)
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
@@ -277,6 +278,20 @@ int main(int argc, char** argv)
             << std::setw(12) << "total min" << "\t;"
             << std::setw(12) << "total mag" << std::endl;
     }
+    auto randomEngine = std::default_random_engine{};
+
+    if(properties.train.batchSize == 0)
+        properties.train.batchSize = filenames.size();
+    size_t curFileIdx = 0;
+    auto nextFile = [&]()
+    {
+        if(curFileIdx >= filenames.size())
+        {
+            std::shuffle(filenames.begin(), filenames.end(), randomEngine);
+            curFileIdx = 0;
+        }
+        return filenames[curFileIdx++];
+    };
 
     // Iterate T times
     for(uint32_t t = properties.train.iter.start; t < T; ++t)
@@ -287,8 +302,9 @@ int main(int argc, char** argv)
         futures.clear();
 
         // Iterate over all images
-        for (std::string const filename : filenames)
+        for (size_t i = 0; i < properties.train.batchSize; ++i)
         {
+            std::string const& filename = nextFile();
             auto&& fut = pool.enqueue(processSample, filename, curWeights, properties);
             futures.push_back(std::move(fut));
 
