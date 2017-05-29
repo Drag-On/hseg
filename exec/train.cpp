@@ -171,6 +171,11 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     return sampleResult;
 }
 
+size_t getNumberOfDigits (size_t i)
+{
+    return i > 0 ? (size_t) log10 ((double) i) + 1 : 1;
+}
+
 enum ERROR_CODE
 {
     SUCCESS=0,
@@ -328,7 +333,9 @@ int main(int argc, char** argv)
                     N++;
                 }
 
-                std::cout << "> " << std::setw(4) << t << " (" << sampleResult.num << "/" << properties.train.batchSize << "): "
+                std::cout << "> " << std::setw(4) << t << " ("
+                          << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num << "/"
+                          << std::setw(getNumberOfDigits(properties.train.batchSize)) << properties.train.batchSize << "): "
                           << std::setw(30) << sampleResult.filename << "\t"
                           << std::setw(12) << sampleResult.upperBound << "\t"
                           << std::setw(2) << sampleResult.numIter << "\t"
@@ -347,7 +354,9 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "> " << std::setw(4) << t << " (" << sampleResult.num << "/" << properties.train.batchSize << "): "
+            std::cout << "> " << std::setw(4) << t << " ("
+                      << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num << "/"
+                      << std::setw(getNumberOfDigits(properties.train.batchSize)) << properties.train.batchSize << "): "
                       << std::setw(30) << sampleResult.filename << "\t"
                       << std::setw(12) << sampleResult.upperBound << "\t"
                       << std::setw(2) << sampleResult.numIter << "\t"
