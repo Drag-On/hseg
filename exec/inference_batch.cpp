@@ -11,13 +11,13 @@
 #include <Threading/ThreadPool.h>
 
 PROPERTIES_DEFINE(InferenceBatch,
-                  GROUP_DEFINE(dataset,
+                  GROUP_DEFINE(datasetPx,
                                PROP_DEFINE_A(std::string, list, "", -l)
                                GROUP_DEFINE(path,
                                             PROP_DEFINE_A(std::string, img, "", --img)
                                             PROP_DEFINE_A(std::string, gt, "", --gt)
                                             PROP_DEFINE_A(std::string, rgb, "", --rgb)
-                  )
+                               )
                                GROUP_DEFINE(extension,
                                             PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
                                             PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
@@ -26,6 +26,19 @@ PROPERTIES_DEFINE(InferenceBatch,
                                GROUP_DEFINE(constants,
                                             PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                               )
+                  )
+                  GROUP_DEFINE(datasetCluster,
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE_A(std::string, img, "", --img_cluster)
+                                            PROP_DEFINE_A(std::string, rgb, "", --rgb_cluster)
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext_cluster)
+                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext_cluster)
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim_cluster)
                                )
                   )
                   GROUP_DEFINE(param,
@@ -51,7 +64,7 @@ struct Result
     std::string filename;
 };
 
-Result process(std::string const& imageFilename, std::string const& rgbFileName, Weights const& weights, std::string const& spOutPath,
+Result process(std::string const& imageFilename, std::string imageClusterFilename, std::string const& rgbFileName, Weights const& weights, std::string const& spOutPath,
                std::string const& labelOutPath, std::string const& margOutPath, helper::image::ColorMap const& cmap,
                ClusterId numClusters, float eps, uint32_t maxIter, bool scaleToRgb)
 {
@@ -60,10 +73,16 @@ Result process(std::string const& imageFilename, std::string const& rgbFileName,
     res.filename = filename;
 
     // Load image
-    FeatureImage features;
-    if(!features.read(imageFilename))
+    FeatureImage featuresPx;
+    if(!featuresPx.read(imageFilename))
     {
         std::cerr << "Unable to read features from \"" << imageFilename << "\"" << std::endl;
+        return res;
+    }
+    FeatureImage featuresCluster;
+    if(!featuresCluster.read(imageClusterFilename))
+    {
+        std::cerr << "Unable to read features from \"" << imageClusterFilename << "\"" << std::endl;
         return res;
     }
 
@@ -79,21 +98,15 @@ Result process(std::string const& imageFilename, std::string const& rgbFileName,
         uint32_t width = rgb.width();
         uint32_t height = rgb.height();
 
-        cv::Mat featMat = static_cast<cv::Mat>(features);
-        cv::Mat featMatResized;
-        cv::resize(featMat, featMatResized, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
-        FeatureImage featuresResized(width, height, features.dim());
-        for(SiteId i = 0; i < featuresResized.width() * featuresResized.height(); ++i)
-            for(uint32_t c = 0; c < featuresResized.dim(); ++c)
-                featuresResized.atSite(i)[c] = ((float*)featMatResized.data)[i * featuresResized.dim() + c];
-        features = featuresResized;
+        featuresPx.rescale(width, height, true);
+        featuresCluster.rescale(width, height, true);
     }
 
     // Create energy function
     EnergyFunction energyFun(&weights, numClusters);
 
     // Do the inference!
-    InferenceIterator<EnergyFunction> inference(&energyFun, &features, eps, maxIter);
+    InferenceIterator<EnergyFunction> inference(&energyFun, &featuresPx, &featuresCluster, eps, maxIter);
     auto result = inference.run();
 
     // Write results to disk
@@ -140,7 +153,7 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    Weights weights(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights weights(properties.datasetPx.constants.numClasses, properties.datasetPx.constants.featDim, properties.datasetCluster.constants.featDim);
     if(!weights.read(properties.param.weights))
     {
         std::cerr << "Couldn't read weights from \"" << properties.param.weights << "\". Using random weights instead." << std::endl;
@@ -150,7 +163,7 @@ int main(int argc, char** argv)
     helper::image::ColorMap const cmap = helper::image::generateColorMapVOC(256ul);
 
     // Read in file names to process
-    auto filenames = readFileNames(properties.dataset.list);
+    auto filenames = readFileNames(properties.datasetPx.list);
     if(filenames.empty())
     {
         std::cerr << "No files specified." << std::endl;
@@ -179,15 +192,16 @@ int main(int argc, char** argv)
     // Iterate all files
     for(auto const& f : filenames)
     {
-        std::string const& imageFilename = properties.dataset.path.img + f + properties.dataset.extension.img;
-        std::string const& rgbFilename = properties.dataset.path.rgb + f + properties.dataset.extension.rgb;
+        std::string const& imageFilename = properties.datasetPx.path.img + f + properties.datasetPx.extension.img;
+        std::string const& imageClusterFilename = properties.datasetCluster.path.img + f + properties.datasetCluster.extension.img;
+        std::string const& rgbFilename = properties.datasetPx.path.rgb + f + properties.datasetPx.extension.rgb;
         std::string filename = boost::filesystem::path(imageFilename).stem().string();
         if(boost::filesystem::exists(spPath / (filename + ".dat")) && boost::filesystem::exists(labelPath / (filename + ".png")))
         {
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb);
+        auto&& fut = pool.enqueue(process, imageFilename, imageClusterFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb);
         futures.push_back(std::move(fut));
 
         // Wait for some threads to finish if the queue gets too long

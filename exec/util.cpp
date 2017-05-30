@@ -36,23 +36,42 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, createBasicFeatures, "", --createBasicFeatures)
                                PROP_DEFINE_A(std::string, testIterationProgress, "", --testIterationProgress)
                   )
-                  GROUP_DEFINE(dataset,
-                               PROP_DEFINE_A(std::string, list, "", -l)
+                  GROUP_DEFINE(datasetPx,
+                               PROP_DEFINE(std::string, list, "")
                                GROUP_DEFINE(path,
-                                            PROP_DEFINE_A(std::string, rgb, "", --rgb)
-                                            PROP_DEFINE_A(std::string, img, "", --img)
-                                            PROP_DEFINE_A(std::string, gt, "", --gt)
-                                            PROP_DEFINE_A(std::string, rgb_orig, "", --rgb_orig)
-                                            PROP_DEFINE_A(std::string, gt_orig, "", --gt_orig)
+                                            PROP_DEFINE(std::string, rgb, "")
+                                            PROP_DEFINE(std::string, img, "")
+                                            PROP_DEFINE(std::string, gt, "")
+                                            PROP_DEFINE(std::string, rgb_orig, "")
+                                            PROP_DEFINE(std::string, gt_orig, "")
                                )
                                GROUP_DEFINE(extension,
-                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
-                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
-                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                                            PROP_DEFINE(std::string, rgb, ".jpg")
+                                            PROP_DEFINE(std::string, img, ".mat")
+                                            PROP_DEFINE(std::string, gt, ".png")
                                )
                                GROUP_DEFINE(constants,
-                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
-                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
+                                            PROP_DEFINE(uint32_t, numClasses, 21)
+                                            PROP_DEFINE(uint32_t, featDim, 512)
+                               )
+                  )
+                  GROUP_DEFINE(datasetCluster,
+                               PROP_DEFINE(std::string, list, "")
+                               GROUP_DEFINE(path,
+                                            PROP_DEFINE(std::string, rgb, "")
+                                            PROP_DEFINE(std::string, img, "")
+                                            PROP_DEFINE(std::string, gt, "")
+                                            PROP_DEFINE(std::string, rgb_orig, "")
+                                            PROP_DEFINE(std::string, gt_orig, "")
+                               )
+                               GROUP_DEFINE(extension,
+                                            PROP_DEFINE(std::string, rgb, ".jpg")
+                                            PROP_DEFINE(std::string, img, ".mat")
+                                            PROP_DEFINE(std::string, gt, ".png")
+                               )
+                               GROUP_DEFINE(constants,
+                                            PROP_DEFINE(uint32_t, numClasses, 21)
+                                            PROP_DEFINE(uint32_t, featDim, 512)
                                )
                   )
                   GROUP_DEFINE(prepareDataset,
@@ -75,7 +94,7 @@ PROPERTIES_DEFINE(Util,
 
 bool showWeight(std::string const& weightFile, UtilProperties const& properties)
 {
-    Weights w(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights w(properties.datasetPx.constants.numClasses, properties.datasetPx.constants.featDim, properties.datasetCluster.constants.featDim);
     if (!w.read(weightFile))
     {
         std::cerr << "Couldn't read weight file \"" << weightFile << "\"" << std::endl;
@@ -92,9 +111,10 @@ bool showWeight(std::string const& weightFile, UtilProperties const& properties)
 
 bool writeWeightFileText(UtilProperties const& properties)
 {
-    size_t const numClasses = properties.dataset.constants.numClasses;
-    size_t const featDim = properties.dataset.constants.featDim;
-    Weights weightsVec(numClasses, featDim);
+    size_t const numClasses = properties.datasetPx.constants.numClasses;
+    size_t const featDim = properties.datasetPx.constants.featDim;
+    size_t const featDimCluster = properties.datasetCluster.constants.featDim;
+    Weights weightsVec(numClasses, featDim, featDimCluster);
     if (!weightsVec.read(properties.job.writeWeightFileText))
     {
         std::cerr << "Couldn't read weight file \"" << properties.job.writeWeightFileText << "\"" << std::endl;
@@ -147,7 +167,7 @@ bool fillGroundTruth(UtilProperties const& properties)
     LabelImage fixedGt = gt;
 
     // Find invalid pixels
-    size_t const numClasses = properties.dataset.constants.numClasses;
+    size_t const numClasses = properties.datasetPx.constants.numClasses;
     std::vector<size_t> invalid;
     for (size_t i = 0; i < gt.pixels(); ++i)
         if (gt.atSite(i) >= numClasses)
@@ -225,86 +245,6 @@ std::vector<std::string> readLines(std::string filename)
     return list;
 }
 
-bool pairwiseStatistics(UtilProperties const& properties)
-{
-    // Read in files to consider
-    std::vector<std::string> list = readLines(properties.job.pairwiseStatistics);
-
-    auto cmap = helper::image::generateColorMapVOC(256);
-
-    size_t pairwiseConnections = 0;
-    std::vector<float> pairwiseWeights((properties.dataset.constants.numClasses * properties.dataset.constants.numClasses) / 2, 0.f);
-
-    // Iterate them
-    for (auto const& s : list)
-    {
-        std::string imageFile = properties.dataset.path.img + s + properties.dataset.extension.img;
-        std::string gtFile = properties.dataset.path.gt + s + properties.dataset.extension.gt;
-        RGBImage image, gtRGB;
-        if (!image.read(imageFile))
-        {
-            std::cerr << "Couldn't read color image \"" << imageFile << "\"." << std::endl;
-            return false;
-        }
-        if (!gtRGB.read(gtFile))
-        {
-            std::cerr << "Couldn't read ground truth image \"" << gtFile << "\"." << std::endl;
-            return false;
-        }
-        LabelImage gt = helper::image::decolorize(gtRGB, cmap);
-
-        for (size_t i = 0; i < gt.pixels(); ++i)
-        {
-            size_t l = gt.atSite(i);
-            auto coords = helper::coord::siteTo2DCoordinate(i, gt.width());
-            decltype(coords) coordsR = {static_cast<Coord>(coords.x() + 1), coords.y()};
-            decltype(coords) coordsD = {coords.x(), static_cast<Coord>(coords.y() + 1)};
-            if (coordsR.x() < gt.width())
-            {
-                size_t siteR = helper::coord::coordinateToSite(coordsR.x(), coordsR.y(), gt.width());
-                size_t lR = gt.atSite(siteR);
-                pairwiseConnections++;
-                if (lR < l)
-                    std::swap(l, lR);
-                if (l != lR)
-                    pairwiseWeights[l + lR * (lR - 1) / 2]++;
-            }
-            if (coordsD.y() < gt.height())
-            {
-                size_t siteD = helper::coord::coordinateToSite(coordsD.x(), coordsD.y(), gt.width());
-                size_t lD = gt.atSite(siteD);
-                pairwiseConnections++;
-                if (lD < l)
-                    std::swap(l, lD);
-                if (l != lD)
-                    pairwiseWeights[l + lD * (lD - 1) / 2]++;
-            }
-        }
-    }
-
-    for (size_t i = 0; i < pairwiseWeights.size(); ++i)
-        pairwiseWeights[i] /= pairwiseConnections;
-
-    for (size_t l1 = 0; l1 < properties.dataset.constants.numClasses; ++l1)
-    {
-        for (size_t l2 = 0; l2 < properties.dataset.constants.numClasses; ++l2)
-        {
-            if (l1 == l2)
-            {
-                std::cout << 0 << "\t";
-                continue;
-            }
-            if (l2 < l1)
-                std::cout << pairwiseWeights[l2 + l1 * (l1 - 1) / 2] << "\t";
-            else
-                std::cout << pairwiseWeights[l1 + l2 * (l2 - 1) / 2] << "\t";
-        }
-        std::cout << std::endl;
-    }
-
-    return true;
-}
-
 bool computeMaxLoss(UtilProperties const& properties)
 {
     // Read in files to consider
@@ -316,8 +256,8 @@ bool computeMaxLoss(UtilProperties const& properties)
     float maxLoss = 0.f;
     for (auto const& s : list)
     {
-        std::string imageFile = properties.dataset.path.img + s + properties.dataset.extension.img;
-        std::string gtFile = properties.dataset.path.gt + s + properties.dataset.extension.gt;
+        std::string imageFile = properties.datasetPx.path.img + s + properties.datasetPx.extension.img;
+        std::string gtFile = properties.datasetPx.path.gt + s + properties.datasetPx.extension.gt;
         RGBImage image, gtRGB;
         if (!image.read(imageFile))
         {
@@ -332,7 +272,7 @@ bool computeMaxLoss(UtilProperties const& properties)
         LabelImage gt = helper::image::decolorize(gtRGB, cmap);
 
         // Compute loss factor for this image
-        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
+        float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.datasetPx.constants.numClasses);
 
         maxLoss += image.pixels() * lossFactor;
     }
@@ -378,8 +318,8 @@ bool rescale(UtilProperties const& properties)
 
     for (std::string const& file : list)
     {
-        std::string filenameGt = file + properties.dataset.extension.gt;
-        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string filenameGt = file + properties.datasetPx.extension.gt;
+        std::string pathGt = properties.datasetPx.path.gt + filenameGt;
         std::string outPathGt = properties.out + "gt/";
 
         // Ground truth image
@@ -406,19 +346,19 @@ bool match_gt(UtilProperties const& properties)
 
     for (std::string const& file : list)
     {
-        std::string filenameFeat = file + properties.dataset.extension.img;
-        std::string pathFeat = properties.dataset.path.img + filenameFeat;
-        std::string filenameGt = file + properties.dataset.extension.gt;
-        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string filenamePxFeat = file + properties.datasetPx.extension.img;
+        std::string pathPxFeat = properties.datasetPx.path.img + filenamePxFeat;
+        std::string filenameGt = file + properties.datasetPx.extension.gt;
+        std::string pathGt = properties.datasetPx.path.gt + filenameGt;
         std::string outPathGt = properties.out + "gt/";
 
         std::cout << outPathGt << filenameGt;
 
-        FeatureImage features;
-        if(!features.read(pathFeat))
+        FeatureImage featuresPx;
+        if(!featuresPx.read(pathPxFeat))
         {
             std::cout << "\tERROR" << std::endl;
-            std::cerr << "Unable to read features from \"" << pathFeat << "\"" << std::endl;
+            std::cerr << "Unable to read features from \"" << pathPxFeat << "\"" << std::endl;
             return false;
         }
 
@@ -430,7 +370,7 @@ bool match_gt(UtilProperties const& properties)
             std::cerr << " Couldn't read ground truth image \"" << pathGt << "\"." << std::endl;
             return false;
         }
-        gt_rgb.rescale(features.width(), features.height(), false);
+        gt_rgb.rescale(featuresPx.width(), featuresPx.height(), false);
         LabelImage gt = helper::image::decolorize(gt_rgb, cmap);
 
         // Note: rescaling the label image doesn't work properly. Apparently opencv has issues rescaling one-channel images?
@@ -455,11 +395,11 @@ bool post_pro(UtilProperties const& properties)
 
     for (std::string const& file : list)
     {
-        std::string filenameRgb = file + properties.dataset.extension.rgb;
-        std::string pathRgb = properties.dataset.path.rgb_orig + filenameRgb;
+        std::string filenameRgb = file + properties.datasetPx.extension.rgb;
+        std::string pathRgb = properties.datasetPx.path.rgb_orig + filenameRgb;
         std::string filenameMarginals = file + ".mat";
         std::string pathMarginals = properties.in + filenameMarginals;
-        std::string outFilenameLabeling = file + properties.dataset.extension.gt;
+        std::string outFilenameLabeling = file + properties.datasetPx.extension.gt;
         std::string outPathLabeling = properties.out + outFilenameLabeling;
 
         std::cout << file;
@@ -482,7 +422,7 @@ bool post_pro(UtilProperties const& properties)
             return false;
         }
 
-        if(rgb.width() != marginals.width() || rgb.height() != marginals.height() || marginals.dim() != properties.dataset.constants.numClasses)
+        if(rgb.width() != marginals.width() || rgb.height() != marginals.height() || marginals.dim() != properties.datasetPx.constants.numClasses)
         {
             std::cout << "\tERROR" << std::endl;
             std::cerr << " Marginal size doesn't match original image." << std::endl;
@@ -491,7 +431,7 @@ bool post_pro(UtilProperties const& properties)
 
         // Do Dense CRF inference
         // Store it in a way the dense crf implementation understands
-        Label const numClasses = properties.dataset.constants.numClasses;
+        Label const numClasses = properties.datasetPx.constants.numClasses;
         Eigen::MatrixXf unary(numClasses, rgb.width() * rgb.height());
         for(Coord y = 0; y < rgb.height(); ++y)
         {
@@ -600,10 +540,10 @@ bool prepareDataset(UtilProperties const& properties)
     {
         std::cout << " > " << file << ": " << std::flush;
 
-        std::string filenameRgb = file + properties.dataset.extension.rgb;
-        std::string pathRgb = properties.dataset.path.rgb + filenameRgb;
-        std::string filenameGt = file + properties.dataset.extension.gt;
-        std::string pathGt = properties.dataset.path.gt + filenameGt;
+        std::string filenameRgb = file + properties.datasetPx.extension.rgb;
+        std::string pathRgb = properties.datasetPx.path.rgb + filenameRgb;
+        std::string filenameGt = file + properties.datasetPx.extension.gt;
+        std::string pathGt = properties.datasetPx.path.gt + filenameGt;
         std::string outPathRgb = properties.out + "rgb/";
         std::string outPathGt = properties.out + "gt/";
 
@@ -750,13 +690,13 @@ bool prepareDataset(UtilProperties const& properties)
                 std::string cropFileNameFlip = file + "_FLIP_" + std::to_string(x / stride) + "_" + std::to_string(y / stride);
 
                 // RGB
-                std::string rgbOut = outPathRgb + cropFileName + properties.dataset.extension.rgb;
+                std::string rgbOut = outPathRgb + cropFileName + properties.datasetPx.extension.rgb;
                 if(!cv::imwrite(rgbOut, padded_img))
                 {
                     std::cerr << "Couldn't write RGB crop to \"" << rgbOut << "\"" << std::endl;
                     return false;
                 }
-                std::string rgbOutFlip = outPathRgb + cropFileNameFlip + properties.dataset.extension.rgb;
+                std::string rgbOutFlip = outPathRgb + cropFileNameFlip + properties.datasetPx.extension.rgb;
                 if(!cv::imwrite(rgbOutFlip, padded_img_flip))
                 {
                     std::cerr << "Couldn't write flipped RGB crop to \"" << rgbOutFlip << "\"" << std::endl;
@@ -766,14 +706,14 @@ bool prepareDataset(UtilProperties const& properties)
                 // GT
                 if(properties.prepareDataset.withGt)
                 {
-                    std::string gtOut = outPathGt + cropFileName + properties.dataset.extension.gt;
+                    std::string gtOut = outPathGt + cropFileName + properties.datasetPx.extension.gt;
                     auto err = helper::image::writePalettePNG(gtOut, padded_gt, cmap);
                     if(err != helper::image::PNGError::Okay)
                     {
                         std::cerr << "Couldn't write GT crop to \"" << gtOut << "\". Error Code: " << (int) err << std::endl;
                         return false;
                     }
-                    std::string gtOutFlip = outPathGt + cropFileNameFlip + properties.dataset.extension.gt;
+                    std::string gtOutFlip = outPathGt + cropFileNameFlip + properties.datasetPx.extension.gt;
                     err = helper::image::writePalettePNG(gtOutFlip, padded_gt_flip, cmap);
                     if(err != helper::image::PNGError::Okay)
                     {
@@ -933,7 +873,7 @@ bool createFakeMarginals(UtilProperties const& properties)
 
     for (std::string const& file : listfile)
     {
-        std::string filenameLabeling = file + properties.dataset.extension.gt;
+        std::string filenameLabeling = file + properties.datasetPx.extension.gt;
         std::string pathLabeling = properties.in + filenameLabeling;
         std::string outPathMarginals = properties.out;
 
@@ -950,12 +890,12 @@ bool createFakeMarginals(UtilProperties const& properties)
         }
 
         // Make up crude "marginals"
-        FeatureImage marginals(labeling.height(), labeling.width(), properties.dataset.constants.numClasses); // All zero
+        FeatureImage marginals(labeling.height(), labeling.width(), properties.datasetPx.constants.numClasses); // All zero
 
         for (SiteId i = 0; i < marginals.width() * marginals.height(); ++i)
         {
             Label l = labeling.atSite(i);
-            if(l < properties.dataset.constants.numClasses)
+            if(l < properties.datasetPx.constants.numClasses)
                 marginals.atSite(i)[l] = 1;
         }
 
@@ -1056,7 +996,7 @@ bool stitchMarginals(UtilProperties const& properties)
 
             // Read in new original image to get dimensions
             RGBImage orig;
-            std::string orig_rgb_file = properties.dataset.path.rgb_orig + origFile + properties.dataset.extension.rgb;
+            std::string orig_rgb_file = properties.datasetPx.path.rgb_orig + origFile + properties.datasetPx.extension.rgb;
             if(!orig.read(orig_rgb_file))
             {
                 std::cout << "ERROR" << std::endl;
@@ -1077,7 +1017,7 @@ bool stitchMarginals(UtilProperties const& properties)
                 baseWidth = static_cast<int>(std::round(baseLongSide / (float)origHeight * origWidth));
             else
                 baseHeight = static_cast<int>(std::round(baseLongSide / (float)origWidth * origHeight));
-            pCurStitchedMarginals = new FeatureImage(baseWidth, baseHeight, properties.dataset.constants.numClasses);
+            pCurStitchedMarginals = new FeatureImage(baseWidth, baseHeight, properties.datasetPx.constants.numClasses);
             curCountImage = LabelImage(baseWidth, baseHeight);
         }
 
@@ -1127,7 +1067,7 @@ bool createBasicFeatures(UtilProperties const& properties)
 
     for (std::string const& file : listfile)
     {
-        std::string filenameRgb = file + properties.dataset.extension.rgb;
+        std::string filenameRgb = file + properties.datasetPx.extension.rgb;
         std::string outPathFeatures = properties.out;
 
         std::cout << file << " ";
@@ -1159,10 +1099,10 @@ bool createBasicFeatures(UtilProperties const& properties)
         }
 
         // Write to disk
-        if(!features.write(properties.out + file + properties.dataset.extension.img))
+        if(!features.write(properties.out + file + properties.datasetPx.extension.img))
         {
             std::cout << "ERROR" << std::endl;
-            std::cerr << "Unable to write feature map \"" << properties.out + file + properties.dataset.extension.img << "\"." << std::endl;
+            std::cerr << "Unable to write feature map \"" << properties.out + file + properties.datasetPx.extension.img << "\"." << std::endl;
             return false;
         }
 
@@ -1178,7 +1118,7 @@ bool testIterationProgress(UtilProperties const& properties)
     std::cout << listfile.size() << " images." << std::endl;
 
     // Read in weights
-    Weights w(properties.dataset.constants.numClasses, properties.dataset.constants.featDim);
+    Weights w(properties.datasetPx.constants.numClasses, properties.datasetPx.constants.featDim, properties.datasetCluster.constants.featDim);
     if(!w.read(properties.in))
         std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
 
@@ -1192,13 +1132,21 @@ bool testIterationProgress(UtilProperties const& properties)
         std::cout << filename << std::endl;
 
         // Read images
-        std::string imgFilename = properties.dataset.path.img + filename + properties.dataset.extension.img;
-        std::string gtFilename = properties.dataset.path.gt + filename + properties.dataset.extension.gt;
+        std::string imgFilename = properties.datasetPx.path.img + filename + properties.datasetPx.extension.img;
+        std::string imgCluFilename = properties.datasetCluster.path.img + filename + properties.datasetCluster.extension.img;
+        std::string gtFilename = properties.datasetPx.path.gt + filename + properties.datasetPx.extension.gt;
 
-        FeatureImage features;
-        if(!features.read(imgFilename))
+        FeatureImage featuresPx;
+        if(!featuresPx.read(imgFilename))
         {
             std::cerr << "Unable to read features from \"" << imgFilename << "\"" << std::endl;
+            return false;
+        }
+
+        FeatureImage featuresCluster;
+        if(!featuresCluster.read(imgCluFilename))
+        {
+            std::cerr << "Unable to read features from \"" << imgCluFilename << "\"" << std::endl;
             return false;
         }
 
@@ -1209,34 +1157,37 @@ bool testIterationProgress(UtilProperties const& properties)
             std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
             return false;
         }
-        gt.rescale(features.width(), features.height(), false);
+        gt.rescale(featuresPx.width(), featuresPx.height(), false);
 
         // Crop to valid region
-        cv::Rect bb = helper::image::computeValidBox(gt, properties.dataset.constants.numClasses);
-        FeatureImage features_cropped(bb.width, bb.height, features.dim());
+        cv::Rect bb = helper::image::computeValidBox(gt, properties.datasetPx.constants.numClasses);
+        FeatureImage features_cropped(bb.width, bb.height, featuresPx.dim());
+        FeatureImage features_cluster_cropped(bb.width, bb.height, featuresPx.dim());
         LabelImage gt_cropped(bb.width, bb.height);
         for(Coord x = bb.x; x < bb.width; ++x)
         {
             for (Coord y = bb.y; y < bb.height; ++y)
             {
                 gt_cropped.at(x - bb.x, y - bb.y) = gt.at(x, y);
-                features_cropped.at(x - bb.x, y - bb.y) = features.at(x, y);
+                features_cropped.at(x - bb.x, y - bb.y) = featuresPx.at(x, y);
+                features_cluster_cropped.at(x - bb.x, y - bb.y) = featuresCluster.at(x, y);
             }
         }
 
         gt = gt_cropped;
-        features = features_cropped;
+        featuresPx = features_cropped;
+        featuresCluster = features_cluster_cropped;
 
-        if(gt.height() == 0 || gt.width() == 0 || gt.height() != features.height() || gt.width() != features.width())
+        if(gt.height() == 0 || gt.width() == 0 || gt.height() != featuresPx.height() || gt.width() != featuresPx.width())
         {
             std::cerr << "Invalid ground truth or features. Dimensions: (" << gt.width() << "x" << gt.height() << ") vs. ("
-                      << features.width() << "x" << features.height() << ")." << std::endl;
+                      << featuresPx.width() << "x" << featuresPx.height() << ")." << std::endl;
             return false;
         }
 
         // Predict
         EnergyFunction energy(&w, properties.param.numClusters, properties.param.usePairwise);
-        InferenceIterator<EnergyFunction> inference(&energy, &features, properties.param.eps, properties.param.maxIter);
+        InferenceIterator<EnergyFunction> inference(&energy, &featuresPx, &featuresCluster, properties.param.eps, properties.param.maxIter);
         auto result = inference.runDetailed();
 
         // Try to write results to file
@@ -1329,9 +1280,6 @@ int main(int argc, char** argv)
 
     if (!properties.job.fillGroundTruth.empty())
         fillGroundTruth(properties);
-
-    if (!properties.job.pairwiseStatistics.empty())
-        pairwiseStatistics(properties);
 
     if (!properties.job.maxLoss.empty())
         computeMaxLoss(properties);

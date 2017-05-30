@@ -90,9 +90,9 @@ add_definitions(${PNG_DEFINITIONS})
 include(cmake/compile_hseg.cmake)
 
 ### Compile inference executables ###
-add_executable(hseg_infer exec/inference.cpp)
-target_link_libraries(hseg_infer ${LIBS} hseg)
-set_target_properties(hseg_infer PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+#add_executable(hseg_infer exec/inference.cpp)
+#target_link_libraries(hseg_infer ${LIBS} hseg)
+#set_target_properties(hseg_infer PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
 add_executable(hseg_infer_batch exec/inference_batch.cpp)
 target_link_libraries(hseg_infer_batch hseg)
 set_target_properties(hseg_infer_batch PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
@@ -117,19 +117,19 @@ if(WITH_CAFFE)
 endif()
 
 ### Compile distributed training executables ###
-add_executable(hseg_train_dist_pred exec/train_dist_pred.cpp)
-target_link_libraries(hseg_train_dist_pred ${LIBS} hseg)
-set_target_properties(hseg_train_dist_pred PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
-add_executable(hseg_train_dist_merge exec/train_dist_merge.cpp)
-target_link_libraries(hseg_train_dist_merge hseg)
-set_target_properties(hseg_train_dist_merge PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+#add_executable(hseg_train_dist_pred exec/train_dist_pred.cpp)
+#target_link_libraries(hseg_train_dist_pred ${LIBS} hseg)
+#set_target_properties(hseg_train_dist_pred PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+#add_executable(hseg_train_dist_merge exec/train_dist_merge.cpp)
+#target_link_libraries(hseg_train_dist_merge hseg)
+#set_target_properties(hseg_train_dist_merge PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
 
 ### Compile messy executable (i.e. the one where I do all my testing) ###
 add_executable(hseg_mess exec/messy.cpp)
 target_link_libraries(hseg_mess hseg)
 
 add_custom_target(default)
-add_dependencies(default hseg hseg_train_dist_pred hseg_train_dist_merge hseg_train hseg_accy hseg_infer_batch hseg_infer)
+add_dependencies(default hseg hseg_train hseg_accy hseg_infer_batch)
 
 ### Unit tests ###
 #enable_testing()
