@@ -35,6 +35,7 @@ PROPERTIES_DEFINE(Train,
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
                                PROP_DEFINE_A(bool, useClusterLoss, true, --useClusterLoss)
+                               PROP_DEFINE_A(size_t, batchSize, 0, --batchSize)
                                GROUP_DEFINE(iter,
                                             PROP_DEFINE_A(uint32_t, start, 0, --start)
                                             PROP_DEFINE_A(uint32_t, end, 1000, --end)
@@ -85,13 +86,15 @@ struct SampleResult
     uint32_t numIter = 0;
     uint32_t numIterGt = 0;
     std::string filename;
+    size_t num = 0;
 };
 
-SampleResult processSample(std::string const& filename, Weights const& curWeights, TrainProperties const& properties,
+SampleResult processSample(std::string const& filename, Weights const& curWeights, size_t num, TrainProperties const& properties,
                             DatasetProperties const& datasetPx, DatasetProperties const& datasetCluster)
 {
     SampleResult sampleResult;
     sampleResult.filename = filename;
+    sampleResult.num = num;
 
     // Load images etc...
     std::string pxFeatFilename = datasetPx.dataset.path.img + filename + datasetPx.dataset.extension.img;
@@ -185,6 +188,11 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
 
     sampleResult.valid = true;
     return sampleResult;
+}
+
+size_t getNumberOfDigits (size_t i)
+{
+    return i > 0 ? (size_t) log10 ((double) i) + 1 : 1;
 }
 
 enum ERROR_CODE
@@ -301,6 +309,20 @@ int main(int argc, char** argv)
             << std::setw(12) << "total min" << "\t;"
             << std::setw(12) << "total mag" << std::endl;
     }
+    auto randomEngine = std::default_random_engine{};
+
+    if(properties.train.batchSize == 0)
+        properties.train.batchSize = filenames.size();
+    size_t curFileIdx = 0;
+    auto nextFile = [&]()
+    {
+        if(curFileIdx >= filenames.size())
+        {
+            std::shuffle(filenames.begin(), filenames.end(), randomEngine);
+            curFileIdx = 0;
+        }
+        return filenames[curFileIdx++];
+    };
 
     // Iterate T times
     for(uint32_t t = properties.train.iter.start; t < T; ++t)
@@ -311,9 +333,10 @@ int main(int argc, char** argv)
         futures.clear();
 
         // Iterate over all images
-        for (std::string const filename : filenames)
+        for (size_t i = 0; i < properties.train.batchSize; ++i)
         {
-            auto&& fut = pool.enqueue(processSample, filename, curWeights, properties, datasetPx, datasetCluster);
+            std::string const& filename = nextFile();
+            auto&& fut = pool.enqueue(processSample, filename, curWeights, i, properties, datasetPx, datasetCluster);
             futures.push_back(std::move(fut));
 
             // Wait for some threads to finish if the queue gets too long
@@ -334,7 +357,10 @@ int main(int argc, char** argv)
                     N++;
                 }
 
-                std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
+                std::cout << "> " << std::setw(4) << t << " ("
+                          << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num << "/"
+                          << std::setw(getNumberOfDigits(properties.train.batchSize)) << properties.train.batchSize << "): "
+                          << std::setw(30) << sampleResult.filename << "\t"
                           << std::setw(12) << sampleResult.upperBound << "\t"
                           << std::setw(2) << sampleResult.numIter << "\t"
                           << std::setw(2) << sampleResult.numIterGt << std::endl;
@@ -352,7 +378,10 @@ int main(int argc, char** argv)
                 return INFERRED_INVALID;
             }
 
-            std::cout << "> " << std::setw(4) << t << ": " << std::setw(30) << sampleResult.filename << "\t"
+            std::cout << "> " << std::setw(4) << t << " ("
+                      << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num << "/"
+                      << std::setw(getNumberOfDigits(properties.train.batchSize)) << properties.train.batchSize << "): "
+                      << std::setw(30) << sampleResult.filename << "\t"
                       << std::setw(12) << sampleResult.upperBound << "\t"
                       << std::setw(2) << sampleResult.numIter << "\t"
                       << std::setw(2) << sampleResult.numIterGt << std::endl;
