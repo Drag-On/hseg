@@ -371,7 +371,7 @@ int main(int argc, char** argv)
                 }
 
                 std::cout << "> " << std::setw(4) << t << " ("
-                          << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num << "/"
+                          << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num + 1 << "/"
                           << std::setw(getNumberOfDigits(properties.train.batchSize)) << properties.train.batchSize << "): "
                           << std::setw(30) << sampleResult.filename << "\t"
                           << std::setw(12) << sampleResult.upperBound << "\t"
@@ -392,7 +392,7 @@ int main(int argc, char** argv)
             }
 
             std::cout << "> " << std::setw(4) << t << " ("
-                      << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num << "/"
+                      << std::setw(getNumberOfDigits(properties.train.batchSize)) << sampleResult.num + 1 << "/"
                       << std::setw(getNumberOfDigits(properties.train.batchSize)) << properties.train.batchSize << "): "
                       << std::setw(30) << sampleResult.filename << "\t"
                       << std::setw(12) << sampleResult.upperBound << "\t"
