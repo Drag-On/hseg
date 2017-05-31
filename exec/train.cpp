@@ -113,6 +113,19 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         std::cerr << "Unable to read features from \"" << clusterFeatFilename << "\"" << std::endl;
         return sampleResult;
     }
+    if(clusterFeatures.width() != pxFeatures.width() || clusterFeatures.height() != pxFeatures.height())
+    {
+        if(static_cast<float>(clusterFeatures.width()) / clusterFeatures.height() ==
+                static_cast<float>(pxFeatures.width()) / pxFeatures.height())
+            clusterFeatures.rescale(pxFeatures.width(), pxFeatures.height(), true);
+        else
+        {
+            std::cerr << "Cluster and pixel feature map size don't match up: "
+                      << "(" << clusterFeatures.width() << "," << clusterFeatures.height() << ") vs. "
+                      << "(" << pxFeatures.width() << "," << pxFeatures.height() << ")." << std::endl;
+            return sampleResult;
+        }
+    }
 
     LabelImage gt;
     auto errCode = helper::image::readPalettePNG(gtFilename, gt, nullptr);

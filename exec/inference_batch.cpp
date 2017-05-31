@@ -85,6 +85,19 @@ Result process(std::string const& imageFilename, std::string imageClusterFilenam
         std::cerr << "Unable to read features from \"" << imageClusterFilename << "\"" << std::endl;
         return res;
     }
+    if(featuresCluster.width() != featuresPx.width() || featuresCluster.height() != featuresPx.height())
+    {
+        if(static_cast<float>(featuresCluster.width()) / featuresCluster.height() ==
+                static_cast<float>(featuresPx.width()) / featuresPx.height())
+            featuresCluster.rescale(featuresPx.width(), featuresPx.height(), true);
+        else
+        {
+            std::cerr << "Cluster and pixel feature map size don't match up: "
+                      << "(" << featuresCluster.width() << "," << featuresCluster.height() << ") vs. "
+                      << "(" << featuresPx.width() << "," << featuresPx.height() << ")." << std::endl;
+            return res;
+        }
+    }
 
     // Rescale features if needed
     if(scaleToRgb)
