@@ -59,6 +59,8 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(std::string, outDir, "", --outDir)
+                  PROP_DEFINE_A(size_t, saveEvery, 1, --saveEvery)
+                  PROP_DEFINE_A(size_t, logEvery, 1, --logEvery)
                   PROP_DEFINE_A(std::string, log, "train.log", --log)
                   PROP_DEFINE_A(uint32_t, numThreads, 4, --numThreads)
                   PROP_DEFINE_A(std::string, propertiesFile, "properties/hseg_train.info", -p)
@@ -422,36 +424,39 @@ int main(int argc, char** argv)
         std::cout << "Current training energy: " << regularizerCost << " + " << upperBoundCost << " = " << iterationEnergy << std::endl;
 
         // Log results of last iteration
-        auto stats = curWeights.computeStats();
-        log << std::setw(4) << t << "\t;"
-            << std::setw(12) << iterationEnergy << "\t;"
-            << std::setw(12) << regularizerCost << "\t;"
-            << std::setw(12) << upperBoundCost << "\t;"
-            << std::setw(12) << stats.unary.mean << "\t;"
-            << std::setw(12) << stats.unary.stdev << "\t;"
-            << std::setw(12) << stats.unary.max << "\t;"
-            << std::setw(12) << stats.unary.min << "\t;"
-            << std::setw(12) << stats.unary.mag << "\t;"
-            << std::setw(12) << stats.pairwise.mean << "\t;"
-            << std::setw(12) << stats.pairwise.stdev << "\t;"
-            << std::setw(12) << stats.pairwise.max << "\t;"
-            << std::setw(12) << stats.pairwise.min << "\t;"
-            << std::setw(12) << stats.pairwise.mag << "\t;"
-            << std::setw(12) << stats.label.mean << "\t;"
-            << std::setw(12) << stats.label.stdev << "\t;"
-            << std::setw(12) << stats.label.max << "\t;"
-            << std::setw(12) << stats.label.min << "\t;"
-            << std::setw(12) << stats.label.mag << "\t;"
-            << std::setw(12) << stats.feature.mean << "\t;"
-            << std::setw(12) << stats.feature.stdev << "\t;"
-            << std::setw(12) << stats.feature.max << "\t;"
-            << std::setw(12) << stats.feature.min << "\t;"
-            << std::setw(12) << stats.feature.mag << "\t;"
-            << std::setw(12) << stats.total.mean << "\t;"
-            << std::setw(12) << stats.total.stdev << "\t;"
-            << std::setw(12) << stats.total.max << "\t;"
-            << std::setw(12) << stats.total.min << "\t;"
-            << std::setw(12) << stats.total.mag << std::endl;
+        if(t % properties.logEvery == 0)
+        {
+            auto stats = curWeights.computeStats();
+            log << std::setw(4) << t << "\t;"
+                << std::setw(12) << iterationEnergy << "\t;"
+                << std::setw(12) << regularizerCost << "\t;"
+                << std::setw(12) << upperBoundCost << "\t;"
+                << std::setw(12) << stats.unary.mean << "\t;"
+                << std::setw(12) << stats.unary.stdev << "\t;"
+                << std::setw(12) << stats.unary.max << "\t;"
+                << std::setw(12) << stats.unary.min << "\t;"
+                << std::setw(12) << stats.unary.mag << "\t;"
+                << std::setw(12) << stats.pairwise.mean << "\t;"
+                << std::setw(12) << stats.pairwise.stdev << "\t;"
+                << std::setw(12) << stats.pairwise.max << "\t;"
+                << std::setw(12) << stats.pairwise.min << "\t;"
+                << std::setw(12) << stats.pairwise.mag << "\t;"
+                << std::setw(12) << stats.label.mean << "\t;"
+                << std::setw(12) << stats.label.stdev << "\t;"
+                << std::setw(12) << stats.label.max << "\t;"
+                << std::setw(12) << stats.label.min << "\t;"
+                << std::setw(12) << stats.label.mag << "\t;"
+                << std::setw(12) << stats.feature.mean << "\t;"
+                << std::setw(12) << stats.feature.stdev << "\t;"
+                << std::setw(12) << stats.feature.max << "\t;"
+                << std::setw(12) << stats.feature.min << "\t;"
+                << std::setw(12) << stats.feature.mag << "\t;"
+                << std::setw(12) << stats.total.mean << "\t;"
+                << std::setw(12) << stats.total.stdev << "\t;"
+                << std::setw(12) << stats.total.max << "\t;"
+                << std::setw(12) << stats.total.min << "\t;"
+                << std::setw(12) << stats.total.mag << std::endl;
+        }
 
         // Compute gradient
         sum *= properties.train.C / N;
@@ -462,20 +467,24 @@ int main(int argc, char** argv)
         // Project onto the feasible set
         curWeights.clampToFeasible();
 
-        if (!curWeights.write(properties.out))
+        // Save to hard disk
+        if(t % properties.saveEvery == 0)
         {
-            std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
-            log.close();
-            return CANT_WRITE_RESULT;
+            if (!curWeights.write(properties.out))
+            {
+                std::cerr << "Couldn't write weights to file \"" << properties.out << "\"" << std::endl;
+                log.close();
+                return CANT_WRITE_RESULT;
+            }
+            std::string weightCopyFilename = properties.outDir + std::to_string(t + 1) + ".dat";
+            if(!curWeights.write(weightCopyFilename))
+            {
+                std::cerr << "Couldn't write weights to file \"" << weightCopyFilename << "\"" << std::endl;
+                log.close();
+                return CANT_WRITE_RESULT_BACKUP;
+            }
+            pStepSizeRule->write(properties.outDir);
         }
-        std::string weightCopyFilename = properties.outDir + std::to_string(t + 1) + ".dat";
-        if(!curWeights.write(weightCopyFilename))
-        {
-            std::cerr << "Couldn't write weights to file \"" << weightCopyFilename << "\"" << std::endl;
-            log.close();
-            return CANT_WRITE_RESULT_BACKUP;
-        }
-        pStepSizeRule->write(properties.outDir);
     }
 
     log.close();
