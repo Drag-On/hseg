@@ -340,7 +340,7 @@ int main(int argc, char** argv)
     };
 
     // Iterate T times
-    for(uint32_t t = properties.train.iter.start; t < T; ++t)
+    for(uint32_t t = properties.train.iter.start; t < properties.train.iter.start + T; ++t)
     {
         uint32_t N = 0;
         Weights sum(datasetPx.dataset.constants.numClasses, datasetPx.dataset.constants.featDim, datasetCluster.dataset.constants.featDim); // All zeros
