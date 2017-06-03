@@ -306,35 +306,42 @@ bool Weights::read(std::string const& filename)
     std::ifstream in(filename, std::ios::in | std::ios::binary);
     if(in.is_open())
     {
-        char id[8];
-        in.read(id, 8);
-        if(std::strncmp(id, "WEIGHT04", 8) != 0)
+        try
         {
+            char id[8];
+            in.read(id, 8);
+            if(std::strncmp(id, "WEIGHT04", 8) != 0)
+            {
+                in.close();
+                return false;
+            }
+            uint32_t featDimPx, featDimCluster, noUnaries, noPairwise, noHigherOrder, noFeature;
+            in.read(reinterpret_cast<char*>(&featDimPx), sizeof(featDimPx));
+            in.read(reinterpret_cast<char*>(&featDimCluster), sizeof(featDimCluster));
+            in.read(reinterpret_cast<char*>(&noUnaries), sizeof(noUnaries));
+            in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
+            in.read(reinterpret_cast<char*>(&noHigherOrder), sizeof(noHigherOrder));
+            in.read(reinterpret_cast<char*>(&noFeature), sizeof(noFeature));
+            m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDimPx + 1));
+            m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDimPx * 2 + 1));
+            m_higherOrderWeights.resize(noHigherOrder, WeightVec::Zero(featDimCluster * 2 + 1));
+            m_featureWeights.resize(noFeature, WeightVec::Zero(featDimCluster));
+            for(auto& e : m_unaryWeights)
+                in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimPx + 1));
+            for(auto& e : m_pairwiseWeights)
+                in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimPx * 2 + 1));
+            for(auto& e : m_higherOrderWeights)
+                in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimCluster * 2 + 1));
+            for(auto& e : m_featureWeights)
+                in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimCluster));
             in.close();
+
+            return true;
+        }
+        catch (...)
+        {
             return false;
         }
-        uint32_t featDimPx, featDimCluster, noUnaries, noPairwise, noHigherOrder, noFeature;
-        in.read(reinterpret_cast<char*>(&featDimPx), sizeof(featDimPx));
-        in.read(reinterpret_cast<char*>(&featDimCluster), sizeof(featDimCluster));
-        in.read(reinterpret_cast<char*>(&noUnaries), sizeof(noUnaries));
-        in.read(reinterpret_cast<char*>(&noPairwise), sizeof(noPairwise));
-        in.read(reinterpret_cast<char*>(&noHigherOrder), sizeof(noHigherOrder));
-        in.read(reinterpret_cast<char*>(&noFeature), sizeof(noFeature));
-        m_unaryWeights.resize(noUnaries, WeightVec::Zero(featDimPx + 1));
-        m_pairwiseWeights.resize(noPairwise, WeightVec::Zero(featDimPx * 2 + 1));
-        m_higherOrderWeights.resize(noHigherOrder, WeightVec::Zero(featDimCluster * 2 + 1));
-        m_featureWeights.resize(noFeature, WeightVec::Zero(featDimCluster));
-        for(auto& e : m_unaryWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimPx + 1));
-        for(auto& e : m_pairwiseWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimPx * 2 + 1));
-        for(auto& e : m_higherOrderWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimCluster * 2 + 1));
-        for(auto& e : m_featureWeights)
-            in.read(reinterpret_cast<char*>(e.data()), sizeof(e(0)) * (featDimCluster));
-        in.close();
-
-        return true;
     }
     return false;
 }

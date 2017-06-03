@@ -12,26 +12,37 @@
 #include <Energy/AdamStepSizeRule.h>
 #include <Energy/DiminishingStepSizeRule.h>
 
-
-PROPERTIES_DEFINE(Dataset,
-                  GROUP_DEFINE(dataset,
-                               PROP_DEFINE(std::string, list, "")
+PROPERTIES_DEFINE(Train,
+                  GROUP_DEFINE(datasetPx,
+                               PROP_DEFINE_A(std::string, list, "", -l)
                                GROUP_DEFINE(path,
-                                            PROP_DEFINE(std::string, img, "")
-                                            PROP_DEFINE(std::string, gt, "")
+                                            PROP_DEFINE_A(std::string, img, "", --img)
+                                            PROP_DEFINE_A(std::string, gt, "", --gt)
+                                            PROP_DEFINE_A(std::string, rgb, "", --rgb)
                                )
                                GROUP_DEFINE(extension,
-                                            PROP_DEFINE(std::string, img, ".mat")
-                                            PROP_DEFINE(std::string, gt, ".png")
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_ext)
+                                            PROP_DEFINE_A(std::string, gt, ".png", --gt_ext)
+                                            PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext)
                                )
                                GROUP_DEFINE(constants,
-                                            PROP_DEFINE(Label, numClasses, 21)
-                                            PROP_DEFINE(uint32_t, featDim, 512)
+                                            PROP_DEFINE_A(uint32_t, numClasses, 21, --numClasses)
+                                            PROP_DEFINE_A(uint32_t, featDim, 512, --featDim)
                                )
                   )
-)
-
-PROPERTIES_DEFINE(Train,
+                  GROUP_DEFINE(datasetCluster,
+                              GROUP_DEFINE(path,
+                                           PROP_DEFINE_A(std::string, img, "", --img_cluster)
+                                           PROP_DEFINE_A(std::string, rgb, "", --rgb_cluster)
+                              )
+                              GROUP_DEFINE(extension,
+                                           PROP_DEFINE_A(std::string, img, ".mat", --img_ext_cluster)
+                                           PROP_DEFINE_A(std::string, rgb, ".jpg", --rgb_ext_cluster)
+                              )
+                              GROUP_DEFINE(constants,
+                                           PROP_DEFINE_A(uint32_t, featDim, 512, --featDim_cluster)
+                              )
+                  )
                   GROUP_DEFINE(train,
                                PROP_DEFINE_A(float, C, 0.1, -C)
                                PROP_DEFINE_A(bool, useClusterLoss, true, --useClusterLoss)
@@ -54,8 +65,6 @@ PROPERTIES_DEFINE(Train,
                                PROP_DEFINE_A(float, eps, 0, --eps)
                                PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
-                  PROP_DEFINE_A(std::string, datasetPx, "", -dataPx)
-                  PROP_DEFINE_A(std::string, datasetCluster, "", -dataCluster)
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(std::string, outDir, "", --outDir)
@@ -91,17 +100,16 @@ struct SampleResult
     size_t num = 0;
 };
 
-SampleResult processSample(std::string const& filename, Weights const& curWeights, size_t num, TrainProperties const& properties,
-                            DatasetProperties const& datasetPx, DatasetProperties const& datasetCluster)
+SampleResult processSample(std::string const& filename, Weights const& curWeights, size_t num, TrainProperties const& properties)
 {
     SampleResult sampleResult;
     sampleResult.filename = filename;
     sampleResult.num = num;
 
     // Load images etc...
-    std::string pxFeatFilename = datasetPx.dataset.path.img + filename + datasetPx.dataset.extension.img;
-    std::string clusterFeatFilename = datasetCluster.dataset.path.img + filename + datasetCluster.dataset.extension.img;
-    std::string gtFilename = datasetPx.dataset.path.gt + filename + datasetPx.dataset.extension.gt;
+    std::string pxFeatFilename = properties.datasetPx.path.img + filename + properties.datasetPx.extension.img;
+    std::string clusterFeatFilename = properties.datasetCluster.path.img + filename + properties.datasetCluster.extension.img;
+    std::string gtFilename = properties.datasetPx.path.gt + filename + properties.datasetPx.extension.gt;
 
     FeatureImage pxFeatures;
     if(!pxFeatures.read(pxFeatFilename))
@@ -139,7 +147,7 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     gt.rescale(pxFeatures.width(), pxFeatures.height(), false);
 
     // Crop to valid region
-    cv::Rect bb = helper::image::computeValidBox(gt, datasetPx.dataset.constants.numClasses);
+    cv::Rect bb = helper::image::computeValidBox(gt, properties.datasetPx.constants.numClasses);
     FeatureImage px_features_cropped(bb.width, bb.height, pxFeatures.dim());
     FeatureImage cluster_features_cropped(bb.width, bb.height, clusterFeatures.dim());
     LabelImage gt_cropped(bb.width, bb.height);
@@ -190,9 +198,9 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     // Compute upper bound on this image
     auto gtEnergyCur = curWeights * gtEnergy;
     auto predEnergyCur = curWeights * predEnergy;
-    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, datasetPx.dataset.constants.numClasses);
+    float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.datasetPx.constants.numClasses);
     float loss = LossAugmentedEnergyFunction::computeLoss(result.labeling, result.clustering, gt, result.clusters,
-                                                          lossFactor, datasetPx.dataset.constants.numClasses, properties.train.useClusterLoss);
+                                                          lossFactor, properties.datasetPx.constants.numClasses, properties.train.useClusterLoss);
     sampleResult.upperBound = (loss - predEnergyCur) + gtEnergyCur;
 
     //std::cout << "Upper bound: (" << loss << " - " << predEnergyCur << ") + " << gtEnergyCur << " = " << loss - predEnergyCur << " + " << gtEnergyCur << " = " << sampleResult.upperBound << std::endl;
@@ -219,6 +227,8 @@ enum ERROR_CODE
     CANT_WRITE_RESULT,
     CANT_WRITE_RESULT_BACKUP,
     NO_VALID_SAMPLES,
+    CANT_READ_PX_FEATURES,
+    CANT_READ_CLU_FEATURES,
 };
 
 int main(int argc, char** argv)
@@ -235,11 +245,36 @@ int main(int argc, char** argv)
     std::cout << properties << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
-    DatasetProperties datasetPx, datasetCluster;
-    datasetPx.read(properties.datasetPx);
-    datasetCluster.read(properties.datasetCluster);
+    // Load filenames of all images
+    std::vector<std::string> filenames = readFileNames(properties.datasetPx.list); // Assume cluster dataset is identical
+    if (filenames.empty())
+    {
+        std::cerr << "File list is empty!" << std::endl;
+        return FILE_LIST_EMPTY;
+    }
+    uint32_t T = properties.train.iter.end - properties.train.iter.start;
 
-    Weights curWeights(datasetPx.dataset.constants.numClasses, datasetPx.dataset.constants.featDim, datasetCluster.dataset.constants.featDim);
+    // Test feature maps
+    {
+        std::string pxFeatFilename = properties.datasetPx.path.img + filenames[0] + properties.datasetPx.extension.img;
+        std::string clusterFeatFilename = properties.datasetCluster.path.img + filenames[0] + properties.datasetCluster.extension.img;
+        FeatureImage pxFeatures;
+        if(!pxFeatures.read(pxFeatFilename))
+        {
+            std::cerr << "Unable to read pixel features." << std::endl;
+            return CANT_READ_PX_FEATURES;
+        }
+        FeatureImage clusterFeatures;
+        if(!clusterFeatures.read(clusterFeatFilename))
+        {
+            std::cerr << "Unable to read cluster features." << std::endl;
+            return CANT_READ_CLU_FEATURES;
+        }
+        std::cout << "Pixel featuremap [0]: " << pxFeatures.width() << "x" << pxFeatures.height() << std::endl;
+        std::cout << "Cluster featuremap [0]: " << clusterFeatures.width() << "x" << clusterFeatures.height() << std::endl;
+    }
+
+    Weights curWeights(properties.datasetPx.constants.numClasses, properties.datasetPx.constants.featDim, properties.datasetCluster.constants.featDim);
     if(!curWeights.read(properties.in))
         std::cout << "Couldn't read in initial weights from \"" << properties.in << "\". Using zero." << std::endl;
 
@@ -249,15 +284,6 @@ int main(int argc, char** argv)
         std::cerr << "Couldn't write initial weights to file \"" << weightCopyFilename << "\"" << std::endl;
         return CANT_WRITE_RESULT_BACKUP;
     }
-
-    // Load filenames of all images
-    std::vector<std::string> filenames = readFileNames(datasetPx.dataset.list); // Assume cluster dataset is identical
-    if (filenames.empty())
-    {
-        std::cerr << "File list is empty!" << std::endl;
-        return FILE_LIST_EMPTY;
-    }
-    uint32_t T = properties.train.iter.end - properties.train.iter.start;
 
     ThreadPool pool(properties.numThreads);
     std::deque<std::future<SampleResult>> futures;
@@ -269,9 +295,9 @@ int main(int argc, char** argv)
                                                            properties.train.rate.beta1,
                                                            properties.train.rate.beta2,
                                                            properties.train.rate.eps,
-                                                           datasetPx.dataset.constants.numClasses,
-                                                           datasetPx.dataset.constants.featDim,
-                                                           datasetCluster.dataset.constants.featDim,
+                                                           properties.datasetPx.constants.numClasses,
+                                                           properties.datasetPx.constants.featDim,
+                                                           properties.datasetCluster.constants.featDim,
                                                            properties.train.iter.start);
     else
         pStepSizeRule = std::make_unique<DiminishingStepSizeRule>(properties.train.rate.alpha,
@@ -343,7 +369,7 @@ int main(int argc, char** argv)
     for(uint32_t t = properties.train.iter.start; t < properties.train.iter.start + T; ++t)
     {
         uint32_t N = 0;
-        Weights sum(datasetPx.dataset.constants.numClasses, datasetPx.dataset.constants.featDim, datasetCluster.dataset.constants.featDim); // All zeros
+        Weights sum(properties.datasetPx.constants.numClasses, properties.datasetPx.constants.featDim, properties.datasetCluster.constants.featDim); // All zeros
         Cost iterationEnergy = 0;
         futures.clear();
 
@@ -351,7 +377,7 @@ int main(int argc, char** argv)
         for (size_t i = 0; i < properties.train.batchSize; ++i)
         {
             std::string const& filename = nextFile();
-            auto&& fut = pool.enqueue(processSample, filename, curWeights, i, properties, datasetPx, datasetCluster);
+            auto&& fut = pool.enqueue(processSample, filename, curWeights, i, properties);
             futures.push_back(std::move(fut));
 
             // Wait for some threads to finish if the queue gets too long
