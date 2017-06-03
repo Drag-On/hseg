@@ -68,6 +68,7 @@ PROPERTIES_DEFINE(Train,
                   PROP_DEFINE_A(std::string, in, "", -i)
                   PROP_DEFINE_A(std::string, out, "", -o)
                   PROP_DEFINE_A(std::string, outDir, "", --outDir)
+                  PROP_DEFINE_A(float, scaleFactor, 1.f, --scaleFactor)
                   PROP_DEFINE_A(size_t, saveEvery, 1, --saveEvery)
                   PROP_DEFINE_A(size_t, logEvery, 1, --logEvery)
                   PROP_DEFINE_A(std::string, log, "train.log", --log)
@@ -144,6 +145,8 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
         std::cerr << "Unable to read ground truth from \"" << gtFilename << "\". Error Code: " << (int) errCode << std::endl;
         return sampleResult;
     }
+    pxFeatures.rescale(properties.scaleFactor, true);
+    clusterFeatures.rescale(properties.scaleFactor, true);
     gt.rescale(pxFeatures.width(), pxFeatures.height(), false);
 
     // Crop to valid region
