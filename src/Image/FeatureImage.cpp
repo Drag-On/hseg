@@ -31,6 +31,8 @@ bool FeatureImage::read(std::string const& filename)
 
     matvar_t *matvar = Mat_VarReadInfo(matfp,"features");
     if ( matvar == nullptr )
+        matvar = Mat_VarReadInfo(matfp,"data");
+    if ( matvar == nullptr )
     {
         std::cerr << "Error finding feature map in file \"" << filename << "\"." << std::endl;
         Mat_Close(matfp);
