@@ -65,6 +65,7 @@ struct ImageAccuracyData
 {
     std::string name;
     float rawAccuracy = 0.f;
+    float iouAccuracy = 0.f;
 };
 
 int main(int argc, char** argv)
@@ -140,6 +141,8 @@ int main(int argc, char** argv)
         size_t imgRawPxCorrect = 0;
         size_t imgRawPxCount = 0;
 
+        ConfusionMatrix localConfusion(properties.dataset.constants.numClasses, pred, gt);
+
         // Compute loss
         float lossFactor = LossAugmentedEnergyFunction::computeLossFactor(gt, properties.dataset.constants.numClasses);
         loss += LossAugmentedEnergyFunction::computeLoss(pred, clustering, gt, clusters, lossFactor,
@@ -158,6 +161,7 @@ int main(int argc, char** argv)
         ImageAccuracyData imgDat;
         imgDat.name = f;
         imgDat.rawAccuracy = rawPercentage;
+        localConfusion.accuracies(&imgDat.iouAccuracy);
         imageAccData.push_back(imgDat);
 
         rawPixelCount += imgRawPxCount;
@@ -178,12 +182,12 @@ int main(int argc, char** argv)
         out << accuracy << std::endl;
         out << "Loss: " << loss << std::endl << std::endl;
 
-        std::sort(imageAccData.begin(), imageAccData.end(),
-                  [](ImageAccuracyData const& a, ImageAccuracyData const& b) { return a.rawAccuracy > b.rawAccuracy; });
+//        std::sort(imageAccData.begin(), imageAccData.end(),
+//                  [](ImageAccuracyData const& a, ImageAccuracyData const& b) { return a.rawAccuracy > b.rawAccuracy; });
         out << "Top List:" << std::endl;
-        out << "---------" << std::endl;
+        out << std::setw(12) << "name\t" << std::setw(12) << "raw px accy\t" << std::setw(12) << "iou accy" << std::endl;
         for(auto const& i : imageAccData)
-            out << i.name << "\t" << i.rawAccuracy << std::endl;
+            out << std::setw(12) << i.name << "\t" << std::setw(12) << i.rawAccuracy << "\t" << std::setw(12) << i.iouAccuracy << std::endl;
 
         out.close();
     }
