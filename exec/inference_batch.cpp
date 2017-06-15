@@ -44,6 +44,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                   GROUP_DEFINE(param,
                           PROP_DEFINE_A(std::string, weights, "", -w)
                           PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
+                          PROP_DEFINE_A(bool, usePairwise, true, --usePairwise)
                           PROP_DEFINE_A(float, eps, 0, --eps)
                           PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
@@ -66,7 +67,7 @@ struct Result
 
 Result process(std::string const& imageFilename, std::string imageClusterFilename, std::string const& rgbFileName, Weights const& weights, std::string const& spOutPath,
                std::string const& labelOutPath, std::string const& margOutPath, helper::image::ColorMap const& cmap,
-               ClusterId numClusters, float eps, uint32_t maxIter, bool scaleToRgb)
+               ClusterId numClusters, float eps, uint32_t maxIter, bool scaleToRgb, bool usePairwise)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
@@ -116,7 +117,7 @@ Result process(std::string const& imageFilename, std::string imageClusterFilenam
     }
 
     // Create energy function
-    EnergyFunction energyFun(&weights, numClusters);
+    EnergyFunction energyFun(&weights, numClusters, usePairwise);
 
     // Do the inference!
     InferenceIterator<EnergyFunction> inference(&energyFun, &featuresPx, &featuresCluster, eps, maxIter);
@@ -214,7 +215,7 @@ int main(int argc, char** argv)
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, imageClusterFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb);
+        auto&& fut = pool.enqueue(process, imageFilename, imageClusterFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb, properties.param.usePairwise);
         futures.push_back(std::move(fut));
 
         // Wait for some threads to finish if the queue gets too long
