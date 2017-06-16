@@ -13,30 +13,34 @@ EnergyFunction::EnergyFunction(Weights const* weights, ClusterId numClusters, bo
 {
 }
 
-Cost EnergyFunction::giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
+Cost EnergyFunction::giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, LabelImage const* gt) const
 {
-    Weights energy = giveEnergyByWeight(pxFeat, clusterFeat, labeling, clustering, clusters);
+    Weights energy = giveEnergyByWeight(pxFeat, clusterFeat, labeling, clustering, clusters, gt);
     return (*m_pWeights) * energy;
 }
 
-Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const
+Weights EnergyFunction::giveEnergyByWeight(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, LabelImage const* gt) const
 {
     PROFILE_THIS
 
     Weights w(numClasses(), pxFeat.dim(), clusterFeat.dim()); // Zero-initialized weights
 
-    computeUnaryEnergyByWeight(pxFeat, labeling, w);
+    computeUnaryEnergyByWeight(pxFeat, labeling, w, gt);
     if(m_usePairwise)
-        computePairwiseEnergyByWeight(pxFeat, labeling, w);
-    computeHigherOrderEnergyByWeight(clusterFeat, labeling, clustering, clusters, w);
+        computePairwiseEnergyByWeight(pxFeat, labeling, w, gt);
+    computeHigherOrderEnergyByWeight(clusterFeat, labeling, clustering, clusters, w, gt);
 
     return w;
 }
 
-void EnergyFunction::computeUnaryEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW) const
+void EnergyFunction::computeUnaryEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW, LabelImage const* gt) const
 {
     for (SiteId i = 0; i < labeling.pixels(); ++i)
     {
+        // Skip invalid pixels
+        if(gt && gt->atSite(i) >= numClasses())
+            continue;
+
         Label l = labeling.atSite(i);
         if(l < numClasses())
         {
@@ -48,18 +52,26 @@ void EnergyFunction::computeUnaryEnergyByWeight(FeatureImage const& features, La
     }
 }
 
-void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW) const
+void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW, LabelImage const* gt) const
 {
     for (Coord x = 0; x < labeling.width(); ++x)
     {
         for (Coord y = 0; y < labeling.height(); ++y)
         {
+            // Skip invalid pixels
+            if(gt && gt->at(x, y) >= numClasses())
+                continue;
+
             Label l = labeling.at(x, y);
             if(l >= numClasses())
                 continue;
             Feature const& f = features.at(x, y);
             if(x + 1 < labeling.width())
             {
+                // Skip invalid pixels
+                if(gt && gt->at(x + 1, y) >= numClasses())
+                    continue;
+
                 Label lR = labeling.at(x + 1, y);
                 if(lR >= numClasses())
                     continue;
@@ -72,6 +84,10 @@ void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features,
 
             if(y + 1 < labeling.height())
             {
+                // Skip invalid pixels
+                if(gt && gt->at(x, y + 1) >= numClasses())
+                    continue;
+
                 Label lD = labeling.at(x, y + 1);
                 if(lD >= numClasses())
                     continue;
@@ -87,13 +103,18 @@ void EnergyFunction::computePairwiseEnergyByWeight(FeatureImage const& features,
 
 void EnergyFunction::computeHigherOrderEnergyByWeight(FeatureImage const& features, LabelImage const& labeling,
                                                       LabelImage const& clustering,
-                                                      std::vector<Cluster> const& clusters, Weights& energyW) const
+                                                      std::vector<Cluster> const& clusters, Weights& energyW,
+                                                      LabelImage const* gt) const
 {
     if(numClusters() == 0)
         return;
 
     for(SiteId i = 0; i < labeling.pixels(); ++i)
     {
+        // Skip invalid pixels
+        if(gt && gt->atSite(i) >= numClasses())
+            continue;
+
         Feature const& f = features.atSite(i);
         Label const l = labeling.atSite(i);
         if(l >= numClasses())

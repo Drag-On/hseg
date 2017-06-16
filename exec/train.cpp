@@ -192,9 +192,9 @@ SampleResult processSample(std::string const& filename, Weights const& curWeight
     sampleResult.numIter = result.numIter;
 
     // Compute energy without weights on the ground truth
-    auto gtEnergy = energy.giveEnergyByWeight(pxFeatures, clusterFeatures, gt, gtResult.clustering, gtResult.clusters);
+    auto gtEnergy = energy.giveEnergyByWeight(pxFeatures, clusterFeatures, gt, gtResult.clustering, gtResult.clusters, &gt);
     // Compute energy without weights on the prediction
-    auto predEnergy = energy.giveEnergyByWeight(pxFeatures, clusterFeatures, result.labeling, result.clustering, result.clusters);
+    auto predEnergy = energy.giveEnergyByWeight(pxFeatures, clusterFeatures, result.labeling, result.clustering, result.clusters, &gt);
 
     //std::cout << gtEnergy.sum() << ", " << predEnergy.sum() << ", " << curWeights.sum() << std::endl;
 

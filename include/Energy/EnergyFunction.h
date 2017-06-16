@@ -33,7 +33,7 @@ public:
      * @param clusters Cluster data
      * @return The energy of the given configuration
      */
-    Cost giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
+    Cost giveEnergy(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, LabelImage const* gt = nullptr) const;
 
     /**
      * Computes the overall energy by weights. I.e. to compute the actual energy, the result needs to be multiplied by
@@ -44,7 +44,7 @@ public:
      * @param clusters Cluster data
      * @return The energy of the given configuration by weights
      */
-    Weights giveEnergyByWeight(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters) const;
+    Weights giveEnergyByWeight(FeatureImage const& pxFeat, FeatureImage const& clusterFeat, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, LabelImage const* gt = nullptr) const;
 
     /**
     * Computes the unary energy by weights
@@ -53,7 +53,7 @@ public:
     * @param[out] energyW The unary energy of the given configuration will be stored here by (unary) weights
     * @return The unary energy of the given configuration
     */
-    void computeUnaryEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW) const;
+    void computeUnaryEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW, LabelImage const* gt = nullptr) const;
 
     /**
      * Computes the pairwise energy by weights
@@ -61,7 +61,7 @@ public:
      * @param labeling Class labeling
      * @param[out] energyW The pairwise energy of the given configuration will be stored here by (pairwise) weights
      */
-    void computePairwiseEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW) const;
+    void computePairwiseEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, Weights& energyW, LabelImage const* gt = nullptr) const;
 
     /**
      * Computes the higher order energy by weights
@@ -71,7 +71,7 @@ public:
      * @param clusters Cluster data
      * @param[out] energyW The pairwise energy of the given configuration will be stored here by (higher-order) weights
      */
-    void computeHigherOrderEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, Weights& energyW) const;
+    void computeHigherOrderEnergyByWeight(FeatureImage const& features, LabelImage const& labeling, LabelImage const& clustering, std::vector<Cluster> const& clusters, Weights& energyW, LabelImage const* gt = nullptr) const;
 
     /**
      * Computes the gradient of the energy function with respect to the features
