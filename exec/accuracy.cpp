@@ -170,7 +170,12 @@ int main(int argc, char** argv)
 
     loss *= properties.train.C / fileNames.size();
 
+    auto const& acc = accuracy.accuracies();
+    float meanIoUWithoutBg = std::accumulate(acc.begin() + 1, acc.end(), 0);
+    meanIoUWithoutBg /= acc.size() - 1;
+
     std::cout << accuracy << std::endl;
+    std::cout << "Mean IoU w/o BG: " << meanIoUWithoutBg << std::endl;
     std::cout << "Loss: " << loss << std::endl;
     std::cout << "Raw px percentage: " << (100.f * rawPxCorrect) / rawPixelCount << " % (" << rawPxCorrect << "/"
               << rawPixelCount << ")" << std::endl;
