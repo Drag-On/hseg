@@ -60,7 +60,7 @@ PROPERTIES_DEFINE(Util,
                                             PROP_DEFINE_A(std::string, img, "", --img_clu)
                                )
                                GROUP_DEFINE(extension,
-                                            PROP_DEFINE_A(std::string, img, ".mat", --ext_img_clu)
+                                            PROP_DEFINE_A(std::string, img, ".mat", --img_clu_ext)
                                )
                                GROUP_DEFINE(constants,
                                             PROP_DEFINE_A(uint32_t, featDim, 512, --featDimClu)
@@ -1154,7 +1154,7 @@ bool testIterationProgress(UtilProperties const& properties)
         // Crop to valid region
         cv::Rect bb = helper::image::computeValidBox(gt, properties.datasetPx.constants.numClasses);
         FeatureImage features_cropped(bb.width, bb.height, featuresPx.dim());
-        FeatureImage features_cluster_cropped(bb.width, bb.height, featuresPx.dim());
+        FeatureImage features_cluster_cropped(bb.width, bb.height, featuresCluster.dim());
         LabelImage gt_cropped(bb.width, bb.height);
         for(Coord x = bb.x; x < bb.width; ++x)
         {
