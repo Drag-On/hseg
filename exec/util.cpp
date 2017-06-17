@@ -1121,7 +1121,7 @@ bool testIterationProgress(UtilProperties const& properties)
     std::vector<InferenceResultDetails> results;
     for(auto const& filename : listfile)
     {
-        std::cout << filename << std::endl;
+        std::cout << filename << ": ";
 
         // Read images
         std::string imgFilename = properties.datasetPx.path.img + filename + properties.datasetPx.extension.img;
@@ -1181,6 +1181,11 @@ bool testIterationProgress(UtilProperties const& properties)
         EnergyFunction energy(&w, properties.param.numClusters, properties.param.usePairwise);
         InferenceIterator<EnergyFunction> inference(&energy, &featuresPx, &featuresCluster, properties.param.eps, properties.param.maxIter);
         auto result = inference.runDetailed();
+
+        // Print energies to screen
+        for(Cost c : result.energy)
+            std::cout << c << ", ";
+        std::cout << std::endl;
 
         // Try to write results to file
         boost::filesystem::path folder = properties.out + filename;
