@@ -171,7 +171,7 @@ int main(int argc, char** argv)
     loss *= properties.train.C / fileNames.size();
 
     auto const& acc = accuracy.accuracies();
-    float meanIoUWithoutBg = std::accumulate(acc.begin() + 1, acc.end(), 0);
+    float meanIoUWithoutBg = std::accumulate(acc.begin() + 1, acc.end(), 0.f);
     meanIoUWithoutBg /= acc.size() - 1;
 
     std::cout << accuracy << std::endl;
