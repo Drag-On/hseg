@@ -34,6 +34,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, createFakeMarginals, "", --createFakeMarginals)
                                PROP_DEFINE_A(std::string, stitchMarginals, "", --stitchMarginals)
                                PROP_DEFINE_A(std::string, createBasicFeatures, "", --createBasicFeatures)
+                               PROP_DEFINE_A(std::string, mergeFeatures, "", --mergeFeatures)
                                PROP_DEFINE_A(std::string, testIterationProgress, "", --testIterationProgress)
                                PROP_DEFINE_A(std::string, symmetryCheck, "", --symmetryCheck)
                   )
@@ -72,6 +73,10 @@ PROPERTIES_DEFINE(Util,
                           PROP_DEFINE_A(int, cropSize, 473, --crop_size)
                           PROP_DEFINE_A(bool, withGt, true, --with_gt)
                           PROP_DEFINE_A(bool, cityscapes, false, --cityscapes)
+                  )
+                  GROUP_DEFINE(mergeFeatures,
+                          PROP_DEFINE_A(std::string, first, "", --first)
+                          PROP_DEFINE_A(std::string, second, "", --second)
                   )
                   GROUP_DEFINE(param,
                           PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
@@ -1104,6 +1109,61 @@ bool createBasicFeatures(UtilProperties const& properties)
     return true;
 }
 
+bool mergeFeatures(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> listfile = readLines(properties.job.testIterationProgress);
+    std::cout << listfile.size() << " images." << std::endl;
+
+    for(auto const& filename : listfile)
+    {
+        std::cout << filename << ": ";
+
+        // Read feature maps
+        std::string feat1Filename = properties.mergeFeatures.first + filename + properties.datasetPx.extension.img;
+        std::string feat2Filename = properties.mergeFeatures.second + filename + properties.datasetPx.extension.img;
+        FeatureImage feat1;
+        if (!feat1.read(feat1Filename))
+        {
+            std::cerr << "Unable to read features from \"" << feat1Filename << "\"" << std::endl;
+            return false;
+        }
+
+        FeatureImage feat2;
+        if (!feat2.read(feat2Filename))
+        {
+            std::cerr << "Unable to read features from \"" << feat2Filename << "\"" << std::endl;
+            return false;
+        }
+
+        if(feat1.width() != feat2.width() || feat1.height() != feat2.height())
+        {
+            std::cerr << "Feature dimensions don't match up!" << std::endl;
+            return false;
+        }
+
+        FeatureImage res(feat1.width(), feat1.height(), feat1.dim() + feat2.dim());
+        for(size_t i = 0; i < res.height() * res.width(); ++i)
+        {
+            Feature f = Feature::Zero(res.dim());
+            f << feat1.atSite(i) , feat2.atSite(i);
+            res.atSite(i) = f;
+        }
+
+        // Write to disk
+        if(!res.write(properties.out + filename + properties.datasetPx.extension.img))
+        {
+            std::cout << "ERROR" << std::endl;
+            std::cerr << "Unable to write feature map \"" << properties.out + filename + properties.datasetPx.extension.img << "\"." << std::endl;
+            return false;
+        }
+
+        std::cout << " OK!" << std::endl;
+    }
+
+    return true;
+}
+
 bool testIterationProgress(UtilProperties const& properties)
 {
     // Read in file names
@@ -1327,6 +1387,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.createBasicFeatures.empty())
         createBasicFeatures(properties);
+
+    if(!properties.job.mergeFeatures.empty())
+        mergeFeatures(properties);
 
     if(!properties.job.testIterationProgress.empty())
         testIterationProgress(properties);
