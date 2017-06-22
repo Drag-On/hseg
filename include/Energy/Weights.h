@@ -274,6 +274,21 @@ public:
      * @param out Output stream, defaults to std::cout
      */
     void printStats(std::ostream& out = std::cout) const;
+
+    /**
+     * @return true if pairwise weights are symmetric
+     */
+    bool isPairwiseSymmetric() const;
+
+    /**
+     * @return true if label consistency weights are symmetric
+     */
+    bool isLabelSymmetric() const;
+
+    /**
+     * @return true if feature weights are symmetric
+     */
+    bool isFeatureSymmetric() const;
 };
 
 std::ostream& operator<<(std::ostream& stream, Weights const& weights);

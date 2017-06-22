@@ -501,3 +501,57 @@ void Weights::printStats(std::ostream& out) const
     printer("FEATURE", wS.feature);
     printer("TOTAL", wS.total);
 }
+
+bool Weights::isPairwiseSymmetric() const
+{
+    float eps = 1e-5f;
+    for(Label l1 = 0; l1 < numClasses(); ++l1)
+    {
+        for(Label l2 = l1; l2 < numClasses(); ++l2)
+        {
+            WeightVec diff = pairwise(l1, l2) - pairwise(l2, l1);
+            for(size_t i = 0; i < diff.size(); ++i)
+            {
+                if(diff[i] >= eps)
+                    return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool Weights::isLabelSymmetric() const
+{
+    float eps = 1e-5f;
+    for(Label l1 = 0; l1 < numClasses(); ++l1)
+    {
+        for(Label l2 = l1; l2 < numClasses(); ++l2)
+        {
+            WeightVec diff = higherOrder(l1, l2) - higherOrder(l2, l1);
+            for(size_t i = 0; i < diff.size(); ++i)
+            {
+                if(diff[i] >= eps)
+                    return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool Weights::isFeatureSymmetric() const
+{
+    float eps = 1e-5f;
+    for(Label l1 = 0; l1 < numClasses(); ++l1)
+    {
+        for(Label l2 = l1; l2 < numClasses(); ++l2)
+        {
+            WeightVec diff = feature(l1, l2) - feature(l2, l1);
+            for(size_t i = 0; i < diff.size(); ++i)
+            {
+                if(diff[i] >= eps)
+                    return false;
+            }
+        }
+    }
+    return true;
+}

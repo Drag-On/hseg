@@ -35,6 +35,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, stitchMarginals, "", --stitchMarginals)
                                PROP_DEFINE_A(std::string, createBasicFeatures, "", --createBasicFeatures)
                                PROP_DEFINE_A(std::string, testIterationProgress, "", --testIterationProgress)
+                               PROP_DEFINE_A(std::string, symmetryCheck, "", --symmetryCheck)
                   )
                   GROUP_DEFINE(datasetPx,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -1259,6 +1260,22 @@ bool testIterationProgress(UtilProperties const& properties)
     return true;
 }
 
+bool symmetryCheck(UtilProperties const& properties)
+{
+    Weights w(properties.datasetPx.constants.numClasses, properties.datasetPx.constants.featDim, properties.datasetCluster.constants.featDim);
+    if(!w.read(properties.job.symmetryCheck))
+    {
+        std::cerr << "Couldn't read in weights from \"" << properties.job.symmetryCheck << "\"." << std::endl;
+        return false;
+    }
+
+    std::cout << "Pairwise: " << w.isPairwiseSymmetric() << std::endl;
+    std::cout << "Label Consistency: " << w.isLabelSymmetric() << std::endl;
+    std::cout << "Feature: " << w.isFeatureSymmetric() << std::endl;
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -1313,6 +1330,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.testIterationProgress.empty())
         testIterationProgress(properties);
+
+    if(!properties.job.symmetryCheck.empty())
+        symmetryCheck(properties);
 
     return 0;
 }
