@@ -1112,7 +1112,7 @@ bool createBasicFeatures(UtilProperties const& properties)
 bool mergeFeatures(UtilProperties const& properties)
 {
     // Read in file names
-    std::vector<std::string> listfile = readLines(properties.job.testIterationProgress);
+    std::vector<std::string> listfile = readLines(properties.job.mergeFeatures);
     std::cout << listfile.size() << " images." << std::endl;
 
     for(auto const& filename : listfile)
