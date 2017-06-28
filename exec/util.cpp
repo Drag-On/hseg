@@ -37,6 +37,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, mergeFeatures, "", --mergeFeatures)
                                PROP_DEFINE_A(std::string, testIterationProgress, "", --testIterationProgress)
                                PROP_DEFINE_A(std::string, symmetryCheck, "", --symmetryCheck)
+                               PROP_DEFINE_A(std::string, prepCityscapesGt, "", --prepCityscapesGt)
                   )
                   GROUP_DEFINE(datasetPx,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -1336,6 +1337,79 @@ bool symmetryCheck(UtilProperties const& properties)
     return true;
 }
 
+bool prepCityscapesGt(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> listfile = readLines(properties.job.prepCityscapesGt);
+    std::cout << listfile.size() << " images." << std::endl;
+
+    std::map<Label, Label> labelMap = {
+            {0, 29},
+            {1, 29},
+            {2, 29},
+            {3, 29},
+            {4, 29},
+            {5, 19},
+            {6, 20},
+            {7, 0},
+            {8, 1},
+            {9, 21},
+            {10, 22},
+            {11, 2},
+            {12, 3},
+            {13, 4},
+            {14, 23},
+            {15, 24},
+            {16, 25},
+            {17, 5},
+            {18, 29},
+            {19, 6},
+            {20, 7},
+            {21, 8},
+            {22, 9},
+            {23, 10},
+            {24, 11},
+            {25, 12},
+            {26, 13},
+            {27, 14},
+            {28, 15},
+            {29, 26},
+            {30, 27},
+            {31, 16},
+            {32, 17},
+            {33, 18},
+            {-1, 28}
+    };
+
+    auto cmap = helper::image::generateColorMapCityscapes();
+
+    for(auto const& f : listfile)
+    {
+        std::string gtFilename = properties.datasetPx.path.gt + f + properties.datasetPx.extension.gt;
+
+        GrayscaleImage gt;
+        if(!gt.read(gtFilename))
+        {
+            std::cerr << "Unable to read \"" << gtFilename << "\"." << std::endl;
+            return false;
+        }
+
+        LabelImage gt_mapped(gt.width(), gt.height());
+        for(SiteId i = 0; i < gt.pixels(); ++i)
+            gt_mapped.atSite(i) = labelMap[gt.atSite(i)];
+
+        std::string outFileName = properties.out + f + properties.datasetPx.extension.gt;
+        auto errCode = helper::image::writePalettePNG(outFileName, gt_mapped, cmap);
+        if(errCode != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Unable to write to \"" << outFileName << "\". Error Code: " << (int) errCode << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -1396,6 +1470,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.symmetryCheck.empty())
         symmetryCheck(properties);
+
+    if(!properties.job.prepCityscapesGt.empty())
+        prepCityscapesGt(properties);
 
     return 0;
 }

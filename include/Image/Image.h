@@ -233,6 +233,11 @@ private:
 };
 
 /**
+ * 1-channel grayscale image
+ */
+using GrayscaleImage = Image<unsigned char, 1>;
+
+/**
  * 3-Channel color image
  */
 template<typename T>

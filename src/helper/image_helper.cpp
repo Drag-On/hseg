@@ -44,34 +44,34 @@ namespace helper
         {
             ColorMap cmap = {
                     {128, 64,128}, // 0 Road
-                    {244, 35,232}, // 1 Sidewalk
+                    {232, 35,244}, // 1 Sidewalk
                     { 70, 70, 70}, // 2 Building
-                    {102,102,156}, // 3 Wall
-                    {190,153,153}, // 4 Fence
+                    {156,102,102}, // 3 Wall
+                    {153,153,190}, // 4 Fence
                     {153,153,153}, // 5 Pole
-                    {250,170, 30}, // 6 Traffic light
-                    {220,220,  0}, // 7 Traffic sign
-                    {107,142, 35}, // 8 Vegetation
+                    { 30,170,250}, // 6 Traffic light
+                    {  0,220,220}, // 7 Traffic sign
+                    { 35,142,107}, // 8 Vegetation
                     {152,251,152}, // 9 Terrain
-                    { 70,130,180}, // 10 Sky
-                    {220, 20, 60}, // 11 Person
-                    {255,  0,  0}, // 12 Rider
-                    {  0,  0,142}, // 13 Car
-                    {  0,  0, 70}, // 14 Truck
-                    {  0, 60,100}, // 15 Bus
-                    {  0, 80,100}, // 16 Train
-                    {  0,  0,230}, // 17 Motorcycle
-                    {119, 11, 32}, // 18 Bicycle
-                    {111, 74,  0}, // 19 dynamic (ignored)
+                    {180,130, 70}, // 10 Sky
+                    { 60, 20,220}, // 11 Person
+                    {  0,  0,255}, // 12 Rider
+                    {142,  0,  0}, // 13 Car
+                    { 70,  0,  0}, // 14 Truck
+                    {100, 60,  0}, // 15 Bus
+                    {100, 80,  0}, // 16 Train
+                    {230,  0,  0}, // 17 Motorcycle
+                    { 32, 11,119}, // 18 Bicycle
+                    {  0, 74,111}, // 19 dynamic (ignored)
                     { 81,  0, 81}, // 20 Ground (ignored)
-                    {250,170,160}, // 21 Parking (ignored)
-                    {230,150,140}, // 22 Rail Track (ignored)
+                    {160,170,250}, // 21 Parking (ignored)
+                    {140,150,230}, // 22 Rail Track (ignored)
                     {180,165,180}, // 23 Guard Rail (ignored)
-                    {150,100,100}, // 24 Bridge (ignored)
-                    {150,120, 90}, // 25 Tunnel (ignored)
-                    {  0,  0, 90}, // 26 Caravan (ignored)
-                    {  0,  0,110}, // 27 Trailer (ignored)
-                    {  0,  0,142}, // 28 Licence Plate (ignored)
+                    {100,100,150}, // 24 Bridge (ignored)
+                    { 90,120,150}, // 25 Tunnel (ignored)
+                    { 90,  0,  0}, // 26 Caravan (ignored)
+                    {110,  0,  0}, // 27 Trailer (ignored)
+                    {142,  0,  0}, // 28 Licence Plate (ignored)
                     {  0,  0,  0}, // 29 unlabeled (ignored)
             };
             return cmap;
