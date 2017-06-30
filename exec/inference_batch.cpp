@@ -49,6 +49,7 @@ PROPERTIES_DEFINE(InferenceBatch,
                           PROP_DEFINE_A(float, maxIter, 50, --max_iter)
                   )
                   PROP_DEFINE_A(bool, scaleToRgb, false, --scale_to_rgb)
+                  PROP_DEFINE_A(float, scaleFactor, 1.f, --scaleFactor)
                   PROP_DEFINE_A(std::string, outDir, "", --out)
                   PROP_DEFINE_A(uint16_t, numThreads, 4, --numThreads)
 )
@@ -67,7 +68,7 @@ struct Result
 
 Result process(std::string const& imageFilename, std::string imageClusterFilename, std::string const& rgbFileName, Weights const& weights, std::string const& spOutPath,
                std::string const& labelOutPath, std::string const& margOutPath, helper::image::ColorMap const& cmap,
-               ClusterId numClusters, float eps, uint32_t maxIter, bool scaleToRgb, bool usePairwise)
+               ClusterId numClusters, float eps, uint32_t maxIter, bool scaleToRgb, bool usePairwise, float scaleFactor)
 {
     std::string filename = boost::filesystem::path(imageFilename).stem().string();
     Result res;
@@ -80,6 +81,7 @@ Result process(std::string const& imageFilename, std::string imageClusterFilenam
         std::cerr << "Unable to read features from \"" << imageFilename << "\"" << std::endl;
         return res;
     }
+    featuresPx.rescale(scaleFactor);
     FeatureImage featuresCluster;
     if(!featuresCluster.read(imageClusterFilename))
     {
@@ -215,7 +217,7 @@ int main(int argc, char** argv)
             std::cout << "Skipping " << f << "." << std::endl;
             continue;
         }
-        auto&& fut = pool.enqueue(process, imageFilename, imageClusterFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb, properties.param.usePairwise);
+        auto&& fut = pool.enqueue(process, imageFilename, imageClusterFilename, rgbFilename, weights, spPath.string(), labelPath.string(), marginalsPath.string(), cmap, properties.param.numClusters, properties.param.eps, properties.param.maxIter, properties.scaleToRgb, properties.param.usePairwise, properties.scaleFactor);
         futures.push_back(std::move(fut));
 
         // Wait for some threads to finish if the queue gets too long
