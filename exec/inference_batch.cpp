@@ -88,6 +88,7 @@ Result process(std::string const& imageFilename, std::string imageClusterFilenam
         std::cerr << "Unable to read features from \"" << imageClusterFilename << "\"" << std::endl;
         return res;
     }
+    featuresCluster.rescale(scaleFactor);
     if(featuresCluster.width() != featuresPx.width() || featuresCluster.height() != featuresPx.height())
     {
         if(static_cast<float>(featuresCluster.width()) / featuresCluster.height() ==
