@@ -126,6 +126,12 @@ public:
     Image<float, C> getCieLabImg() const;
 
     /**
+     * Converts the image to grayscale
+     * @return Grayscale image
+     */
+    Image<unsigned char, 1> getGrayscaleImg() const;
+
+    /**
      * @return Image width
      */
     Coord width() const;
@@ -425,6 +431,15 @@ Image<float, C> Image<T, C>::getCieLabImg() const
     cv::cvtColor(floatMat, floatMatCieLab, CV_BGR2Lab);
     Image<float, C> img(floatMatCieLab);
     return img;
+}
+
+template<typename T, size_t C>
+Image<unsigned char, 1> Image<T, C>::getGrayscaleImg() const
+{
+    cv::Mat greyMat, colorMat = static_cast<cv::Mat>(*this);
+    cv::cvtColor(colorMat, greyMat, CV_BGR2GRAY);
+
+    return Image<unsigned char, 1>(greyMat);
 }
 
 template<typename T, size_t C>

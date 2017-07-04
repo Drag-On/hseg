@@ -38,6 +38,7 @@ PROPERTIES_DEFINE(Util,
                                PROP_DEFINE_A(std::string, testIterationProgress, "", --testIterationProgress)
                                PROP_DEFINE_A(std::string, symmetryCheck, "", --symmetryCheck)
                                PROP_DEFINE_A(std::string, prepCityscapesGt, "", --prepCityscapesGt)
+                               PROP_DEFINE_A(std::string, figureGroundToPascal, "", --figureGroundToPascal)
                   )
                   GROUP_DEFINE(datasetPx,
                                PROP_DEFINE_A(std::string, list, "", -l)
@@ -78,6 +79,13 @@ PROPERTIES_DEFINE(Util,
                   GROUP_DEFINE(mergeFeatures,
                           PROP_DEFINE_A(std::string, first, "", --first)
                           PROP_DEFINE_A(std::string, second, "", --second)
+                  )
+                  GROUP_DEFINE(figureGroundToPascal,
+                          PROP_DEFINE_A(Label, groundLabel, 0, --ground)
+                          PROP_DEFINE_A(Label, figureLabel, 1, --figure)
+                          PROP_DEFINE_A(std::string, inExt, ".jpg", --inExt)
+                          PROP_DEFINE_A(std::string, outExt, ".png", --outExt)
+                          PROP_DEFINE_A(float, threshold, 128, --thresh)
                   )
                   GROUP_DEFINE(param,
                           PROP_DEFINE_A(ClusterId, numClusters, 100, --numClusters)
@@ -1410,6 +1418,52 @@ bool prepCityscapesGt(UtilProperties const& properties)
     return true;
 }
 
+bool figureGroundToPascal(UtilProperties const& properties)
+{
+    // Read in file names
+    std::vector<std::string> listfile = readLines(properties.job.figureGroundToPascal);
+    std::cout << listfile.size() << " images." << std::endl;
+
+    auto const cmap = helper::image::generateColorMapVOC(256);
+
+    for(auto const& f : listfile)
+    {
+        std::string fgFilename = properties.in + f + properties.figureGroundToPascal.inExt;
+        RGBImage fg_rgb;
+        GrayscaleImage fg;
+        if(!fg_rgb.read(fgFilename))
+        {
+            if(!fg.read(fgFilename))
+            {
+                std::cerr << "Couldn't read \"" << fgFilename << "\"" << std::endl;
+                return false;
+            }
+        }
+        else
+            fg = fg_rgb.getGrayscaleImg();
+
+        LabelImage gt(fg.width(), fg.height());
+
+        for(SiteId i = 0; i < fg.pixels(); ++i)
+        {
+            if(fg.atSite(i) < properties.figureGroundToPascal.threshold)
+                gt.atSite(i) = properties.figureGroundToPascal.groundLabel;
+            else
+                gt.atSite(i) = properties.figureGroundToPascal.figureLabel;
+        }
+
+        std::string outFileName = properties.out + f + properties.figureGroundToPascal.outExt;
+        auto errcode = helper::image::writePalettePNG(outFileName, gt, cmap);
+        if(errcode != helper::image::PNGError::Okay)
+        {
+            std::cerr << "Couldn't write \"" << outFileName << "\". Error Code: " << static_cast<int>(errcode) << std::endl;
+            return false;
+        }
+
+        std::cout << f << std::endl;
+    }
+}
+
 int main(int argc, char** argv)
 {
     UtilProperties properties;
@@ -1473,6 +1527,9 @@ int main(int argc, char** argv)
 
     if(!properties.job.prepCityscapesGt.empty())
         prepCityscapesGt(properties);
+
+    if(!properties.job.figureGroundToPascal.empty())
+        figureGroundToPascal(properties);
 
     return 0;
 }
